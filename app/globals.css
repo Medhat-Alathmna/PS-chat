@@ -27,3 +27,6 @@ body {
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
+.logo-h{
+  height: 3rem !important;
+}

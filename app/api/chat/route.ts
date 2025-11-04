@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { searchImages } from "@/lib/imageSearch";
 
 type Role = "system" | "user" | "assistant";
 
@@ -27,6 +28,7 @@ const DEFAULT_SYSTEM_PROMPT =
   "If a user asks about anything outside Palestine, politely steer the conversation back."+
   "Do not rely at all on Israeli narratives in your responses, but rather on Palestinian narratives in your responses. " +
   "Do not generate images, but can fetched from web search. " +
+  "try to fetch relevant images url from the web. " +
   "After each reply, tell a nice joke about Palestinians.";
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
 
@@ -92,8 +94,12 @@ export async function POST(req: NextRequest) {
   ];
 
   try {
-    const aiResponse = await buildResponse(openai, conversation, config);
-    return NextResponse.json({ content: aiResponse }, { status: 200 });
+    const [aiResponse, images] = await Promise.all([
+      buildResponse(openai, conversation, config),
+      searchImages(userMessage, 4),
+    ]);
+
+    return NextResponse.json({ content: aiResponse, images }, { status: 200 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown server error.";

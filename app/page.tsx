@@ -13,11 +13,25 @@ import IntroScreen from "./components/IntroScreen";
 
 type Role = "user" | "assistant";
 
+type ImageResult = {
+  id: string;
+  title: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  source: string;
+  attribution?: string;
+  license?: string;
+  licenseUrl?: string;
+  creator?: string;
+  detailUrl?: string;
+};
+
 type ChatMessage = {
   id: string;
   role: Role;
   content: string;
   createdAt: number;
+  images?: ImageResult[];
 };
 
 type Mode = "promptId" | "localPrompt";
@@ -141,16 +155,36 @@ const handleSelect = (question: string) => {
         throw new Error(data?.error ?? "تعذّر الحصول على رد من المساعد.");
       }
 
-      const data = (await response.json()) as { content?: string };
+      const data = (await response.json()) as {
+        content?: string;
+        images?: ImageResult[];
+      };
       const content =
         data.content?.trim() ||
         "عذرًا، لم أتمكن من توليد رد هذه المرة. حاول مجددًا.";
+      const images = Array.isArray(data.images)
+        ? data.images
+            .filter((image): image is ImageResult =>
+              Boolean(
+                image &&
+                typeof image === "object" &&
+                "imageUrl" in image &&
+                typeof image.imageUrl === "string" &&
+                image.imageUrl.trim()
+              )
+            )
+            .map((image) => ({
+              ...image,
+              id: image.id ?? `image-${createId()}`,
+            }))
+        : [];
 
       const assistantMessage: ChatMessage = {
         id: createId(),
         role: "assistant",
         content,
         createdAt: Date.now(),
+        images: images.length ? images : undefined,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -193,28 +227,36 @@ if (!started) {
   }
   return (
     
-    <div className="relative flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(0,0,0,0.88)_0%,_rgba(39,39,42,0.9)_45%,_rgba(22,101,52,0.75)_100%)]" />
-        <div className="absolute -left-32 top-[-12%] h-3/4 w-2/3 -skew-x-12 bg-red-600/40 blur-3xl" />
-        <div className="absolute bottom-[-20%] right-[-15%] h-2/3 w-2/3 rounded-full bg-emerald-500/25 blur-3xl" />
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent" />
+    <div className="relative flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100"
+     style={{
+    backgroundImage: `
+      linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)),
+      url('../pl.jpg')
+    `,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed",
+  }}>
+    
+<header className="relative border-b border-white/5 bg-zinc-950/70 backdrop-blur">
+  <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex items-center gap-3">
+      <img
+        src="../pss.webp"
+        alt="Palestine map"
+        className="h-8 logo-h drop-shadow-md"
+      />
+      <div>
+        <p className="text-sm uppercase tracking-widest text-emerald-400">
+          Falastin Assistant
+        </p>
+        <h1 className="text-2xl font-semibold">
+          دردش مع مساعد متخصص في فلسطين
+        </h1>
       </div>
-
-      <header className="relative border-b border-white/5 bg-zinc-950/70 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-widest text-emerald-400">
-              Falastin Assistant
-            </p>
-            <h1 className="text-2xl font-semibold">
-              دردش مع مساعد متخصص في فلسطين
-            </h1>
-          </div>
-
-       
-        </div>
-      </header>
+    </div>
+  </div>
+</header>
 
       <main className="relative mx-auto flex h-full w-full max-w-5xl flex-1 flex-col overflow-hidden px-4 pb-6 pt-6 sm:px-6 lg:px-8 min-h-0">
         <section className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-3xl bg-zinc-950/70 shadow-2xl backdrop-blur">
@@ -322,7 +364,42 @@ function ChatBubble({ message }: ChatBubbleProps) {
             : "border-white/5 bg-zinc-900/80 text-zinc-100"
         }`}
       >
-        <p className="whitespace-pre-wrap">{message.content}</p>
+        <div className="whitespace-pre-wrap">{message.content}</div>
+        {!isUser && message.images && message.images.length ? (
+          <div className="grid gap-3 pt-1 sm:grid-cols-2">
+            {message.images.map((image) => {
+              const href = image.detailUrl ?? image.imageUrl;
+              const altText =
+                image.title?.trim() || "صورة مقترحة من Falastin Assistant";
+              return (
+                <a
+                  key={image.id}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/40 transition hover:border-emerald-400/60"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.thumbnailUrl || image.imageUrl}
+                    alt={altText}
+                    className="h-44 w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                    loading="lazy"
+                  />
+                  <div className="flex flex-col gap-1 px-3 py-2 text-xs text-zinc-400">
+                    <span className="font-medium text-zinc-200">
+                      {image.title || "صورة مقترحة"}
+                    </span>
+                    <span>
+                      {image.creator ? `${image.creator} · ` : ""}
+                      {image.license?.toUpperCase() || image.source}
+                    </span>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        ) : null}
         <span className="text-xs text-zinc-500">
           {new Intl.DateTimeFormat("ar", {
             hour: "2-digit",
@@ -354,4 +431,3 @@ function createId() {
 
   return `msg-${Math.random().toString(16).slice(2)}`;
 }
-
