@@ -8,6 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
+import ChatIntro from "./components/IntroScreen";
+import IntroScreen from "./components/IntroScreen";
 
 type Role = "user" | "assistant";
 
@@ -28,20 +30,12 @@ const DEFAULT_SYSTEM_PROMPT =
   "Do not generate images, but can fetched from web search. " +
   "After each reply, tell a nice joke about Palestinians.";
 
-const INITIAL_ASSISTANT_MESSAGE =
-  "Marhaba! I'm Falastin, your guide for everything about Palestine. " +
-  "Ask about history, culture, cities, cuisine, current events, or human stories and I'll gladly share what I know.";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    {
-      id: createId(),
-      role: "assistant",
-      content: INITIAL_ASSISTANT_MESSAGE,
-      createdAt: Date.now(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => []);
   const [mode, setMode] = useState<Mode>("localPrompt");
+    const [started, setStarted] = useState(false);
+  const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
   const [promptId, setPromptId] = useState("");
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +62,19 @@ export default function ChatPage() {
     if (!textareaRef.current) return;
     resizeTextarea(textareaRef.current);
   }, [input]);
-
+  useEffect(() => {
+  if (initialQuestion) {
+    setInput(initialQuestion);
+    // أرسلها تلقائياً للمساعد
+    setTimeout(() => {
+      void handleSubmit();
+    }, 500);
+  }
+}, [initialQuestion]);
+const handleSelect = (question: string) => {
+    console.log("Selected question:", question);
+    // يمكنك لاحقاً إرسال السؤال إلى /api/chat
+  };
   const assistantTypingStub = useMemo<ChatMessage | null>(() => {
     if (!isLoading) return null;
     return {
@@ -175,8 +181,18 @@ export default function ChatPage() {
       void handleSubmit();
     }
   };
-
+if (!started) {
+    return (
+      <IntroScreen
+        onSelect={(text) => {
+          setInitialQuestion(text);
+          setStarted(true);
+        }}
+      />
+    );
+  }
   return (
+    
     <div className="relative flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(0,0,0,0.88)_0%,_rgba(39,39,42,0.9)_45%,_rgba(22,101,52,0.75)_100%)]" />
@@ -196,11 +212,7 @@ export default function ChatPage() {
             </h1>
           </div>
 
-          <ModeToggle
-            mode={mode}
-            onChange={(value) => setMode(value)}
-            isLoading={isLoading}
-          />
+       
         </div>
       </header>
 
@@ -266,18 +278,6 @@ export default function ChatPage() {
                   )}
                 </button>
               </div>
-{/* 
-              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-500">
-                <p>
-                  يتم إرسال الرسائل عبر واجهة OpenAI Responses API. تأكد من
-                  توفير مفتاح API في المتغير{" "}
-                  <span className="font-semibold text-emerald-400">
-                    OPENAI_API_KEY
-                  </span>
-                  .
-                </p>
-                <p>يحفظ سياق الدردشة محليًا في الجلسة الحالية فقط.</p>
-              </div> */}
 
               {error ? (
                 <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -292,84 +292,8 @@ export default function ChatPage() {
   );
 }
 
-type ModeToggleProps = {
-  mode: Mode;
-  onChange: (value: Mode) => void;
-  isLoading: boolean;
-};
 
-function ModeToggle({ mode, onChange, isLoading }: ModeToggleProps) {
-  return (
-    <div className="inline-flex rounded-full border border-white/10 bg-zinc-900/80 p-1 text-sm shadow-lg">
-      <button
-        type="button"
-        onClick={() => onChange("promptId")}
-        className={`rounded-full px-3 py-1.5 transition ${
-          mode === "promptId"
-            ? "bg-emerald-500 text-zinc-950"
-            : "text-zinc-400 hover:text-zinc-200"
-        }`}
-        disabled={isLoading}
-      >
-        استخدام Prompt ID
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("localPrompt")}
-        className={`rounded-full px-3 py-1.5 transition ${
-          mode === "localPrompt"
-            ? "bg-emerald-500 text-zinc-950"
-            : "text-zinc-400 hover:text-zinc-200"
-        }`}
-        disabled={isLoading}
-      >
-        نظام محلي
-      </button>
-    </div>
-  );
-}
-
-type PromptSettingsProps = {
-  mode: Mode;
-  promptId: string;
-  onPromptIdChange: (value: string) => void;
-  disabled: boolean;
-};
-
-function PromptSettings({
-  mode,
-  promptId,
-  onPromptIdChange,
-  disabled,
-}: PromptSettingsProps) {
-  if (mode === "promptId") {
-    return (
-      <label className="flex flex-col gap-2 text-sm text-zinc-300">
-        <span className="font-medium text-zinc-200">
-          Prompt ID (من منصة OpenAI)
-        </span>
-        <input
-          type="text"
-          value={promptId}
-          onChange={(event) => onPromptIdChange(event.target.value)}
-          placeholder="prompt-xxxxxxxxxxxxxxxxxxxxxxxx"
-          className="w-full rounded-xl border border-white/10 bg-zinc-950/70 px-4 py-3 text-base text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500/60 focus:outline-none disabled:opacity-60"
-          disabled={disabled}
-        />
-      </label>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-white/10 bg-zinc-950/70 px-4 py-4 text-sm text-zinc-300 shadow-inner">
-      <p className="font-medium text-zinc-200">الوضع المحلي المخصص لفلسطين</p>
-      <p className="mt-1 text-zinc-400">
-        يتم استخدام التعليمات الافتراضية الخاصة بالمساعد Falastin للحديث عن
-        فلسطين فقط، دون الحاجة لتعديل إضافي.
-      </p>
-    </div>
-  );
-}type ChatBubbleProps = {
+type ChatBubbleProps = {
   message: ChatMessage;
 };
 
