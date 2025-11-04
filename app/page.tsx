@@ -1,65 +1,433 @@
-import Image from "next/image";
+﻿"use client";
 
-export default function Home() {
+import {
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+type Role = "user" | "assistant";
+
+type ChatMessage = {
+  id: string;
+  role: Role;
+  content: string;
+  createdAt: number;
+};
+
+type Mode = "promptId" | "localPrompt";
+
+const DEFAULT_SYSTEM_PROMPT =
+  "You are Falastin, a warm and knowledgeable guide focused entirely on Palestine. " +
+  "Celebrate Palestinian culture, history, geography, cuisine, people, and daily life. " +
+  "If a user asks about anything outside Palestine, politely steer the conversation back."+
+  "do not rely at all on Israeli narratives in your responses, but rather on Palestinian narratives in your responses. " +
+  "Do not generate images, but can fetched from web search. " +
+  "After each reply, tell a nice joke about Palestinians.";
+
+const INITIAL_ASSISTANT_MESSAGE =
+  "Marhaba! I'm Falastin, your guide for everything about Palestine. " +
+  "Ask about history, culture, cities, cuisine, current events, or human stories and I'll gladly share what I know.";
+
+export default function ChatPage() {
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      id: createId(),
+      role: "assistant",
+      content: INITIAL_ASSISTANT_MESSAGE,
+      createdAt: Date.now(),
+    },
+  ]);
+  const [mode, setMode] = useState<Mode>("localPrompt");
+  const [promptId, setPromptId] = useState("");
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const initialScrollRef = useRef(true);
+
+  const canSend = input.trim().length > 0 && !isLoading;
+
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    const behavior =
+      initialScrollRef.current || messages.length <= 1 ? "auto" : "smooth";
+
+    initialScrollRef.current = false;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+  }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (!textareaRef.current) return;
+    resizeTextarea(textareaRef.current);
+  }, [input]);
+
+  const assistantTypingStub = useMemo<ChatMessage | null>(() => {
+    if (!isLoading) return null;
+    return {
+      id: "typing",
+      role: "assistant",
+      content: "...",
+      createdAt: Date.now(),
+    };
+  }, [isLoading]);
+
+  const visibleMessages = useMemo(() => {
+    return assistantTypingStub
+      ? [...messages, assistantTypingStub]
+      : messages.slice();
+  }, [messages, assistantTypingStub]);
+
+  const handleSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
+
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) {
+      return;
+    }
+
+    const userMessage: ChatMessage = {
+      id: createId(),
+      role: "user",
+      content: trimmed,
+      createdAt: Date.now(),
+    };
+
+    const previousMessages = messages.map(({ role, content }) => ({
+      role,
+      content,
+    }));
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: previousMessages,
+          userMessage: trimmed,
+          config:
+            mode === "promptId"
+              ? {
+                  mode,
+                  promptId: promptId.trim(),
+                }
+              : {
+                  mode,
+                  systemPrompt: DEFAULT_SYSTEM_PROMPT,
+                },
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await safeJson(response)) as { error?: string } | null;
+        throw new Error(data?.error ?? "تعذّر الحصول على رد من المساعد.");
+      }
+
+      const data = (await response.json()) as { content?: string };
+      const content =
+        data.content?.trim() ||
+        "عذرًا، لم أتمكن من توليد رد هذه المرة. حاول مجددًا.";
+
+      const assistantMessage: ChatMessage = {
+        id: createId(),
+        role: "assistant",
+        content,
+        createdAt: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      const fallback =
+        err instanceof Error
+          ? err.message
+          : "تعذّر إرسال الرسالة، يرجى المحاولة من جديد.";
+      setError(fallback);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: createId(),
+          role: "assistant",
+          content:
+            "واجهت مشكلة أثناء الاتصال بخدمة الذكاء الاصطناعي. تحقق من الإعدادات أو حاول لاحقًا.",
+          createdAt: Date.now(),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void handleSubmit();
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="relative flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(0,0,0,0.88)_0%,_rgba(39,39,42,0.9)_45%,_rgba(22,101,52,0.75)_100%)]" />
+        <div className="absolute -left-32 top-[-12%] h-3/4 w-2/3 -skew-x-12 bg-red-600/40 blur-3xl" />
+        <div className="absolute bottom-[-20%] right-[-15%] h-2/3 w-2/3 rounded-full bg-emerald-500/25 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent" />
+      </div>
+
+      <header className="relative border-b border-white/5 bg-zinc-950/70 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-widest text-emerald-400">
+              Falastin Assistant
+            </p>
+            <h1 className="text-2xl font-semibold">
+              دردش مع مساعد متخصص في فلسطين
+            </h1>
+          </div>
+
+          <ModeToggle
+            mode={mode}
+            onChange={(value) => setMode(value)}
+            isLoading={isLoading}
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </header>
+
+      <main className="relative mx-auto flex h-full w-full max-w-5xl flex-1 flex-col overflow-hidden px-4 pb-6 pt-6 sm:px-6 lg:px-8 min-h-0">
+        <section className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-3xl bg-zinc-950/70 shadow-2xl backdrop-blur">
+          {/* <div className="flex items-center gap-3 border-b border-white/5 bg-zinc-900/50 px-6 py-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-200">
+              فلسطين
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-200">
+                Falastin • Palestine AI
+              </p>
+              <p className="text-xs text-zinc-400">
+                يدعم اللغة العربية والإنجليزية، ويُركّز على كل ما يخص فلسطين
+              </p>
+            </div>
+          </div> */}
+
+          <div
+            ref={chatContainerRef}
+            className="flex flex-1 min-h-0 flex-col no-scrollbar overflow-y-auto px-4 py-6 sm:px-6"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+              {visibleMessages.map((message) => (
+                <ChatBubble key={message.id} message={message} />
+              ))}
+            </div>
+          </div>
+
+          <footer className="px-4 py-4 sm:px-6">
+            <form
+              onSubmit={(event) => void handleSubmit(event)}
+              className="mx-auto flex w-full max-w-3xl flex-col gap-4"
+            >
+
+
+              <div className="flex items-end gap-3 rounded-2xl border border-white/10 bg-zinc-950/70 px-4 py-3 shadow-inner focus-within:border-emerald-500/60">
+                <textarea
+                  ref={textareaRef}
+                  className="min-h-[44px] flex-1 resize-none bg-transparent text-base text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+                  placeholder="اكتب رسالتك هنا (اضغط Enter للإرسال، وShift+Enter لسطر جديد)..."
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  maxLength={2000}
+                  disabled={isLoading}
+                />
+
+                <button
+                  type="submit"
+                  disabled={!canSend}
+                  className="flex h-12 min-w-[48px] items-center justify-center rounded-full bg-emerald-500 font-medium text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/40 disabled:text-emerald-900/60"
+                  aria-label="إرسال الرسالة"
+                >
+                  {isLoading ? (
+                    <span className="animate-pulse text-sm font-semibold">
+                      ...
+                    </span>
+                  ) : (
+                    "إرسال"
+                  )}
+                </button>
+              </div>
+{/* 
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-500">
+                <p>
+                  يتم إرسال الرسائل عبر واجهة OpenAI Responses API. تأكد من
+                  توفير مفتاح API في المتغير{" "}
+                  <span className="font-semibold text-emerald-400">
+                    OPENAI_API_KEY
+                  </span>
+                  .
+                </p>
+                <p>يحفظ سياق الدردشة محليًا في الجلسة الحالية فقط.</p>
+              </div> */}
+
+              {error ? (
+                <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {error}
+                </p>
+              ) : null}
+            </form>
+          </footer>
+        </section>
       </main>
     </div>
   );
 }
+
+type ModeToggleProps = {
+  mode: Mode;
+  onChange: (value: Mode) => void;
+  isLoading: boolean;
+};
+
+function ModeToggle({ mode, onChange, isLoading }: ModeToggleProps) {
+  return (
+    <div className="inline-flex rounded-full border border-white/10 bg-zinc-900/80 p-1 text-sm shadow-lg">
+      <button
+        type="button"
+        onClick={() => onChange("promptId")}
+        className={`rounded-full px-3 py-1.5 transition ${
+          mode === "promptId"
+            ? "bg-emerald-500 text-zinc-950"
+            : "text-zinc-400 hover:text-zinc-200"
+        }`}
+        disabled={isLoading}
+      >
+        استخدام Prompt ID
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("localPrompt")}
+        className={`rounded-full px-3 py-1.5 transition ${
+          mode === "localPrompt"
+            ? "bg-emerald-500 text-zinc-950"
+            : "text-zinc-400 hover:text-zinc-200"
+        }`}
+        disabled={isLoading}
+      >
+        نظام محلي
+      </button>
+    </div>
+  );
+}
+
+type PromptSettingsProps = {
+  mode: Mode;
+  promptId: string;
+  onPromptIdChange: (value: string) => void;
+  disabled: boolean;
+};
+
+function PromptSettings({
+  mode,
+  promptId,
+  onPromptIdChange,
+  disabled,
+}: PromptSettingsProps) {
+  if (mode === "promptId") {
+    return (
+      <label className="flex flex-col gap-2 text-sm text-zinc-300">
+        <span className="font-medium text-zinc-200">
+          Prompt ID (من منصة OpenAI)
+        </span>
+        <input
+          type="text"
+          value={promptId}
+          onChange={(event) => onPromptIdChange(event.target.value)}
+          placeholder="prompt-xxxxxxxxxxxxxxxxxxxxxxxx"
+          className="w-full rounded-xl border border-white/10 bg-zinc-950/70 px-4 py-3 text-base text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500/60 focus:outline-none disabled:opacity-60"
+          disabled={disabled}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-zinc-950/70 px-4 py-4 text-sm text-zinc-300 shadow-inner">
+      <p className="font-medium text-zinc-200">الوضع المحلي المخصص لفلسطين</p>
+      <p className="mt-1 text-zinc-400">
+        يتم استخدام التعليمات الافتراضية الخاصة بالمساعد Falastin للحديث عن
+        فلسطين فقط، دون الحاجة لتعديل إضافي.
+      </p>
+    </div>
+  );
+}type ChatBubbleProps = {
+  message: ChatMessage;
+};
+
+function ChatBubble({ message }: ChatBubbleProps) {
+  const isUser = message.role === "user";
+
+  return (
+    <div 
+      className={`flex w-full items-start gap-3  ${
+        isUser ? "flex-row-reverse text-right" : "text-left"
+      }`}
+    >
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+          isUser
+            ? "bg-emerald-500/15 text-emerald-200"
+            : "bg-emerald-500/20 text-emerald-100"
+        }`}
+      >
+        {isUser ? "أنت" : "فلسطين"}
+      </div>
+      <div
+        className={`flex max-w-[85%] flex-col gap-2 rounded-3xl border px-4 py-3 text-sm leading-7 sm:text-base ${
+          isUser
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+            : "border-white/5 bg-zinc-900/80 text-zinc-100"
+        }`}
+      >
+        <p className="whitespace-pre-wrap">{message.content}</p>
+        <span className="text-xs text-zinc-500">
+          {new Intl.DateTimeFormat("ar", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(message.createdAt)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function resizeTextarea(textarea: HTMLTextAreaElement) {
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.min(textarea.scrollHeight, 240)}px`;
+}
+
+async function safeJson(response: Response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function createId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `msg-${Math.random().toString(16).slice(2)}`;
+}
+
