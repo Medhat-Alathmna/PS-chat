@@ -145,6 +145,11 @@ async function buildResponse(
 
   const response = await openai.responses.create({
     model: DEFAULT_MODEL,
+    tools: [
+          {
+            type: "web_search",
+          },
+        ],
     instructions: systemPrompt,
     input,
   });
@@ -161,7 +166,8 @@ type ResponseLike = {
 
 function extractOutputText(response: unknown) {
   const result = response as ResponseLike;
-
+  console.log(response);
+  
   if (typeof result.output_text === "string" && result.output_text.trim()) {
     return result.output_text;
   }

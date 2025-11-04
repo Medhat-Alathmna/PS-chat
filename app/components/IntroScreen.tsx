@@ -18,7 +18,18 @@ export default function IntroScreen({
   onSelect: (text: string) => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-center bg-gradient-to-b from-zinc-950 to-zinc-900 text-zinc-100 px-6">
+    <div
+     style={{
+    backgroundImage: `
+      linear-gradient(rgba(0,0,0,0.7)),
+      url('../pl.jpg')
+    `,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed",
+  }}
+    className="flex flex-col items-center justify-center min-h-screen text-center bg-gradient-to-b from-zinc-950 to-zinc-900 text-zinc-100 px-6">
+      <div className="flex flex-col items-center backdrop-blur" >
       <h1 className="text-6xl font-extrabold text-emerald-400 mb-3 drop-shadow-lg">
         FalastinBot
       </h1>
@@ -45,7 +56,7 @@ export default function IntroScreen({
           </button>
         ))}
       </div>
-
+</div>
 
     </div>
   );

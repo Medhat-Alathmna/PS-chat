@@ -230,7 +230,7 @@ if (!started) {
     <div className="relative flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100"
      style={{
     backgroundImage: `
-      linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)),
+      linear-gradient(rgba(0,0,0,0.7)),
       url('../pl.jpg')
     `,
     backgroundSize: "cover",
