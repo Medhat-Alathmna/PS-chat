@@ -1,198 +1,84 @@
 "use server";
 
-import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { searchImages } from "@/lib/imageSearch";
+import { NextRequest } from "next/server";
+import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { DEFAULT_SYSTEM_PROMPT, getModel } from "@/lib/ai/config";
+import { allTools } from "@/lib/ai/tools";
+import { logError } from "@/lib/utils/error-handler";
 
-type Role = "system" | "user" | "assistant";
-
-type Message = {
-  role: Role;
-  content: string;
-};
-
-type ChatRequest = {
-  messages: Message[];
-  userMessage: string;
-  config: {
+// Type for AI SDK request format
+type AISDKRequest = {
+  messages: UIMessage[];
+  config?: {
     mode: "promptId" | "localPrompt";
     promptId?: string;
     systemPrompt?: string;
   };
 };
 
-const DEFAULT_SYSTEM_PROMPT =
-  "You are Falastin, a warm and knowledgeable guide focused entirely on Palestine. " +
-  "Respond in the user's language. " +
-  "Celebrate Palestinian culture, history, geography, cuisine, people, and daily life. " +
-  "If a user asks about anything outside Palestine, politely steer the conversation back."+
-  "Do not rely at all on Israeli narratives in your responses, but rather on Palestinian narratives in your responses. " +
-  "Do not generate images, but can fetched from web search. " +
-  "try to fetch relevant images url from the web. " +
-  "After each reply, tell a nice joke about Palestinians.";
-const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-
-let openaiClient: OpenAI | null = null;
-
-function getOpenAIClient() {
-  if (openaiClient) {
-    return openaiClient;
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return null;
-  }
-
-  openaiClient = new OpenAI({ apiKey });
-  return openaiClient;
-}
-
+/**
+ * POST /api/chat - Handle chat requests with streaming and tool calling support
+ */
 export async function POST(req: NextRequest) {
-  const openai = getOpenAIClient();
-
-  if (!openai) {
-    return NextResponse.json(
-      { error: "Missing OpenAI API key." },
-      { status: 500 }
-    );
-  }
-
-  let body: ChatRequest;
-
   try {
-    body = (await req.json()) as ChatRequest;
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to parse request payload." },
-      { status: 400 }
-    );
-  }
+    // Parse request body - AI SDK sends messages array directly
+    const body = (await req.json()) as AISDKRequest;
+    const { messages = [], config } = body;
 
-  const { messages = [], userMessage = "", config } = body;
-
-  if (!userMessage.trim()) {
-    return NextResponse.json(
-      { error: "Message content is required." },
-      { status: 400 }
-    );
-  }
-
-  if (!config) {
-    return NextResponse.json(
-      { error: "Chat configuration is missing." },
-      { status: 400 }
-    );
-  }
-
-  const conversation: Message[] = [
-    ...messages.map((message) => ({
-      role: sanitizeRole(message.role),
-      content: message.content ?? "",
-    })),
-    { role: "user", content: userMessage.trim() },
-  ];
-
-  try {
-    const [aiResponse, images] = await Promise.all([
-      buildResponse(openai, conversation, config),
-      searchImages(userMessage, 4),
-    ]);
-
-    return NextResponse.json({ content: aiResponse, images }, { status: 200 });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown server error.";
-    console.error("[chat-route]", error);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
-
-function sanitizeRole(role: Role): Role {
-  if (role === "system" || role === "assistant") {
-    return role;
-  }
-  return "user";
-}
-
-async function buildResponse(
-  openai: OpenAI,
-  conversation: Message[],
-  config: ChatRequest["config"]
-) {
-  const input = conversation.map((message) => ({
-    role: message.role,
-    content: message.content,
-  }));
-
-  if (config.mode === "promptId") {
-    if (!config.promptId?.trim()) {
-      throw new Error("Prompt ID is required when using prompt mode.");
+    // Validation - check if we have messages
+    if (!messages || messages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Message content is required." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    const response = await openai.responses.create({
-      prompt: { id: config.promptId.trim() },
-      input,
+    // Get API key
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "Missing OpenAI API key." }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Create OpenAI client
+    const openai = createOpenAI({
+      apiKey,
     });
 
-    return extractOutputText(response);
+    // Determine system prompt
+    const systemPrompt =
+      config?.mode === "localPrompt"
+        ? config.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT
+        : DEFAULT_SYSTEM_PROMPT;
+
+    // Stream the response with tools
+    const result = streamText({
+      model: openai(getModel()),
+      system: systemPrompt,
+      messages: await convertToModelMessages(messages),
+      tools: allTools,
+      stopWhen: stepCountIs(5), // Allow up to 5 tool calls per request
+      onFinish: async ({ text, toolCalls, toolResults }) => {
+        console.log("[chat] Stream finished", {
+          textLength: text.length,
+          toolCallsCount: toolCalls?.length || 0,
+          toolResultsCount: toolResults?.length || 0,
+        });
+      },
+    });
+
+    // Return the stream using UI message format
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    logError("chat-route", error);
+    return new Response(
+      JSON.stringify({
+        error: "حدث خطأ في الخادم. يرجى المحاولة مرة أخرى.",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
-
-  const systemPrompt =
-    config.systemPrompt?.trim().length === 0
-      ? DEFAULT_SYSTEM_PROMPT
-      : config.systemPrompt?.trim() ?? DEFAULT_SYSTEM_PROMPT;
-
-  const response = await openai.responses.create({
-    model: DEFAULT_MODEL,
-    tools: [
-          {
-            type: "web_search",
-          },
-        ],
-    instructions: systemPrompt,
-    input,
-  });
-
-  return extractOutputText(response);
-}
-
-type ResponseLike = {
-  output_text?: string;
-  output?: Array<{ type?: string; text?: string; output_text?: string }>;
-  message?: string;
-  data?: string;
-};
-
-function extractOutputText(response: unknown) {
-  const result = response as ResponseLike;
-  console.log(response);
-  
-  if (typeof result.output_text === "string" && result.output_text.trim()) {
-    return result.output_text;
-  }
-
-  const outputItems = result.output;
-  if (Array.isArray(outputItems)) {
-    const textChunks = outputItems
-      .filter((item) => item.type === "output_text")
-      .map((item) => item.text ?? item.output_text ?? "")
-      .join("");
-    if (textChunks.trim()) {
-      return textChunks;
-    }
-  }
-
-  const safeResponse = result as Record<string, unknown>;
-  const fallbacks = ["message", "data"].flatMap((key) => {
-    const value = safeResponse[key];
-    if (typeof value === "string") return value;
-    return [];
-  });
-
-  if (fallbacks.length > 0) {
-    return fallbacks.join("\n");
-  }
-
-  throw new Error("Unable to read response from OpenAI.");
 }
