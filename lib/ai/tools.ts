@@ -2,7 +2,10 @@ import { tool } from "ai";
 import { z } from "zod";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { geocodeLocation } from "@/lib/services/maps/geocoding";
-import { ImageResult, Coordinates } from "@/lib/types";
+import { searchYouTubeVideos } from "@/lib/services/video/youtube";
+import { fetchPalestinianNews } from "@/lib/services/news/rss-parser";
+import { searchTimelineByKeyword, getTimelineEvents } from "@/lib/data/palestinian-history";
+import { ImageResult, Coordinates, VideoResult, NewsItem, TimelineEvent } from "@/lib/types";
 
 /**
  * Image Search Tool
@@ -198,6 +201,186 @@ export const webSearchTool = tool({
   },
 });
 
+/**
+ * Video Search Tool
+ * Finds YouTube videos about Palestinian topics
+ */
+export const videoSearchTool = tool({
+  description:
+    "ابحث عن فيديوهات عن فلسطين من YouTube. استخدم هذه الأداة عندما يريد المستخدم مشاهدة فيديو أو وثائقي. " +
+    "Search for YouTube videos about Palestine. Use this tool when the user wants to watch a video or documentary.",
+  inputSchema: z.object({
+    query: z
+      .string()
+      .describe(
+        "Search query for videos (e.g., 'Palestinian cuisine', 'Jerusalem history', 'Nakba documentary')"
+      ),
+  }),
+  execute: async ({ query }): Promise<VideoSearchResult> => {
+    try {
+      const result = await searchYouTubeVideos(query);
+
+      if (!result.success || !result.data) {
+        return {
+          success: false,
+          query,
+          video: null,
+          message: `لم يتم العثور على فيديو لـ "${query}"`,
+        };
+      }
+
+      return {
+        success: true,
+        query,
+        video: result.data,
+        message: `تم العثور على فيديو: "${result.data.title}"`,
+      };
+    } catch (error) {
+      console.error("[video_search] Error:", error);
+      return {
+        success: false,
+        query,
+        video: null,
+        message: "حدث خطأ أثناء البحث عن الفيديو",
+      };
+    }
+  },
+});
+
+/**
+ * News Search Tool
+ * Fetches latest Palestinian news from RSS feeds
+ */
+export const newsSearchTool = tool({
+  description:
+    "احصل على أحدث أخبار فلسطين من مصادر إخبارية فلسطينية. استخدم هذه الأداة للأخبار المحلية والثقافية. " +
+    "Get latest Palestinian news from Palestinian news sources. Use this tool for local and cultural news.",
+  inputSchema: z.object({
+    query: z
+      .string()
+      .optional()
+      .describe("Optional search query to filter news (e.g., 'ثقافة', 'رام الله')"),
+    limit: z
+      .number()
+      .min(1)
+      .max(5)
+      .default(3)
+      .describe("Number of news items to return (1-5)"),
+  }),
+  execute: async ({ query, limit = 3 }): Promise<NewsSearchResult> => {
+    try {
+      const result = await fetchPalestinianNews(query, limit);
+
+      if (!result.success || !result.data || result.data.length === 0) {
+        return {
+          success: false,
+          query: query || "",
+          news: [],
+          message: "لم يتم العثور على أخبار",
+        };
+      }
+
+      return {
+        success: true,
+        query: query || "",
+        news: result.data,
+        message: `تم العثور على ${result.data.length} خبر`,
+      };
+    } catch (error) {
+      console.error("[news_search] Error:", error);
+      return {
+        success: false,
+        query: query || "",
+        news: [],
+        message: "حدث خطأ أثناء جلب الأخبار",
+      };
+    }
+  },
+});
+
+/**
+ * Timeline Search Tool
+ * Retrieves Palestinian historical events
+ */
+export const timelineSearchTool = tool({
+  description:
+    "احصل على جدول زمني للأحداث التاريخية الفلسطينية. استخدم هذه الأداة عندما يسأل المستخدم عن التاريخ أو الأحداث. " +
+    "Get a timeline of Palestinian historical events. Use this tool when the user asks about history or events.",
+  inputSchema: z.object({
+    query: z
+      .string()
+      .optional()
+      .describe("Search keyword (e.g., 'نكبة', '1948', 'القدس')"),
+    startYear: z
+      .number()
+      .optional()
+      .describe("Start year for filtering (e.g., 1900)"),
+    endYear: z
+      .number()
+      .optional()
+      .describe("End year for filtering (e.g., 2000)"),
+    category: z
+      .enum(["political", "cultural", "military", "social", "other"])
+      .optional()
+      .describe("Category filter"),
+    limit: z
+      .number()
+      .min(1)
+      .max(10)
+      .default(5)
+      .describe("Number of events to return (1-10)"),
+  }),
+  execute: async ({
+    query,
+    startYear,
+    endYear,
+    category,
+    limit = 5,
+  }): Promise<TimelineSearchResult> => {
+    try {
+      let events: TimelineEvent[];
+
+      if (query) {
+        events = searchTimelineByKeyword(query);
+      } else {
+        events = getTimelineEvents({
+          startYear,
+          endYear,
+          category,
+          limit,
+        });
+      }
+
+      if (events.length === 0) {
+        return {
+          success: false,
+          query: query || "",
+          events: [],
+          message: "لم يتم العثور على أحداث تاريخية",
+        };
+      }
+
+      // Apply limit
+      events = events.slice(0, limit);
+
+      return {
+        success: true,
+        query: query || "",
+        events,
+        message: `تم العثور على ${events.length} حدث تاريخي`,
+      };
+    } catch (error) {
+      console.error("[timeline_search] Error:", error);
+      return {
+        success: false,
+        query: query || "",
+        events: [],
+        message: "حدث خطأ أثناء البحث في التاريخ",
+      };
+    }
+  },
+});
+
 // ============================================
 // TOOL RESULT TYPES
 // ============================================
@@ -231,6 +414,27 @@ export type WebSearchResult = {
   message: string;
 };
 
+export type VideoSearchResult = {
+  success: boolean;
+  query: string;
+  video: VideoResult | null;
+  message: string;
+};
+
+export type NewsSearchResult = {
+  success: boolean;
+  query: string;
+  news: NewsItem[];
+  message: string;
+};
+
+export type TimelineSearchResult = {
+  success: boolean;
+  query: string;
+  events: TimelineEvent[];
+  message: string;
+};
+
 // ============================================
 // EXPORT ALL TOOLS
 // ============================================
@@ -239,4 +443,7 @@ export const allTools = {
   image_search: imageSearchTool,
   location_search: locationSearchTool,
   web_search: webSearchTool,
+  video_search: videoSearchTool,
+  news_search: newsSearchTool,
+  timeline_search: timelineSearchTool,
 };

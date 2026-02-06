@@ -34,6 +34,9 @@ export type ChatMessage = {
   location?: LocationInfo;
   mapData?: MapData;
   webSearchResults?: WebSearchResultItem[];
+  video?: VideoResult;
+  news?: NewsItem[];
+  timeline?: TimelineEvent[];
   debug?: DebugInfo;
 };
 
@@ -51,7 +54,7 @@ export type ChatRequest = {
 // IMAGE TYPES
 // ============================================
 
-export type ImageSource = "openverse" | "unsplash" | "pexels" | "wikimedia";
+export type ImageSource = "pexels" | "unsplash" | "wikimedia";
 
 export type ImageResult = {
   id: string;
@@ -94,6 +97,51 @@ export type MapMarker = {
   position: Coordinates;
   title: string;
   description?: string;
+};
+
+// ============================================
+// VIDEO TYPES
+// ============================================
+
+export type VideoResult = {
+  id: string;
+  title: string;
+  description?: string;
+  thumbnailUrl: string;
+  embedUrl: string;
+  channelName?: string;
+  duration?: string;
+  viewCount?: string;
+  publishedAt?: string;
+};
+
+// ============================================
+// NEWS TYPES
+// ============================================
+
+export type NewsItem = {
+  id: string;
+  title: string;
+  description?: string;
+  url: string;
+  source: string;
+  imageUrl?: string;
+  publishedAt: string;
+  category?: string;
+};
+
+// ============================================
+// TIMELINE TYPES
+// ============================================
+
+export type TimelineEvent = {
+  id: string;
+  year: number;
+  title: string;
+  description: string;
+  category?: "political" | "cultural" | "military" | "social" | "other";
+  imageUrl?: string;
+  location?: string;
 };
 
 // ============================================

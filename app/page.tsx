@@ -12,6 +12,7 @@ import {
 } from "react";
 import IntroScreen from "./components/IntroScreen";
 import ChatBubble from "./components/ChatBubble";
+import ThemeToggle from "./components/ThemeToggle";
 import {
   ChatMessage,
   ImageResult,
@@ -19,6 +20,9 @@ import {
   MapData,
   ToolCallInfo,
   WebSearchResultItem,
+  VideoResult,
+  NewsItem,
+  TimelineEvent,
 } from "@/lib/types";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/ai/config";
 
@@ -30,7 +34,7 @@ export default function ChatPage() {
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
   const [promptId, setPromptId] = useState("");
   const [input, setInput] = useState("");
-  const [showDebug, setShowDebug] = useState(true);
+  const [showDebug, setShowDebug] = useState(false); // Hidden by default
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -63,6 +67,9 @@ export default function ChatPage() {
       let location: LocationInfo | undefined;
       let mapData: MapData | undefined;
       let webSearchResults: WebSearchResultItem[] | undefined;
+      let video: VideoResult | undefined;
+      let news: NewsItem[] | undefined;
+      let timeline: TimelineEvent[] | undefined;
       let textContent = "";
       const toolCalls: ToolCallInfo[] = [];
 
@@ -138,6 +145,39 @@ export default function ChatPage() {
             if (result?.success && result?.results?.length > 0) {
               webSearchResults = result.results;
             }
+          } else if (
+            toolName === "video_search" &&
+            toolPart.state === "output-available"
+          ) {
+            const result = toolPart.output as {
+              success: boolean;
+              video: VideoResult;
+            };
+            if (result?.success && result?.video) {
+              video = result.video;
+            }
+          } else if (
+            toolName === "news_search" &&
+            toolPart.state === "output-available"
+          ) {
+            const result = toolPart.output as {
+              success: boolean;
+              news: NewsItem[];
+            };
+            if (result?.success && result?.news?.length > 0) {
+              news = result.news;
+            }
+          } else if (
+            toolName === "timeline_search" &&
+            toolPart.state === "output-available"
+          ) {
+            const result = toolPart.output as {
+              success: boolean;
+              events: TimelineEvent[];
+            };
+            if (result?.success && result?.events?.length > 0) {
+              timeline = result.events;
+            }
           }
         }
       }
@@ -151,6 +191,9 @@ export default function ChatPage() {
         location,
         mapData,
         webSearchResults,
+        video,
+        news,
+        timeline,
         debug: showDebug
           ? {
               messageId: msg.id,
@@ -244,108 +287,99 @@ export default function ChatPage() {
   }
 
   return (
-    <div
-      className="relative flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-100"
-      style={{
-        backgroundImage: `
-      linear-gradient(rgba(0,0,0,0.7)),
-      url('../pl.jpg')
-    `,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-      }}
-    >
-      <header className="relative border-b border-white/5 bg-zinc-950/70 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="relative flex h-screen flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+      {/* Palestinian Flag Stripe - Top */}
+      <div className="h-1.5 w-full flex shrink-0">
+        <div className="flex-1 bg-[var(--ps-black)]" />
+        <div className="flex-1 bg-[var(--ps-white)]" />
+        <div className="flex-1 bg-[var(--ps-green)]" />
+        <div className="w-16 bg-[var(--ps-red)]" style={{ clipPath: "polygon(100% 0, 0 50%, 100% 100%)" }} />
+      </div>
+
+      <header className="relative border-b border-[var(--border-color)] bg-[var(--card-bg)] shrink-0">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="../pss.webp"
               alt="Palestine map"
-              className="h-8 logo-h drop-shadow-md"
+              className="h-10 sm:h-12 drop-shadow-md"
             />
             <div>
-              <p className="text-sm uppercase tracking-widest text-emerald-400">
-                Falastin Assistant
-              </p>
-              <h1 className="text-2xl font-semibold">
-                دردش مع مساعد متخصص في فلسطين
+              <h1 className="text-lg sm:text-xl font-bold text-[var(--foreground)]">
+                فلسطين Chat
               </h1>
+              <p className="text-xs text-[var(--foreground-secondary)]">
+                مساعدك الذكي للتعرف على فلسطين
+              </p>
             </div>
           </div>
-          {/* Debug Toggle */}
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              showDebug
-                ? "bg-emerald-500/20 text-emerald-300"
-                : "bg-zinc-800 text-zinc-400"
-            }`}
-          >
-            {showDebug ? "Debug: ON" : "Debug: OFF"}
-          </button>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
-      <main className="relative mx-auto flex h-full w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 pb-6 pt-6 sm:px-6 lg:px-8 min-h-0">
-        <section className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-3xl bg-zinc-950/70 shadow-2xl backdrop-blur">
-          <div
-            ref={chatContainerRef}
-            className="flex flex-1 min-h-0 flex-col no-scrollbar overflow-y-auto px-4 py-6 sm:px-6"
-          >
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-              {visibleMessages.map((message, index) => (
-                <ChatBubble
-                  key={message.id}
-                  message={message}
-                  isStreaming={status === "streaming" && index === visibleMessages.length - 1 && message.role === "assistant"}
-                />
-              ))}
-            </div>
+      <main className="relative flex flex-1 flex-col overflow-hidden min-h-0 bg-[var(--background-secondary)]">
+        {/* Chat Messages Area */}
+        <div
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+        >
+          <div className="mx-auto max-w-3xl flex flex-col gap-6">
+            {visibleMessages.map((message, index) => (
+              <ChatBubble
+                key={message.id}
+                message={message}
+                isStreaming={status === "streaming" && index === visibleMessages.length - 1 && message.role === "assistant"}
+              />
+            ))}
           </div>
+        </div>
 
-          <footer className="px-4 py-4 sm:px-6">
-            <form
-              onSubmit={(event) => void handleSubmit(event)}
-              className="mx-auto flex w-full max-w-3xl flex-col gap-4"
-            >
-              <div className="flex items-end gap-3 rounded-2xl border border-white/10 bg-zinc-950/70 px-4 py-3 shadow-inner focus-within:border-emerald-500/60">
-                <textarea
-                  ref={textareaRef}
-                  className="min-h-[44px] flex-1 resize-none bg-transparent text-base text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
-                  placeholder="اكتب رسالتك هنا..."
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  maxLength={2000}
-                  disabled={isLoading}
-                />
+        {/* Input Area */}
+        <div className="border-t border-[var(--border-color)] bg-[var(--card-bg)] px-4 py-4 sm:px-6">
+          <form
+            onSubmit={(event) => void handleSubmit(event)}
+            className="mx-auto max-w-3xl"
+          >
+            <div className="flex items-end gap-3 rounded-2xl border-2 border-[var(--border-color)] bg-[var(--background)] px-4 py-3 shadow-sm focus-within:border-[var(--accent)] transition-colors">
+              <textarea
+                ref={textareaRef}
+                className="min-h-[24px] flex-1 resize-none bg-transparent text-base text-[var(--foreground)] placeholder:text-[var(--foreground-secondary)] focus:outline-none leading-6"
+                placeholder="اسأل عن فلسطين..."
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={1}
+                maxLength={2000}
+                disabled={isLoading}
+              />
 
-                <button
-                  type="submit"
-                  disabled={!canSend}
-                  className="flex h-12 min-w-[48px] items-center justify-center rounded-full bg-emerald-500 font-medium text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/40 disabled:text-emerald-900/60"
-                  aria-label="إرسال الرسالة"
-                >
-                  {isLoading ? (
-                    <span className="animate-pulse text-sm font-semibold">
-                      ...
-                    </span>
-                  ) : (
-                    "إرسال"
-                  )}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={!canSend}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] text-white transition-all hover:bg-[var(--accent-hover)] hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
+                aria-label="إرسال"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
+              </button>
+            </div>
 
-              {error ? (
-                <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                  {error.message}
-                </p>
-              ) : null}
-            </form>
-          </footer>
-        </section>
+            {error && (
+              <p className="mt-3 rounded-xl bg-[var(--ps-red)]/10 border border-[var(--ps-red)]/30 px-4 py-3 text-sm text-[var(--ps-red)]">
+                {error.message}
+              </p>
+            )}
+          </form>
+        </div>
       </main>
     </div>
   );
