@@ -54,7 +54,7 @@ export type ChatRequest = {
 // IMAGE TYPES
 // ============================================
 
-export type ImageSource = "pexels" | "unsplash" | "wikimedia";
+export type ImageSource = "pexels" | "unsplash" | "wikimedia" | "openverse";
 
 export type ImageResult = {
   id: string;
@@ -183,3 +183,46 @@ export type OpenverseImage = {
 export type OpenverseResponse = {
   results?: OpenverseImage[];
 };
+
+// ============================================
+// KIDS APP TYPES
+// ============================================
+
+export type StickerCategory = "cities" | "food" | "heritage";
+
+export type Sticker = {
+  id: string;
+  name: string;
+  nameAr: string;
+  emoji: string;
+  category: StickerCategory;
+  description?: string;
+  descriptionAr?: string;
+};
+
+export type UnlockedSticker = {
+  stickerId: string;
+  unlockedAt: number;
+};
+
+export type RewardLevel = {
+  id: string;
+  name: string;
+  nameAr: string;
+  minPoints: number;
+  maxPoints: number;
+  icon: string;
+  color: string;
+};
+
+export type RewardState = {
+  points: number;
+  level: RewardLevel;
+  messagesCount: number;
+  unlockedStickers: UnlockedSticker[];
+  lastRewardAt: number | null;
+};
+
+export type MascotState = "idle" | "thinking" | "happy" | "waving" | "celebrating";
+
+export type SoundType = "pop" | "ding" | "coin" | "success" | "fanfare" | "click";

@@ -226,3 +226,325 @@ pre {
 code {
   font-variant-ligatures: none;
 }
+
+/* =========================================
+   KIDS THEME - Bright & Fun Colors
+   ========================================= */
+
+:root {
+  /* Kids vibrant colors */
+  --kids-red: #FF6B6B;
+  --kids-green: #4ECDC4;
+  --kids-yellow: #FFE66D;
+  --kids-orange: #FF9F43;
+  --kids-purple: #A55EEA;
+  --kids-blue: #54A0FF;
+  --kids-pink: #FF9FF3;
+  --kids-coral: #FF7F7F;
+
+  /* Kids backgrounds */
+  --kids-bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --kids-bg-sky: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
+  --kids-card-bg: rgba(255, 255, 255, 0.95);
+  --kids-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+  /* Palestinian kids accent */
+  --kids-ps-red: #FF5252;
+  --kids-ps-green: #00C853;
+  --kids-ps-gold: #FFD700;
+}
+
+/* =========================================
+   KIDS ANIMATIONS
+   ========================================= */
+
+/* Floating animation for clouds/elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Bounce animation */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  60% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Wiggle animation for mascot */
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Pulse grow animation */
+@keyframes pulseGrow {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Sparkle animation */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+/* Heart beat animation */
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.3);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.2);
+  }
+  60% {
+    transform: scale(1);
+  }
+}
+
+/* Star twinkle */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Cloud drift animation */
+@keyframes cloudDrift {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}
+
+/* Bird fly animation */
+@keyframes birdFly {
+  0% {
+    transform: translateX(-50px) translateY(0);
+  }
+  25% {
+    transform: translateX(25vw) translateY(-20px);
+  }
+  50% {
+    transform: translateX(50vw) translateY(0);
+  }
+  75% {
+    transform: translateX(75vw) translateY(-15px);
+  }
+  100% {
+    transform: translateX(100vw) translateY(0);
+  }
+}
+
+/* Pop in animation */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Confetti fall */
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Kids animation classes */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-bounce-kids {
+  animation: bounce 2s ease infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 1s ease-in-out infinite;
+}
+
+.animate-pulse-grow {
+  animation: pulseGrow 2s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.animate-heart-beat {
+  animation: heartBeat 1.5s ease-in-out infinite;
+}
+
+.animate-twinkle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.animate-cloud-drift {
+  animation: cloudDrift 30s linear infinite;
+}
+
+.animate-bird-fly {
+  animation: birdFly 15s linear infinite;
+}
+
+.animate-pop-in {
+  animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Stagger animation delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* Kids theme background styles */
+.kids-bg-sky {
+  background: var(--kids-bg-sky);
+}
+
+.kids-bg-gradient {
+  background: var(--kids-bg-gradient);
+}
+
+/* Kids card styles */
+.kids-card {
+  background: var(--kids-card-bg);
+  border-radius: 1.5rem;
+  box-shadow: var(--kids-card-shadow);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+.kids-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Kids chat bubbles - more vibrant */
+.kids-bubble-assistant {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.25) 100%);
+  border: 3px solid var(--kids-purple);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.kids-bubble-user {
+  background: linear-gradient(135deg, var(--kids-green) 0%, #3DBDB2 100%);
+  box-shadow: 0 8px 20px rgba(78, 205, 196, 0.4);
+}
+
+/* Rainbow border for special elements */
+.rainbow-border {
+  background: linear-gradient(90deg,
+    var(--kids-red),
+    var(--kids-orange),
+    var(--kids-yellow),
+    var(--kids-green),
+    var(--kids-blue),
+    var(--kids-purple),
+    var(--kids-pink)
+  );
+  background-size: 400% 400%;
+  animation: rainbowMove 3s ease infinite;
+}
+
+@keyframes rainbowMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Palestinian flag stripe for kids */
+.kids-ps-stripe {
+  height: 8px;
+  background: linear-gradient(to right,
+    var(--ps-black) 0%,
+    var(--ps-black) 25%,
+    var(--ps-white) 25%,
+    var(--ps-white) 50%,
+    var(--ps-green) 50%,
+    var(--ps-green) 75%,
+    var(--ps-red) 75%,
+    var(--ps-red) 100%
+  );
+}
+
+/* Bubble text for kids */
+.bubble-text {
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Emoji bounce on hover */
+.emoji-bounce:hover {
+  animation: bounce 0.5s ease;
+}

@@ -1,0 +1,58 @@
+[    7925ms] Error: Minified React error #418; visit https://react.dev/errors/418?args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at Gi (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:24:30922)
+    at Np (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:24:75521)
+    at rf (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:24:115608)
+    at tb (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:24:115581)
+    at eb (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:24:115438)
+    at tf (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:24:111248)
+    at df (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:24:121127)
+    at MessagePort.U (https://lottiefiles.com/assets/entry.client-EuDoKPam.js:9:1539)
+[    7985ms] [WARNING] Amplitude Logger [Warn]: Storage provider t is not enabled. Falling back to MemoryStorage. @ https://lottiefiles.com/assets/index-DJzGtSMl.js:90
+[    8515ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://lottiefiles.com/api/v1/user/animation-count:0
+[    8515ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://lottiefiles.com/api/v1/user/preference:0
+[    8677ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'ambient-light-sensor'. @ :0
+[    8677ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'battery'. @ :0
+[    8677ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'document-domain'. @ :0
+[    8677ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'speaker'. @ :0
+[    8698ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://accounts.lottiefiles.com/deimos/v1/session:0
+[    8801ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://accounts.lottiefiles.com/deimos/v1/session:0
+[    8808ms] Error: Failed to fetch auth session
+    at w (https://lottiefiles.com/assets/index-DJzGtSMl.js:377:3004)
+[   10584ms] Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at rk (https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:201755)
+    at oj (https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:242440)
+    at oF (https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:251828)
+    at ic (https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:280042)
+    at https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:276090
+    at u6 (https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:276191)
+    at iH (https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:297635)
+    at MessagePort.x (https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:1:25573)
+[   14149ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://cdn.iconscout.com/profile-photo/large/-682165.jpg?w=100&h=100&updated_at=1768360548:0
+[   14625ms] [ERROR] `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog @ https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:0
+[   14626ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ https://login.lottiefiles.com/_next/static/chunks/app/(routes)/layout-3fcaa5b3c55502c2.js:4
+[   15769ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://accounts.lottiefiles.com/deimos/v1/session:0
+[   16050ms] [ERROR] H @ https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:0
+[   16051ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://accounts.lottiefiles.com/deimos/v1/session:0
+[   16052ms] [ERROR] H @ https://login.lottiefiles.com/_next/static/chunks/main-app-58ba6342285b9550.js:0
+[   17208ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://lottiefiles.com/api/v1/user/preference:0
+[   17395ms] [ERROR] Not signed in with the identity provider. @ https://lottiefiles.com/free-animations/kid-waving:0
+[   17395ms] [ERROR] Only one navigator.credentials.get request may be outstanding at one time. @ https://lottiefiles.com/free-animations/kid-waving:0
+[   17395ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NotAllowedError: Only one navigator.credentials.get request may be outstanding at one time. @ https://accounts.google.com/gsi/client:81
+[   17395ms] [ERROR] Only one navigator.credentials.get request may be outstanding at one time. @ https://lottiefiles.com/free-animations/kid-waving:0
+[   17396ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NotAllowedError: Only one navigator.credentials.get request may be outstanding at one time. @ https://accounts.google.com/gsi/client:81
+[   17567ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://accounts.lottiefiles.com/deimos/v1/session:0
+[   17691ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NetworkError: Error retrieving a token. @ https://accounts.google.com/gsi/client:81
+[   18195ms] [ERROR] Not signed in with the identity provider. @ https://lottiefiles.com/free-animations/kid-waving:0
+[   32367ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NetworkError: Error retrieving a token. @ https://accounts.google.com/gsi/client:81
+[   35335ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://cdn.iconscout.com/profile-photo/large/-682165.jpg?w=100&h=100&updated_at=1768360548:0
+[   35458ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://accounts.lottiefiles.com/deimos/v1/session:0
+[   35495ms] [ERROR] Not signed in with the identity provider. @ https://lottiefiles.com/animation/kid-waving-hand-animation_4805793:0
+[   35793ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://cdn.iconscout.com/profile-photo/large/-682165.jpg?w=100&h=100&updated_at=1770278526:0
+[   35819ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://accounts.lottiefiles.com/deimos/v1/session:0
+[   35866ms] [ERROR] Only one navigator.credentials.get request may be outstanding at one time. @ https://lottiefiles.com/animation/kid-waving-hand-animation_4805793:0
+[   35866ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with NotAllowedError: Only one navigator.credentials.get request may be outstanding at one time. @ https://accounts.google.com/gsi/client:81
+[   41032ms] [ERROR] [GSI_LOGGER]: FedCM get() rejects with AbortError: signal is aborted without reason @ https://accounts.google.com/gsi/client:81
