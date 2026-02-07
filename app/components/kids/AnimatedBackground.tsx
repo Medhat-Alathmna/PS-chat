@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface AnimatedBackgroundProps {
   variant?: "sky" | "night" | "gradient";
@@ -140,14 +140,25 @@ function Birds() {
  * Twinkling stars for night mode
  */
 function Stars() {
-  const stars = useMemo(() => {
-    return Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 50}%`,
-      delay: `${Math.random() * 3}s`,
-      size: Math.random() > 0.5 ? "text-lg" : "text-sm",
-    }));
+  const [stars, setStars] = useState<Array<{
+    id: number;
+    left: string;
+    top: string;
+    delay: string;
+    size: string;
+  }>>([]);
+
+  // Generate stars only on client to avoid hydration mismatch
+  useEffect(() => {
+    setStars(
+      Array.from({ length: 20 }, (_, i) => ({
+        id: i,
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 50}%`,
+        delay: `${Math.random() * 3}s`,
+        size: Math.random() > 0.5 ? "text-lg" : "text-sm",
+      }))
+    );
   }, []);
 
   return (

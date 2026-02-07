@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AnimatedMascot from "./AnimatedMascot";
 import AnimatedBackground from "./AnimatedBackground";
+import LottieAnimation from "../LottieAnimation";
 import { RewardLevel } from "@/lib/types";
 import { getRandomPrompts, KidsPrompt } from "@/lib/data/kids-prompts";
 
@@ -21,12 +22,39 @@ export default function KidsIntroScreen({
   level,
 }: KidsIntroScreenProps) {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [showLottie, setShowLottie] = useState(false);
+  const [prompts, setPrompts] = useState<KidsPrompt[]>([]);
 
-  // Get 4 random prompts
-  const prompts = useMemo(() => getRandomPrompts(4), []);
+  // Get 4 random prompts - only on client to avoid hydration mismatch
+  useEffect(() => {
+    setPrompts(getRandomPrompts(4));
+  }, []);
+
+  // Load Lottie animations after content
+  useEffect(() => {
+    setTimeout(() => setShowLottie(true), 800);
+  }, []);
 
   return (
     <AnimatedBackground variant="sky" showClouds showBirds>
+      {/* خريطة فلسطين - يمين الشاشة */}
+      {showLottie && (
+        <div
+          className="hidden lg:block absolute right-8 xl:right-12 top-1/4 z-10 pointer-events-none animate-lottie-float"
+          role="img"
+          aria-label="خريطة فلسطين التفاعلية"
+        >
+          <LottieAnimation
+            src="/lottie/Palestine.lottie"
+            className="w-48 lg:w-56 xl:w-64 opacity-90"
+            style={{
+              filter: "drop-shadow(0 10px 30px rgba(0, 151, 54, 0.4))",
+            }}
+            speed={0.7}
+          />
+        </div>
+      )}
+
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
         {/* Level indicator (if exists) */}
         {level && points > 0 && (
@@ -85,6 +113,32 @@ export default function KidsIntroScreen({
         {/* Fun decorations */}
         <FloatingEmojis />
       </div>
+
+      {/* علم فلسطين - سارية في الأسفل */}
+      {showLottie && (
+        <div
+          className="fixed bottom-4 sm:bottom-6 left-4 sm:left-8 z-30 flex flex-col items-center animate-gentle-sway"
+          role="img"
+          aria-label="علم فلسطين - رمز الحرية والكرامة"
+        >
+          {/* العلم */}
+          <LottieAnimation
+            src="/lottie/Palestine flag Lottie JSON animation.lottie"
+            className="h-36 sm:h-44 md:h-56 lg:h-64 w-auto"
+            style={{
+              transformOrigin: "bottom center",
+              filter: "drop-shadow(0 8px 20px rgba(238, 42, 53, 0.3))",
+            }}
+            speed={0.5}
+          />
+
+          {/* قاعدة السارية */}
+          <div className="relative w-16 sm:w-20 h-1.5 sm:h-2 mt-0.5">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-600/50 to-transparent blur-sm" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/80 to-transparent rounded-full" />
+          </div>
+        </div>
+      )}
     </AnimatedBackground>
   );
 }

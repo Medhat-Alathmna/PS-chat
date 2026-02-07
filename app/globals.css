@@ -548,3 +548,48 @@ code {
 .emoji-bounce:hover {
   animation: bounce 0.5s ease;
 }
+
+/* =========================================
+   LOTTIE ANIMATIONS - Palestinian Theme
+   ========================================= */
+
+/* حركة رفرفة خفيفة للعلم */
+@keyframes gentle-sway {
+  0%, 100% {
+    transform: rotate(0deg) translateX(0);
+  }
+  25% {
+    transform: rotate(1deg) translateX(2px);
+  }
+  75% {
+    transform: rotate(-1deg) translateX(-2px);
+  }
+}
+
+.animate-gentle-sway {
+  animation: gentle-sway 4s ease-in-out infinite;
+}
+
+/* حركة طفو للخريطة */
+@keyframes lottie-float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+  }
+}
+
+.animate-lottie-float {
+  animation: lottie-float 6s ease-in-out infinite;
+}
+
+/* تأثير توهج أخضر فلسطيني */
+.ps-glow-green {
+  filter: drop-shadow(0 0 20px rgba(0, 151, 54, 0.4));
+}
+
+/* تأثير توهج أحمر فلسطيني */
+.ps-glow-red {
+  filter: drop-shadow(0 0 20px rgba(238, 42, 53, 0.4));
+}

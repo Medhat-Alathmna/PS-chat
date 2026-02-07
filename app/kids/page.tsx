@@ -107,7 +107,7 @@ export default function KidsPage() {
 
   // Convert AI SDK messages to ChatMessage format
   const messages = useMemo<ChatMessage[]>(() => {
-    return aiMessages.map((msg) => {
+    return aiMessages.map((msg, index) => {
       let images: ImageResult[] | undefined;
       let location: LocationInfo | undefined;
       let mapData: MapData | undefined;
@@ -229,7 +229,7 @@ export default function KidsPage() {
         id: msg.id,
         role: msg.role as "user" | "assistant",
         content: textContent,
-        createdAt: Date.now(),
+        createdAt: index,
         images,
         location,
         mapData,
