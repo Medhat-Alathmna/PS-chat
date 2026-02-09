@@ -51,6 +51,11 @@ export const POINTS_CONFIG = {
   historyQuestion: 15,
   foodQuestion: 10,
   dailyBonus: 25,
+  // Game points
+  gameCorrectAnswer: 10,
+  gameRoundComplete: 10,
+  gameBonus: 25,
+  gamePerfectScore: 50,
 };
 
 const STORAGE_KEY = "falastin_kids_rewards";

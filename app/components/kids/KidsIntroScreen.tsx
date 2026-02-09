@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AnimatedMascot from "./AnimatedMascot";
 import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
@@ -21,6 +22,7 @@ export default function KidsIntroScreen({
   points = 0,
   level,
 }: KidsIntroScreenProps) {
+  const router = useRouter();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [showLottie, setShowLottie] = useState(false);
   const [prompts, setPrompts] = useState<KidsPrompt[]>([]);
@@ -102,8 +104,19 @@ export default function KidsIntroScreen({
             ))}
           </div>
 
+          {/* Games button */}
+          <button
+            onClick={() => router.push("/kids/games")}
+            className="mt-6 w-full max-w-xl mx-auto flex items-center justify-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white font-bold text-lg shadow-lg hover:scale-105 active:scale-95 transition-all animate-fade-in-up"
+            style={{ animationDelay: "400ms" }}
+          >
+            <span className="text-2xl">🎮</span>
+            يلا نلعب ألعاب!
+            <span className="text-2xl">🎯</span>
+          </button>
+
           {/* Or type your own */}
-          <div className="mt-6 text-gray-500 text-sm animate-fade-in delay-500">
+          <div className="mt-4 text-gray-500 text-sm animate-fade-in delay-500">
             <p>
               أو اكتب سؤالك الخاص! ✍️
             </p>

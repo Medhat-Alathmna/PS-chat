@@ -77,6 +77,13 @@ export function useSounds() {
   const playSuccess = useCallback(() => playSound("success"), [playSound]);
   const playFanfare = useCallback(() => playSound("fanfare"), [playSound]);
   const playClick = useCallback(() => playSound("click"), [playSound]);
+  const playCorrect = useCallback(() => playSound("correct"), [playSound]);
+  const playWrong = useCallback(() => playSound("wrong"), [playSound]);
+  const playHint = useCallback(() => playSound("hint"), [playSound]);
+  const playGameStart = useCallback(() => playSound("gameStart"), [playSound]);
+  const playGameOver = useCallback(() => playSound("gameOver"), [playSound]);
+  const playTick = useCallback(() => playSound("tick"), [playSound]);
+  const playLevelComplete = useCallback(() => playSound("levelComplete"), [playSound]);
 
   return {
     // State
@@ -94,5 +101,12 @@ export function useSounds() {
     playSuccess,
     playFanfare,
     playClick,
+    playCorrect,
+    playWrong,
+    playHint,
+    playGameStart,
+    playGameOver,
+    playTick,
+    playLevelComplete,
   };
 }

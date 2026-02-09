@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChatMessage,
   ImageResult,
@@ -37,17 +38,31 @@ import StickerCollection, {
   StickerUnlockedPopup,
 } from "../components/kids/StickerCollection";
 import Confetti from "../components/kids/Confetti";
+import ErrorBoundary from "../components/ErrorBoundary";
+import AgeGate, { getKidsProfile, KidsProfile } from "../components/kids/AgeGate";
 
 // Hooks
 import { useRewards } from "@/lib/hooks/useRewards";
 import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
+import { useChatContext } from "@/lib/hooks/useChatContext";
 import { getStickerById } from "@/lib/data/stickers";
 
 export default function KidsPage() {
+  return (
+    <ErrorBoundary>
+      <KidsPageInner />
+    </ErrorBoundary>
+  );
+}
+
+function KidsPageInner() {
+  const router = useRouter();
   const [started, setStarted] = useState(false);
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [profile, setProfile] = useState<KidsProfile | null>(null);
+  const [profileChecked, setProfileChecked] = useState(false);
 
   // Rewards system
   const {
@@ -75,6 +90,15 @@ export default function KidsPage() {
   // Sounds
   const { soundEnabled, toggleSound, playPop, playDing, playCoin, playFanfare } =
     useSounds();
+
+  // Chat context for game integration
+  const { addTopic } = useChatContext();
+
+  // Age gate check
+  useEffect(() => {
+    setProfile(getKidsProfile());
+    setProfileChecked(true);
+  }, []);
 
   // UI state
   const [showPointsPopup, setShowPointsPopup] = useState(false);
@@ -295,7 +319,7 @@ export default function KidsPage() {
     }
   }, [showCelebration, playFanfare]);
 
-  // Handle response received - add points
+  // Handle response received - add points and track topics
   useEffect(() => {
     if (
       !isLoading &&
@@ -303,8 +327,14 @@ export default function KidsPage() {
       messages[messages.length - 1].role === "assistant"
     ) {
       playDing();
+
+      // Track topics for game context
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.location?.name) {
+        addTopic(lastMsg.location.name);
+      }
     }
-  }, [isLoading, messages, playDing]);
+  }, [isLoading, messages, playDing, addTopic]);
 
   const handleSubmit = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -330,6 +360,12 @@ export default function KidsPage() {
     }
   };
 
+  // Age gate
+  if (!profileChecked) return null;
+  if (!profile) {
+    return <AgeGate onComplete={(p) => setProfile(p)} />;
+  }
+
   // Show intro screen
   if (!started) {
     return (
@@ -352,17 +388,27 @@ export default function KidsPage() {
 
         {/* Header with rewards */}
         <header className="shrink-0 px-4 py-3">
-          <RewardsBar
-            points={points}
-            level={level}
-            progress={progressToNextLevel()}
-            unlockedStickersCount={unlockedStickers.length}
-            totalStickersCount={totalCount}
-            pointsEarned={pointsEarned}
-            onOpenStickers={() => setShowCollection(true)}
-            soundEnabled={soundEnabled}
-            onToggleSound={toggleSound}
-          />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <RewardsBar
+                points={points}
+                level={level}
+                progress={progressToNextLevel()}
+                unlockedStickersCount={unlockedStickers.length}
+                totalStickersCount={totalCount}
+                pointsEarned={pointsEarned}
+                onOpenStickers={() => setShowCollection(true)}
+                soundEnabled={soundEnabled}
+                onToggleSound={toggleSound}
+              />
+            </div>
+            <button
+              onClick={() => router.push("/kids/games")}
+              className="shrink-0 px-3 py-2 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-xl font-bold text-sm hover:scale-105 active:scale-95 transition-transform shadow-md"
+            >
+              🎮 ألعاب
+            </button>
+          </div>
         </header>
 
         {/* Chat Messages */}

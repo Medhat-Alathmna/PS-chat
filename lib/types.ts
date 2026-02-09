@@ -225,4 +225,7 @@ export type RewardState = {
 
 export type MascotState = "idle" | "thinking" | "happy" | "waving" | "celebrating";
 
-export type SoundType = "pop" | "ding" | "coin" | "success" | "fanfare" | "click";
+export type SoundType = "pop" | "ding" | "coin" | "success" | "fanfare" | "click" | "correct" | "wrong" | "hint" | "gameStart" | "gameOver" | "tick" | "levelComplete";
+
+// Re-export game types for convenience
+export type { GameId, GameCategory, GameDifficulty, GameStatus, GameConfig, GameState, GameSessionSummary, KidsProfile, KidsChatContext } from "./types/games";
