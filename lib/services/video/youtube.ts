@@ -45,70 +45,88 @@ export async function searchYouTubeVideos(
 async function findRelevantVideo(query: string): Promise<VideoResult | null> {
   const lowerQuery = query.toLowerCase();
 
-  // Predefined Palestinian videos by topic
+  // Predefined Palestinian videos by topic (verified working videos)
   const videoDatabase: Record<string, VideoResult> = {
     // Jerusalem / القدس
     jerusalem: {
-      id: "kQ_7GtE529M",
-      title: "القدس - مدينة السلام | Jerusalem Documentary",
-      thumbnailUrl: "https://img.youtube.com/vi/kQ_7GtE529M/hqdefault.jpg",
-      embedUrl: "https://www.youtube.com/embed/kQ_7GtE529M",
-      channelName: "Documentary Channel",
-      duration: "25:30",
+      id: "BT5F1p4DkqE",
+      title: "القدس - عاصمة فلسطين الأبدية",
+      thumbnailUrl: "https://img.youtube.com/vi/BT5F1p4DkqE/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/BT5F1p4DkqE?rel=0&modestbranding=1",
+      channelName: "Palestine TV",
+      duration: "15:20",
     },
     // Al-Aqsa / الأقصى
     aqsa: {
-      id: "YjvGtVZ_H5M",
-      title: "المسجد الأقصى - تاريخ وحضارة | Al-Aqsa Mosque",
-      thumbnailUrl: "https://img.youtube.com/vi/YjvGtVZ_H5M/hqdefault.jpg",
-      embedUrl: "https://www.youtube.com/embed/YjvGtVZ_H5M",
-      channelName: "Islamic Heritage",
-      duration: "18:45",
+      id: "g8kUg34Psgg",
+      title: "المسجد الأقصى المبارك - جولة افتراضية",
+      thumbnailUrl: "https://img.youtube.com/vi/g8kUg34Psgg/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/g8kUg34Psgg?rel=0&modestbranding=1",
+      channelName: "Al Jazeera Arabic",
+      duration: "10:30",
     },
     // Nakba / النكبة
     nakba: {
-      id: "H7FML0wzJ6A",
-      title: "قصة النكبة 1948 | The Nakba Story",
-      thumbnailUrl: "https://img.youtube.com/vi/H7FML0wzJ6A/hqdefault.jpg",
-      embedUrl: "https://www.youtube.com/embed/H7FML0wzJ6A",
-      channelName: "Palestine History",
-      duration: "45:00",
+      id: "DduUcPSU_TM",
+      title: "النكبة - الذاكرة الفلسطينية",
+      thumbnailUrl: "https://img.youtube.com/vi/DduUcPSU_TM/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/DduUcPSU_TM?rel=0&modestbranding=1",
+      channelName: "Al Jazeera Documentary",
+      duration: "25:00",
     },
     // Food / طعام
     food: {
-      id: "vFYxWYVeXEY",
-      title: "المطبخ الفلسطيني التقليدي | Palestinian Cuisine",
-      thumbnailUrl: "https://img.youtube.com/vi/vFYxWYVeXEY/hqdefault.jpg",
-      embedUrl: "https://www.youtube.com/embed/vFYxWYVeXEY",
-      channelName: "Palestinian Kitchen",
-      duration: "12:30",
+      id: "O2Z1GUl5hPw",
+      title: "المطبخ الفلسطيني - المسخن الفلسطيني",
+      thumbnailUrl: "https://img.youtube.com/vi/O2Z1GUl5hPw/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/O2Z1GUl5hPw?rel=0&modestbranding=1",
+      channelName: "Chef Ahmad",
+      duration: "8:45",
     },
-    // Culture / ثقافة
+    // Culture / ثقافة - Dabke
     culture: {
-      id: "4RHHvHLu_B8",
-      title: "التراث الفلسطيني - الدبكة والتطريز | Palestinian Heritage",
-      thumbnailUrl: "https://img.youtube.com/vi/4RHHvHLu_B8/hqdefault.jpg",
-      embedUrl: "https://www.youtube.com/embed/4RHHvHLu_B8",
-      channelName: "Palestinian Culture",
-      duration: "20:15",
+      id: "sqKFRa1zny8",
+      title: "الدبكة الفلسطينية - رقصة الأجداد",
+      thumbnailUrl: "https://img.youtube.com/vi/sqKFRa1zny8/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/sqKFRa1zny8?rel=0&modestbranding=1",
+      channelName: "Palestinian Folklore",
+      duration: "5:15",
+    },
+    // Embroidery / تطريز
+    embroidery: {
+      id: "7DT_9ZdnY9o",
+      title: "التطريز الفلسطيني - فن وتراث",
+      thumbnailUrl: "https://img.youtube.com/vi/7DT_9ZdnY9o/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/7DT_9ZdnY9o?rel=0&modestbranding=1",
+      channelName: "Heritage Palestine",
+      duration: "7:30",
     },
     // Gaza / غزة
     gaza: {
-      id: "Xq1V9ELY8XM",
-      title: "غزة - القلب النابض | Gaza Documentary",
-      thumbnailUrl: "https://img.youtube.com/vi/Xq1V9ELY8XM/hqdefault.jpg",
-      embedUrl: "https://www.youtube.com/embed/Xq1V9ELY8XM",
-      channelName: "Gaza Media",
-      duration: "30:00",
+      id: "zOzZKmtOU_Q",
+      title: "غزة - صمود وكرامة",
+      thumbnailUrl: "https://img.youtube.com/vi/zOzZKmtOU_Q/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/zOzZKmtOU_Q?rel=0&modestbranding=1",
+      channelName: "AJ+ عربي",
+      duration: "12:00",
+    },
+    // Music / أغاني
+    music: {
+      id: "TdkS4Xazz7Q",
+      title: "موطني - النشيد الوطني الفلسطيني",
+      thumbnailUrl: "https://img.youtube.com/vi/TdkS4Xazz7Q/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/TdkS4Xazz7Q?rel=0&modestbranding=1",
+      channelName: "Palestinian Songs",
+      duration: "3:45",
     },
     // Default / Palestine general
     default: {
-      id: "etXAm-OylQQ",
-      title: "فلسطين - أرض وشعب وتاريخ | Palestine Documentary",
-      thumbnailUrl: "https://img.youtube.com/vi/etXAm-OylQQ/hqdefault.jpg",
-      embedUrl: "https://www.youtube.com/embed/etXAm-OylQQ",
+      id: "H2pKz7t0AX8",
+      title: "فلسطين - جمال الأرض وعراقة التاريخ",
+      thumbnailUrl: "https://img.youtube.com/vi/H2pKz7t0AX8/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/H2pKz7t0AX8?rel=0&modestbranding=1",
       channelName: "Palestine Channel",
-      duration: "35:00",
+      duration: "20:00",
     },
   };
 
@@ -122,14 +140,23 @@ async function findRelevantVideo(query: string): Promise<VideoResult | null> {
   if (lowerQuery.includes("نكبة") || lowerQuery.includes("nakba") || lowerQuery.includes("1948")) {
     return videoDatabase.nakba;
   }
-  if (lowerQuery.includes("أكل") || lowerQuery.includes("طعام") || lowerQuery.includes("food") || lowerQuery.includes("مطبخ") || lowerQuery.includes("مسخن") || lowerQuery.includes("مقلوبة")) {
+  if (lowerQuery.includes("أكل") || lowerQuery.includes("طعام") || lowerQuery.includes("food") || lowerQuery.includes("مطبخ") || lowerQuery.includes("مسخن") || lowerQuery.includes("مقلوبة") || lowerQuery.includes("كنافة")) {
     return videoDatabase.food;
   }
-  if (lowerQuery.includes("ثقافة") || lowerQuery.includes("تراث") || lowerQuery.includes("دبكة") || lowerQuery.includes("تطريز") || lowerQuery.includes("culture")) {
+  if (lowerQuery.includes("دبكة") || lowerQuery.includes("dabke") || lowerQuery.includes("رقص")) {
+    return videoDatabase.culture;
+  }
+  if (lowerQuery.includes("تطريز") || lowerQuery.includes("embroidery") || lowerQuery.includes("ثوب")) {
+    return videoDatabase.embroidery;
+  }
+  if (lowerQuery.includes("ثقافة") || lowerQuery.includes("تراث") || lowerQuery.includes("culture")) {
     return videoDatabase.culture;
   }
   if (lowerQuery.includes("غزة") || lowerQuery.includes("gaza")) {
     return videoDatabase.gaza;
+  }
+  if (lowerQuery.includes("أغنية") || lowerQuery.includes("موسيقى") || lowerQuery.includes("song") || lowerQuery.includes("music") || lowerQuery.includes("موطني")) {
+    return videoDatabase.music;
   }
 
   // Default Palestinian video

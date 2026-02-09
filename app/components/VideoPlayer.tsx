@@ -91,14 +91,24 @@ export default function VideoPlayer({ video }: Props) {
         <iframe
           src={video.embedUrl}
           title={video.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           className="absolute inset-0 w-full h-full"
           onError={() => setHasError(true)}
         />
       </div>
-      <div className="p-2 bg-[var(--background-secondary)]">
-        <p className="text-[10px] text-[var(--foreground-secondary)] truncate">{video.title}</p>
+      <div className="p-2 bg-[var(--background-secondary)] flex items-center justify-between gap-2">
+        <p className="text-[10px] text-[var(--foreground-secondary)] truncate flex-1">
+          {video.title}
+        </p>
+        <a
+          href={`https://www.youtube.com/watch?v=${video.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] text-[var(--ps-red)] hover:underline whitespace-nowrap"
+        >
+          شاهد على YouTube ↗
+        </a>
       </div>
     </div>
   );

@@ -122,14 +122,35 @@ export default function KidsChatBubble({
 
         {/* Video */}
         {message.video && (
-          <div className="mt-3 rounded-xl overflow-hidden">
+          <div className="mt-3 rounded-2xl overflow-hidden border-3 border-[var(--kids-purple)]/30 bg-gradient-to-br from-[var(--kids-purple)]/5 to-[var(--kids-blue)]/5 shadow-lg">
             <iframe
               src={message.video.embedUrl}
               title={message.video.title}
-              className="w-full aspect-video"
+              className="w-full aspect-video bg-black"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               loading="lazy"
             />
+            <div className="px-3 py-2.5 bg-white/90 backdrop-blur-sm">
+              <p className="text-xs font-bold text-gray-700 line-clamp-1">
+                🎬 {message.video.title}
+              </p>
+              <div className="flex items-center justify-between gap-2 mt-1">
+                {message.video.channelName && (
+                  <p className="text-[10px] text-gray-500">
+                    {message.video.channelName}
+                  </p>
+                )}
+                <a
+                  href={`https://www.youtube.com/watch?v=${message.video.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-bold text-[var(--kids-red)] hover:underline whitespace-nowrap"
+                >
+                  شاهد على YouTube ↗
+                </a>
+              </div>
+            </div>
           </div>
         )}
 
