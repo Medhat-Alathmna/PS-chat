@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { isSpeechSupported, createUtterance, cancelSpeech } from "@/lib/utils/speech-synthesis";
-import { detectLanguage, getVoiceLang, cleanTextForSpeech } from "@/lib/utils/language-detect";
+import { cleanTextForSpeech } from "@/lib/utils/language-detect";
 
 const STORAGE_KEY = "falastin_kids_voice_enabled";
 
@@ -17,31 +16,13 @@ export function useVoiceSynthesis({ soundEnabled }: UseVoiceSynthesisOptions) {
     return stored === null ? true : stored === "true";
   });
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
 
+  // Audio element ref for stop/cancel
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
   // Generation counter to prevent race conditions with rapid messages
   const generationRef = useRef(0);
-
-  // Check support & load voices
-  useEffect(() => {
-    const supported = isSpeechSupported();
-    setIsSupported(supported);
-
-    if (supported) {
-      // Chrome loads voices asynchronously
-      const handleVoicesChanged = () => {
-        // Voices loaded — no action needed, findBestVoice reads them on demand
-      };
-      window.speechSynthesis.addEventListener("voiceschanged", handleVoicesChanged);
-
-      return () => {
-        window.speechSynthesis.removeEventListener("voiceschanged", handleVoicesChanged);
-        // Cancel orphaned speech on unmount (Safari fix)
-        cancelSpeech();
-      };
-    }
-  }, []);
 
   // Persist voiceEnabled
   useEffect(() => {
@@ -50,93 +31,131 @@ export function useVoiceSynthesis({ soundEnabled }: UseVoiceSynthesisOptions) {
     }
   }, [voiceEnabled]);
 
-  const toggleVoice = useCallback(() => {
-    setVoiceEnabled((prev) => {
-      if (prev) {
-        // Turning off — stop current speech
-        cancelSpeech();
-        setIsSpeaking(false);
-        setCurrentMessageId(null);
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
-      return !prev;
-    });
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+    };
   }, []);
 
-  const stop = useCallback(() => {
-    cancelSpeech();
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
     setIsSpeaking(false);
     setCurrentMessageId(null);
   }, []);
 
-  const speak = useCallback(
-    (text: string, messageId?: string) => {
-      if (!isSupported) return;
+  const toggleVoice = useCallback(() => {
+    setVoiceEnabled((prev) => {
+      if (prev) {
+        stopAudio();
+      }
+      return !prev;
+    });
+  }, [stopAudio]);
 
-      // Cancel any current speech
-      cancelSpeech();
+  const stop = useCallback(() => {
+    generationRef.current++;
+    stopAudio();
+  }, [stopAudio]);
+
+  const speak = useCallback(
+    async (text: string, messageId?: string) => {
+      // Stop any current playback
+      stopAudio();
 
       const cleaned = cleanTextForSpeech(text);
-      if (!cleaned) {
-        setIsSpeaking(false);
-        setCurrentMessageId(null);
-        return;
-      }
+      if (!cleaned) return;
 
-      const lang = detectLanguage(cleaned);
-      const voiceLang = getVoiceLang(lang);
-      const utterance = createUtterance(cleaned, voiceLang);
       const gen = ++generationRef.current;
 
-      utterance.onstart = () => {
-        if (generationRef.current !== gen) return;
-        setIsSpeaking(true);
-        setCurrentMessageId(messageId ?? null);
-      };
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: cleaned }),
+        });
 
-      utterance.onend = () => {
-        if (generationRef.current !== gen) return;
+        if (gen !== generationRef.current) return;
+
+        if (!res.ok) return;
+
+        const blob = await res.blob();
+        if (gen !== generationRef.current) return;
+
+        const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
+
+        const audio = new Audio(url);
+        audioRef.current = audio;
+
+        audio.onplay = () => {
+          if (gen !== generationRef.current) return;
+          setIsSpeaking(true);
+          setCurrentMessageId(messageId ?? null);
+        };
+
+        audio.onended = () => {
+          if (gen !== generationRef.current) return;
+          setIsSpeaking(false);
+          setCurrentMessageId(null);
+          URL.revokeObjectURL(url);
+          blobUrlRef.current = null;
+          audioRef.current = null;
+        };
+
+        audio.onerror = () => {
+          if (gen !== generationRef.current) return;
+          setIsSpeaking(false);
+          setCurrentMessageId(null);
+          URL.revokeObjectURL(url);
+          blobUrlRef.current = null;
+          audioRef.current = null;
+        };
+
+        audio.play();
+      } catch {
+        if (gen !== generationRef.current) return;
         setIsSpeaking(false);
         setCurrentMessageId(null);
-      };
-
-      utterance.onerror = () => {
-        if (generationRef.current !== gen) return;
-        setIsSpeaking(false);
-        setCurrentMessageId(null);
-      };
-
-      window.speechSynthesis.speak(utterance);
+      }
     },
-    [isSupported]
+    [stopAudio]
   );
 
-  /**
-   * Auto-read a new assistant message (respects voiceEnabled + soundEnabled)
-   */
   const autoReadMessage = useCallback(
     (msg: { id: string; content: string; role: string }) => {
-      if (!voiceEnabled || !soundEnabled || !isSupported) return;
+      if (!voiceEnabled || !soundEnabled) return;
       if (msg.role !== "assistant" || !msg.content) return;
       speak(msg.content, msg.id);
     },
-    [voiceEnabled, soundEnabled, isSupported, speak]
+    [voiceEnabled, soundEnabled, speak]
   );
 
-  /**
-   * Manual replay of a specific message (ignores voiceEnabled toggle)
-   */
   const speakMessage = useCallback(
     (msg: { id: string; content: string }) => {
-      if (!isSupported) return;
       speak(msg.content, msg.id);
     },
-    [isSupported, speak]
+    [speak]
   );
 
   return {
     voiceEnabled,
     isSpeaking,
-    isSupported,
+    isSupported: true,
     currentMessageId,
     toggleVoice,
     speak,
