@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import AnimatedMascot from "../AnimatedMascot";
+import SpeakingIndicator from "../SpeakingIndicator";
 
 interface GameChatBubbleProps {
   role: "user" | "assistant";
@@ -9,6 +10,9 @@ interface GameChatBubbleProps {
   isStreaming?: boolean;
   answerResult?: { correct: boolean; explanation: string } | null;
   hintData?: { hint: string; hintNumber: number } | null;
+  isSpeaking?: boolean;
+  onSpeak?: () => void;
+  onStopSpeaking?: () => void;
 }
 
 const ASSISTANT_COLORS = [
@@ -21,6 +25,9 @@ export default function GameChatBubble({
   isStreaming,
   answerResult,
   hintData,
+  isSpeaking = false,
+  onSpeak,
+  onStopSpeaking,
 }: GameChatBubbleProps) {
   const bgColor = useMemo(
     () => ASSISTANT_COLORS[Math.floor(Math.random() * ASSISTANT_COLORS.length)],
@@ -93,6 +100,16 @@ export default function GameChatBubble({
             <p className="text-xs text-gray-600" dir="auto">
               {hintData.hint}
             </p>
+          </div>
+        )}
+
+        {/* Speaking indicator */}
+        {!isStreaming && onSpeak && (
+          <div className="flex">
+            <SpeakingIndicator
+              isSpeaking={isSpeaking}
+              onToggle={isSpeaking ? () => onStopSpeaking?.() : () => onSpeak()}
+            />
           </div>
         )}
       </div>

@@ -23,6 +23,7 @@ const STATE_ANIMATIONS: Record<MascotState, string> = {
   happy: "animate-bounce-kids",
   waving: "animate-wiggle",
   celebrating: "animate-bounce-kids",
+  speaking: "animate-speaking",
 };
 
 /**
@@ -49,6 +50,7 @@ export default function AnimatedMascot({
       happy: "😄",
       waving: "👋",
       celebrating: "🎉",
+      speaking: "🗣️",
     }),
     []
   );
@@ -61,6 +63,7 @@ export default function AnimatedMascot({
       happy: ["يا سلام! 🌟", "ممتاز! ⭐"],
       waving: ["أهلاً! 👋", "مرحبا! 🎈"],
       celebrating: ["مبروك! 🎊", "برافو! 🏆"],
+      speaking: ["بتكلم... 🔊", "اسمع... 🎧"],
     }),
     []
   );

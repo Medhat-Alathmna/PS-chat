@@ -40,12 +40,14 @@ import StickerCollection, {
 import Confetti from "../components/kids/Confetti";
 import ErrorBoundary from "../components/ErrorBoundary";
 import AgeGate, { getKidsProfile, KidsProfile } from "../components/kids/AgeGate";
+import SpeechInput from "../components/kids/SpeechInput";
 
 // Hooks
 import { useRewards } from "@/lib/hooks/useRewards";
 import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
 import { useChatContext } from "@/lib/hooks/useChatContext";
+import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import { getStickerById } from "@/lib/data/stickers";
 
 export default function KidsPage() {
@@ -90,6 +92,18 @@ function KidsPageInner() {
   // Sounds
   const { soundEnabled, toggleSound, playPop, playDing, playCoin, playFanfare } =
     useSounds();
+
+  // Voice synthesis (TTS)
+  const {
+    voiceEnabled,
+    isSpeaking,
+    isSupported: voiceSupported,
+    currentMessageId,
+    toggleVoice,
+    stop: stopSpeaking,
+    autoReadMessage,
+    speakMessage,
+  } = useVoiceSynthesis({ soundEnabled });
 
   // Chat context for game integration
   const { addTopic } = useChatContext();
@@ -319,7 +333,7 @@ function KidsPageInner() {
     }
   }, [showCelebration, playFanfare]);
 
-  // Handle response received - add points and track topics
+  // Handle response received - add points, track topics, auto-read
   useEffect(() => {
     if (
       !isLoading &&
@@ -328,13 +342,16 @@ function KidsPageInner() {
     ) {
       playDing();
 
-      // Track topics for game context
+      // Auto-read the new assistant message
       const lastMsg = messages[messages.length - 1];
+      autoReadMessage(lastMsg);
+
+      // Track topics for game context
       if (lastMsg.location?.name) {
         addTopic(lastMsg.location.name);
       }
     }
-  }, [isLoading, messages, playDing, addTopic]);
+  }, [isLoading, messages, playDing, addTopic, autoReadMessage]);
 
   const handleSubmit = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -344,6 +361,7 @@ function KidsPageInner() {
       return;
     }
 
+    stopSpeaking(); // Cancel any TTS before sending
     setInput("");
     playPop();
     recordMessage(); // Add points for sending message
@@ -400,6 +418,10 @@ function KidsPageInner() {
                 onOpenStickers={() => setShowCollection(true)}
                 soundEnabled={soundEnabled}
                 onToggleSound={toggleSound}
+                voiceEnabled={voiceEnabled}
+                onToggleVoice={toggleVoice}
+                isSpeaking={isSpeaking}
+                voiceSupported={voiceSupported}
               />
             </div>
             <button
@@ -423,6 +445,9 @@ function KidsPageInner() {
                   index === messages.length - 1 &&
                   message.role === "assistant"
                 }
+                isSpeaking={currentMessageId === message.id}
+                onSpeak={() => speakMessage(message)}
+                onStopSpeaking={stopSpeaking}
               />
             ))}
 
@@ -442,7 +467,7 @@ function KidsPageInner() {
             <div className="flex items-end gap-3 rounded-3xl border-3 border-[var(--kids-purple)]/30 bg-white px-4 py-3 shadow-lg focus-within:border-[var(--kids-purple)] transition-colors">
               {/* Mini mascot */}
               <AnimatedMascot
-                state={isLoading ? "thinking" : "idle"}
+                state={isSpeaking ? "speaking" : isLoading ? "thinking" : "idle"}
                 size="sm"
                 className="hidden sm:block"
               />
@@ -458,6 +483,12 @@ function KidsPageInner() {
                 maxLength={500}
                 disabled={isLoading}
                 dir="auto"
+              />
+
+              {/* Mic button for speech input */}
+              <SpeechInput
+                onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                disabled={isLoading}
               />
 
               <button

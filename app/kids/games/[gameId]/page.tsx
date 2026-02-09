@@ -10,6 +10,7 @@ import { useGameState } from "@/lib/hooks/useGameState";
 import { useGameRewards } from "@/lib/hooks/useGameRewards";
 import { useChatContext } from "@/lib/hooks/useChatContext";
 import { useSounds } from "@/lib/hooks/useSounds";
+import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import AgeGate, { getKidsProfile, KidsProfile } from "../../../components/kids/AgeGate";
@@ -18,6 +19,7 @@ import GameHeader from "../../../components/kids/games/GameHeader";
 import GameChatBubble, { GameTypingBubble } from "../../../components/kids/games/GameChatBubble";
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
+import SpeechInput from "../../../components/kids/SpeechInput";
 
 export default function GamePage() {
   return (
@@ -70,6 +72,16 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const startSentRef = useRef(false);
 
   const { soundEnabled, toggleSound, playSound } = useSounds();
+  const {
+    voiceEnabled,
+    isSpeaking,
+    isSupported: voiceSupported,
+    currentMessageId,
+    toggleVoice,
+    stop: stopSpeaking,
+    autoReadMessage,
+    speakMessage,
+  } = useVoiceSynthesis({ soundEnabled });
   const { getContext } = useChatContext();
   const gameState = useGameState(gameId, difficulty || undefined);
   const gameRewards = useGameRewards();
@@ -225,6 +237,18 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     });
   }, [aiMessages]);
 
+  // Auto-read assistant messages when streaming completes
+  const prevMsgCountRef = useRef(0);
+  useEffect(() => {
+    if (!isLoading && displayMessages.length > prevMsgCountRef.current) {
+      const lastMsg = displayMessages[displayMessages.length - 1];
+      if (lastMsg?.role === "assistant" && lastMsg.content) {
+        autoReadMessage(lastMsg);
+      }
+    }
+    prevMsgCountRef.current = displayMessages.length;
+  }, [isLoading, displayMessages, autoReadMessage]);
+
   const canSend = input.trim().length > 0 && !isLoading;
 
   const handleSubmit = useCallback(
@@ -232,11 +256,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       event?.preventDefault();
       const trimmed = input.trim();
       if (!trimmed || isLoading) return;
+      stopSpeaking(); // Cancel any TTS before sending
       setInput("");
       playSound("click");
       sendMessage({ text: trimmed });
     },
-    [input, isLoading, playSound, sendMessage]
+    [input, isLoading, playSound, sendMessage, stopSpeaking]
   );
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -308,6 +333,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             soundEnabled={soundEnabled}
             onToggleSound={toggleSound}
             onBack={() => router.push("/kids/games")}
+            voiceEnabled={voiceEnabled}
+            onToggleVoice={toggleVoice}
+            isSpeaking={isSpeaking}
+            voiceSupported={voiceSupported}
           />
         </header>
 
@@ -326,6 +355,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 }
                 answerResult={msg.answerResult}
                 hintData={msg.hintData}
+                isSpeaking={currentMessageId === msg.id}
+                onSpeak={() => speakMessage(msg)}
+                onStopSpeaking={stopSpeaking}
               />
             ))}
 
@@ -355,6 +387,13 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 disabled={isLoading}
                 dir="auto"
               />
+
+              {/* Mic button for speech input */}
+              <SpeechInput
+                onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                disabled={isLoading}
+              />
+
               <button
                 type="submit"
                 disabled={!canSend}

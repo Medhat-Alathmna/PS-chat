@@ -3,12 +3,16 @@
 import { useState, useMemo } from "react";
 import { ChatMessage } from "@/lib/types";
 import { MiniMascot, ThinkingMascot } from "./AnimatedMascot";
+import SpeakingIndicator from "./SpeakingIndicator";
 
 interface KidsChatBubbleProps {
   message: ChatMessage;
   isStreaming?: boolean;
   onLike?: () => void;
   liked?: boolean;
+  isSpeaking?: boolean;
+  onSpeak?: () => void;
+  onStopSpeaking?: () => void;
 }
 
 // Fun colors for assistant bubbles
@@ -28,6 +32,9 @@ export default function KidsChatBubble({
   isStreaming = false,
   onLike,
   liked = false,
+  isSpeaking = false,
+  onSpeak,
+  onStopSpeaking,
 }: KidsChatBubbleProps) {
   const [showReactions, setShowReactions] = useState(false);
   const isUser = message.role === "user";
@@ -154,9 +161,18 @@ export default function KidsChatBubble({
           </div>
         )}
 
-        {/* Like button for assistant messages */}
+        {/* Action buttons for assistant messages */}
         {!isUser && !isStreaming && (
-          <div className="absolute -bottom-3 right-4">
+          <div className="absolute -bottom-3 right-4 flex gap-1.5">
+            {/* Speaking indicator */}
+            {onSpeak && (
+              <SpeakingIndicator
+                isSpeaking={isSpeaking}
+                onToggle={isSpeaking ? () => onStopSpeaking?.() : () => onSpeak()}
+              />
+            )}
+
+            {/* Like button */}
             <button
               onClick={() => {
                 setShowReactions(!showReactions);

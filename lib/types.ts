@@ -223,7 +223,7 @@ export type RewardState = {
   lastRewardAt: number | null;
 };
 
-export type MascotState = "idle" | "thinking" | "happy" | "waving" | "celebrating";
+export type MascotState = "idle" | "thinking" | "happy" | "waving" | "celebrating" | "speaking";
 
 export type SoundType = "pop" | "ding" | "coin" | "success" | "fanfare" | "click" | "correct" | "wrong" | "hint" | "gameStart" | "gameOver" | "tick" | "levelComplete";
 

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { RewardLevel } from "@/lib/types";
 import { REWARD_LEVELS } from "@/lib/hooks/useRewards";
+import VoiceToggle from "./VoiceToggle";
 
 interface RewardsBarProps {
   points: number;
@@ -14,6 +15,10 @@ interface RewardsBarProps {
   onOpenStickers?: () => void;
   soundEnabled?: boolean;
   onToggleSound?: () => void;
+  voiceEnabled?: boolean;
+  onToggleVoice?: () => void;
+  isSpeaking?: boolean;
+  voiceSupported?: boolean;
   className?: string;
 }
 
@@ -30,6 +35,10 @@ export default function RewardsBar({
   onOpenStickers,
   soundEnabled = true,
   onToggleSound,
+  voiceEnabled,
+  onToggleVoice,
+  isSpeaking = false,
+  voiceSupported = false,
   className = "",
 }: RewardsBarProps) {
   // Next level info
@@ -119,6 +128,16 @@ export default function RewardsBar({
           {unlockedStickersCount}/{totalStickersCount}
         </span>
       </button>
+
+      {/* Voice toggle */}
+      {onToggleVoice && voiceSupported && (
+        <VoiceToggle
+          voiceEnabled={!!voiceEnabled}
+          onToggle={onToggleVoice}
+          isSpeaking={isSpeaking}
+          isSupported={voiceSupported}
+        />
+      )}
 
       {/* Sound toggle */}
       {onToggleSound && (

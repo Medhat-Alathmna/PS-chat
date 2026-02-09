@@ -1,6 +1,7 @@
 "use client";
 
 import { GameConfig, GameState, GameDifficulty } from "@/lib/types/games";
+import VoiceToggle from "../VoiceToggle";
 
 const DIFFICULTY_LABELS: Record<GameDifficulty, { ar: string; stars: string; color: string }> = {
   easy: { ar: "سهل", stars: "⭐", color: "#00B894" },
@@ -14,6 +15,10 @@ interface GameHeaderProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   onBack: () => void;
+  voiceEnabled?: boolean;
+  onToggleVoice?: () => void;
+  isSpeaking?: boolean;
+  voiceSupported?: boolean;
 }
 
 export default function GameHeader({
@@ -22,6 +27,10 @@ export default function GameHeader({
   soundEnabled,
   onToggleSound,
   onBack,
+  voiceEnabled,
+  onToggleVoice,
+  isSpeaking = false,
+  voiceSupported = false,
 }: GameHeaderProps) {
   const diffLabel = state.difficulty ? DIFFICULTY_LABELS[state.difficulty] : null;
 
@@ -71,6 +80,16 @@ export default function GameHeader({
           {state.score} ⭐
         </div>
       </div>
+
+      {/* Voice toggle */}
+      {onToggleVoice && voiceSupported && (
+        <VoiceToggle
+          voiceEnabled={!!voiceEnabled}
+          onToggle={onToggleVoice}
+          isSpeaking={isSpeaking}
+          isSupported={voiceSupported}
+        />
+      )}
 
       {/* Sound toggle */}
       <button
