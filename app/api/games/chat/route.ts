@@ -62,17 +62,17 @@ export async function POST(req: NextRequest) {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
     let lastUserText = "";
     if (lastUserMsg) {
-      if (typeof lastUserMsg.content === "string") {
-        lastUserText = lastUserMsg.content.trim();
-      } else if (Array.isArray(lastUserMsg.parts)) {
-        // UIMessage v5 uses parts array with { type: "text", text: "..." }
+      // UIMessage uses parts array with { type: "text", text: "..." }
+      if (Array.isArray(lastUserMsg.parts)) {
         const textPart = lastUserMsg.parts.find(
           (p: Record<string, unknown>) => p.type === "text"
         ) as { text?: string } | undefined;
         lastUserText = textPart?.text?.trim() || "";
+      } else if (typeof (lastUserMsg as unknown as Record<string, unknown>).content === "string") {
+        lastUserText = ((lastUserMsg as unknown as Record<string, unknown>).content as string).trim();
       }
     }
-    console.log("[game-chat] lastUserText:", JSON.stringify(lastUserText), "from msg:", JSON.stringify(lastUserMsg?.content?.toString().slice(0, 100)));
+    console.log("[game-chat] lastUserText:", JSON.stringify(lastUserText));
     const isHintRequest = lastUserText === "تلميح" || lastUserText.toLowerCase() === "hint";
     if (isHintRequest && tools.give_hint) {
       console.log("[game-chat] HINT REQUEST detected — restricting tools to give_hint only");

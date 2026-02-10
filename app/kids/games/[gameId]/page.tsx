@@ -22,6 +22,7 @@ import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../componen
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
+import CartoonPalestineMap, { CITIES } from "../../../components/kids/CartoonPalestineMap";
 
 export default function GamePage() {
   return (
@@ -58,6 +59,27 @@ function GamePageInner() {
   return <GameSession gameId={gameId} config={config} />;
 }
 
+// City name → city ID mapping for map integration
+const CITY_NAME_MAP: Record<string, string> = {};
+for (const city of CITIES) {
+  CITY_NAME_MAP[city.nameAr] = city.id;
+  CITY_NAME_MAP[city.name.toLowerCase()] = city.id;
+}
+// Additional Arabic variants
+CITY_NAME_MAP["القدس الشريف"] = "jerusalem";
+CITY_NAME_MAP["عكة"] = "acre";
+CITY_NAME_MAP["الخليل"] = "hebron";
+CITY_NAME_MAP["رام الله"] = "ramallah";
+CITY_NAME_MAP["بيت لحم"] = "bethlehem";
+
+/** Scan text for a city name and return its ID */
+function detectCityInText(text: string): string | null {
+  for (const [name, id] of Object.entries(CITY_NAME_MAP)) {
+    if (text.includes(name)) return id;
+  }
+  return null;
+}
+
 function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig }) {
   const router = useRouter();
   const [difficulty, setDifficulty] = useState<GameDifficulty | null>(
@@ -66,6 +88,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [gameStarted, setGameStarted] = useState(false);
   const [input, setInput] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Map state for city-explorer
+  const isCityExplorer = gameId === "city-explorer";
+  const [revealedCities, setRevealedCities] = useState<string[]>([]);
+  const [highlightRegion, setHighlightRegion] = useState<string | null>(null);
+  const [mapExpanded, setMapExpanded] = useState(true);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -101,6 +129,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const {
     messages: aiMessages,
     sendMessage,
+    setMessages,
     status,
   } = useChat({
     transport: useMemo(
@@ -152,11 +181,34 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   gameId,
                   (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
                 );
+                // Map: reveal city on correct answer
+                if (isCityExplorer && toolPart.output.explanation) {
+                  const cityId = detectCityInText(toolPart.output.explanation as string);
+                  if (cityId && !revealedCities.includes(cityId)) {
+                    setRevealedCities((prev) => [...prev, cityId]);
+                    setHighlightRegion(null);
+                  }
+                }
               } else {
                 playSound("wrong" as any);
+                // Map: also reveal on incorrect (answer was shown)
+                if (isCityExplorer && toolPart.output.explanation) {
+                  const cityId = detectCityInText(toolPart.output.explanation as string);
+                  if (cityId && !revealedCities.includes(cityId)) {
+                    setRevealedCities((prev) => [...prev, cityId]);
+                    setHighlightRegion(null);
+                  }
+                }
               }
             } else if (toolName === "give_hint") {
               playSound("hint" as any);
+              // Map: highlight region on hint
+              if (isCityExplorer && toolPart.output.hint) {
+                const cityId = detectCityInText(toolPart.output.hint as string);
+                if (cityId) {
+                  setHighlightRegion(cityId);
+                }
+              }
             } else if (toolName === "advance_round") {
               playSound("correct" as any);
               gameRewards.onRoundComplete(
@@ -378,8 +430,14 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         onPlayAgain={() => {
           startSentRef.current = false;
           processedTools.current.clear();
+          prevMsgCountRef.current = 0;
+          setMessages([]); // Clear chat history so AI starts fresh
           gameState.resetGame(difficulty || undefined);
           setGameStarted(false);
+          // Reset map state
+          setRevealedCities([]);
+          setHighlightRegion(null);
+          setMapExpanded(true);
           if (config.hasDifficulty) {
             setDifficulty(null);
           } else {
@@ -410,6 +468,34 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             />
           </div>
         </header>
+
+        {/* Map panel for city-explorer */}
+        {isCityExplorer && (
+          <div className="shrink-0 px-3 z-10">
+            <div className="mx-auto max-w-2xl">
+              <button
+                onClick={() => setMapExpanded((v) => !v)}
+                className="flex items-center gap-2 text-sm font-bold text-[var(--kids-purple)] bg-white/80 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-sm mb-1 hover:bg-white transition-colors"
+              >
+                <span>{mapExpanded ? "▼" : "▶"}</span>
+                <span>🗺️ خريطة فلسطين</span>
+                <span className="text-xs font-normal text-gray-500">
+                  {revealedCities.length}/{CITIES.length} مدن مكتشفة 🌟
+                </span>
+              </button>
+              {mapExpanded && (
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-1.5 shadow-md overflow-hidden animate-pop-in">
+                  <CartoonPalestineMap
+                    gameMode
+                    revealedCities={revealedCities}
+                    highlightRegion={highlightRegion || undefined}
+                    className="h-36 sm:h-40"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Chat area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>

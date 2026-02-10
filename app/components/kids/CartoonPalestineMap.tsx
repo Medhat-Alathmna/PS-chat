@@ -96,10 +96,20 @@ const CITIES: City[] = [
   },
 ];
 
+/** Export CITIES for use in game page city matching */
+export { CITIES };
+export type { City };
+
 interface CartoonPalestineMapProps {
   onCityClick?: (city: City) => void;
   highlightedCity?: string;
   className?: string;
+  /** Enable game mode with fog/reveal mechanics */
+  gameMode?: boolean;
+  /** City IDs that have been revealed (correct answers) */
+  revealedCities?: string[];
+  /** City ID to pulse as a region clue */
+  highlightRegion?: string;
 }
 
 /**
@@ -109,13 +119,16 @@ export default function CartoonPalestineMap({
   onCityClick,
   highlightedCity,
   className = "",
+  gameMode = false,
+  revealedCities = [],
+  highlightRegion,
 }: CartoonPalestineMapProps) {
   const [hoveredCity, setHoveredCity] = useState<City | null>(null);
 
   return (
     <div className={`relative ${className}`}>
-      {/* Map container */}
-      <div className="relative w-full max-w-md mx-auto aspect-[3/4]">
+      {/* Map container — compact in game mode */}
+      <div className={`relative w-full mx-auto ${gameMode ? "max-w-xs aspect-[4/5]" : "max-w-md aspect-[3/4]"}`}>
         {/* Map SVG background */}
         <svg
           viewBox="0 0 100 130"
@@ -141,20 +154,28 @@ export default function CartoonPalestineMap({
         </svg>
 
         {/* City markers */}
-        {CITIES.map((city) => (
-          <CityMarker
-            key={city.id}
-            city={city}
-            isHovered={hoveredCity?.id === city.id}
-            isHighlighted={highlightedCity === city.id}
-            onHover={() => setHoveredCity(city)}
-            onLeave={() => setHoveredCity(null)}
-            onClick={() => onCityClick?.(city)}
-          />
-        ))}
+        {CITIES.map((city) => {
+          const isRevealed = revealedCities.includes(city.id);
+          const isRegionHint = highlightRegion === city.id;
 
-        {/* Tooltip */}
-        {hoveredCity && (
+          return (
+            <CityMarker
+              key={city.id}
+              city={city}
+              isHovered={hoveredCity?.id === city.id}
+              isHighlighted={highlightedCity === city.id}
+              onHover={() => setHoveredCity(city)}
+              onLeave={() => setHoveredCity(null)}
+              onClick={() => onCityClick?.(city)}
+              gameMode={gameMode}
+              isRevealed={isRevealed}
+              isRegionHint={isRegionHint}
+            />
+          );
+        })}
+
+        {/* Tooltip — only in non-game mode, or in game mode for revealed cities */}
+        {hoveredCity && (!gameMode || revealedCities.includes(hoveredCity.id)) && (
           <div
             className="
               absolute z-20 bg-white rounded-xl shadow-lg p-3
@@ -169,7 +190,7 @@ export default function CartoonPalestineMap({
           >
             <span className="text-2xl block">{hoveredCity.emoji}</span>
             <p className="font-bold text-gray-700">{hoveredCity.nameAr}</p>
-            <p className="text-xs text-gray-500">{hoveredCity.fact}</p>
+            {!gameMode && <p className="text-xs text-gray-500">{hoveredCity.fact}</p>}
             {/* Arrow */}
             <div
               className="absolute w-3 h-3 bg-white rotate-45"
@@ -184,9 +205,11 @@ export default function CartoonPalestineMap({
       </div>
 
       {/* Legend */}
-      <div className="mt-4 text-center text-sm text-gray-500">
-        <p>🗺️ انقر على المدينة لتعرف أكثر!</p>
-      </div>
+      {!gameMode && (
+        <div className="mt-4 text-center text-sm text-gray-500">
+          <p>🗺️ انقر على المدينة لتعرف أكثر!</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -201,6 +224,9 @@ function CityMarker({
   onHover,
   onLeave,
   onClick,
+  gameMode = false,
+  isRevealed = false,
+  isRegionHint = false,
 }: {
   city: City;
   isHovered: boolean;
@@ -208,9 +234,86 @@ function CityMarker({
   onHover: () => void;
   onLeave: () => void;
   onClick: () => void;
+  gameMode?: boolean;
+  isRevealed?: boolean;
+  isRegionHint?: boolean;
 }) {
   const isActive = isHovered || isHighlighted;
 
+  // Game mode: fogged cities
+  if (gameMode && !isRevealed && !isRegionHint) {
+    return (
+      <div
+        className="absolute z-10 rounded-full border-2 border-gray-300/50"
+        style={{
+          left: `${city.x}%`,
+          top: `${city.y}%`,
+          transform: "translate(-50%, -50%)",
+          width: "28px",
+          height: "28px",
+          backgroundColor: "#D1D5DB",
+          opacity: 0.5,
+          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+        }}
+      >
+        <span className="text-sm flex items-center justify-center h-full">❓</span>
+      </div>
+    );
+  }
+
+  // Game mode: region hint (pulsing glow, no name)
+  if (gameMode && isRegionHint && !isRevealed) {
+    return (
+      <div
+        className="absolute z-15 rounded-full animate-region-pulse"
+        style={{
+          left: `${city.x}%`,
+          top: `${city.y}%`,
+          transform: "translate(-50%, -50%)",
+          width: "36px",
+          height: "36px",
+          backgroundColor: `${city.color}80`,
+          boxShadow: `0 0 0 4px ${city.color}40, 0 0 16px ${city.color}60`,
+        }}
+      >
+        <span className="text-lg flex items-center justify-center h-full">❓</span>
+      </div>
+    );
+  }
+
+  // Game mode: revealed city (pop-in animation)
+  if (gameMode && isRevealed) {
+    return (
+      <button
+        className="absolute z-10 flex flex-col items-center justify-center animate-pop-in"
+        style={{
+          left: `${city.x}%`,
+          top: `${city.y}%`,
+          transform: "translate(-50%, -50%)",
+        }}
+        onMouseEnter={onHover}
+        onMouseLeave={onLeave}
+        onClick={onClick}
+      >
+        <div
+          className="rounded-full flex items-center justify-center"
+          style={{
+            width: "36px",
+            height: "36px",
+            backgroundColor: city.color,
+            boxShadow: `0 0 0 3px ${city.color}50, 0 4px 12px rgba(0,0,0,0.25)`,
+          }}
+        >
+          <span className="text-lg">{city.emoji}</span>
+        </div>
+        <span className="text-[10px] font-bold text-gray-700 mt-0.5 bg-white/80 px-1.5 rounded-full shadow-sm">
+          {city.nameAr}
+        </span>
+      </button>
+    );
+  }
+
+  // Default (non-game) mode
   return (
     <button
       className={`
