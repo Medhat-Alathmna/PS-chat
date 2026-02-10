@@ -37,6 +37,7 @@ export default function KidsChatBubble({
   onStopSpeaking,
 }: KidsChatBubbleProps) {
   const [showReactions, setShowReactions] = useState(false);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const isUser = message.role === "user";
 
   // Random color for assistant bubbles (consistent per message)
@@ -90,6 +91,27 @@ export default function KidsChatBubble({
           }
         `}
       >
+        {/* User-uploaded images */}
+        {isUser && message.userImages && message.userImages.length > 0 && (
+          <div className="mb-2 grid grid-cols-2 gap-2">
+            {message.userImages.map((img, i) => (
+              <div
+                key={i}
+                className="relative rounded-2xl overflow-hidden border-2 border-white/40 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform"
+                onClick={() => setExpandedImage(img.url)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.url}
+                  alt="صورة من المستخدم"
+                  className="w-full h-36 object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Message content */}
         <div
           className={`
@@ -108,6 +130,7 @@ export default function KidsChatBubble({
               <div
                 key={i}
                 className="relative rounded-2xl overflow-hidden shadow-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer border-3 border-[var(--kids-yellow)]/50"
+                onClick={() => setExpandedImage(img.imageUrl || img.thumbnailUrl)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -193,6 +216,29 @@ export default function KidsChatBubble({
           </div>
         )}
       </div>
+
+      {/* Image lightbox */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
+          onClick={() => setExpandedImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center text-white text-xl transition-colors"
+            onClick={() => setExpandedImage(null)}
+            aria-label="إغلاق"
+          >
+            ✕
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={expandedImage}
+            alt="صورة مكبّرة"
+            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

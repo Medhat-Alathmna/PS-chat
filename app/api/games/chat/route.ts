@@ -54,14 +54,36 @@ export async function POST(req: NextRequest) {
       kidsProfile?.age
     );
 
-    const tools = getToolsForGame(gameId);
+    let tools = getToolsForGame(gameId);
+
+    // When the player asks for a hint, restrict tools to only give_hint
+    // This prevents the AI from also calling check_answer or present_options
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    let lastUserText = "";
+    if (lastUserMsg) {
+      if (typeof lastUserMsg.content === "string") {
+        lastUserText = lastUserMsg.content.trim();
+      } else if (Array.isArray(lastUserMsg.parts)) {
+        // UIMessage v5 uses parts array with { type: "text", text: "..." }
+        const textPart = lastUserMsg.parts.find(
+          (p: Record<string, unknown>) => p.type === "text"
+        ) as { text?: string } | undefined;
+        lastUserText = textPart?.text?.trim() || "";
+      }
+    }
+    console.log("[game-chat] lastUserText:", JSON.stringify(lastUserText), "from msg:", JSON.stringify(lastUserMsg?.content?.toString().slice(0, 100)));
+    const isHintRequest = lastUserText === "تلميح" || lastUserText.toLowerCase() === "hint";
+    if (isHintRequest && tools.give_hint) {
+      console.log("[game-chat] HINT REQUEST detected — restricting tools to give_hint only");
+      tools = { give_hint: tools.give_hint, end_game: tools.end_game };
+    }
 
     const result = streamText({
       model: openai(getModel()),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools,
-      stopWhen: stepCountIs(5),
+      stopWhen: stepCountIs(isHintRequest ? 2 : 5),
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[game-chat] Stream finished", {
           gameId,

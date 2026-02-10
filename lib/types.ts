@@ -31,6 +31,7 @@ export type ChatMessage = {
   content: string;
   createdAt: number;
   images?: ImageResult[];
+  userImages?: { url: string; mediaType: string }[];
   location?: LocationInfo;
   mapData?: MapData;
   webSearchResults?: WebSearchResultItem[];

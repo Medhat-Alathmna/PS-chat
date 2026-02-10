@@ -3,6 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import {
+  ChangeEvent,
   FormEvent,
   KeyboardEvent,
   useEffect,
@@ -123,6 +124,8 @@ function KidsPageInner() {
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [imagePreview, setImagePreview] = useState<{ url: string; mediaType: string; file: File } | null>(null);
 
   // AI Chat hook
   const {
@@ -155,10 +158,16 @@ function KidsPageInner() {
       let timeline: TimelineEvent[] | undefined;
       let textContent = "";
       const toolCalls: ToolCallInfo[] = [];
+      const userImageParts: { url: string; mediaType: string }[] = [];
 
       for (const part of msg.parts) {
         if (part.type === "text") {
           textContent += part.text;
+        } else if (part.type === "file") {
+          const filePart = part as { type: "file"; mediaType: string; url: string };
+          if (filePart.mediaType?.startsWith("image/")) {
+            userImageParts.push({ url: filePart.url, mediaType: filePart.mediaType });
+          }
         } else if (part.type.startsWith("tool-")) {
           const toolName = part.type.replace("tool-", "");
           const toolPart = part as {
@@ -269,6 +278,7 @@ function KidsPageInner() {
         content: textContent,
         createdAt: index,
         images,
+        userImages: userImageParts.length > 0 ? userImageParts : undefined,
         location,
         mapData,
         webSearchResults,
@@ -279,7 +289,7 @@ function KidsPageInner() {
     });
   }, [aiMessages]);
 
-  const canSend = input.trim().length > 0 && !isLoading;
+  const canSend = (input.trim().length > 0 || !!imagePreview) && !isLoading;
 
   // Auto-scroll
   useEffect(() => {
@@ -353,21 +363,52 @@ function KidsPageInner() {
     }
   }, [isLoading, messages, playDing, addTopic, autoReadMessage]);
 
+  const handleImageSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview({
+        url: reader.result as string,
+        mediaType: file.type,
+        file,
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input so the same file can be re-selected
+    event.target.value = "";
+  };
+
   const handleSubmit = async (event?: FormEvent) => {
     event?.preventDefault();
 
     const trimmed = input.trim();
-    if (!trimmed || isLoading) {
+    if ((!trimmed && !imagePreview) || isLoading) {
       return;
     }
 
     stopSpeaking(); // Cancel any TTS before sending
+    const currentImage = imagePreview;
     setInput("");
+    setImagePreview(null);
     playPop();
     recordMessage(); // Add points for sending message
 
     sendMessage({
-      text: trimmed,
+      text: trimmed || "🖼️",
+      ...(currentImage
+        ? {
+            files: [
+              {
+                type: "file" as const,
+                mediaType: currentImage.mediaType,
+                url: currentImage.url,
+              },
+            ],
+          }
+        : {}),
     });
   };
 
@@ -460,10 +501,40 @@ function KidsPageInner() {
 
         {/* Input Area */}
         <div className="shrink-0 border-t-2 border-[var(--kids-yellow)]/30 bg-white/90 backdrop-blur-sm px-4 py-4">
+          {/* Image preview */}
+          {imagePreview && (
+            <div className="mx-auto max-w-2xl mb-2">
+              <div className="relative inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagePreview.url}
+                  alt="معاينة الصورة"
+                  className="h-20 w-20 object-cover rounded-2xl border-3 border-[var(--kids-purple)]/30 shadow-md"
+                />
+                <button
+                  onClick={() => setImagePreview(null)}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md hover:scale-110 active:scale-95 transition-transform"
+                  aria-label="إزالة الصورة"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <form
             onSubmit={(event) => void handleSubmit(event)}
             className="mx-auto max-w-2xl"
           >
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+
             <div className="flex items-end gap-3 rounded-3xl border-3 border-[var(--kids-purple)]/30 bg-white px-4 py-3 shadow-lg focus-within:border-[var(--kids-purple)] transition-colors">
               {/* Mini mascot */}
               <AnimatedMascot
@@ -471,6 +542,17 @@ function KidsPageInner() {
                 size="sm"
                 className="hidden sm:block"
               />
+
+              {/* Camera button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--kids-purple)]/10 text-lg transition-all hover:scale-105 hover:bg-[var(--kids-purple)]/20 active:scale-95 disabled:opacity-40"
+                aria-label="إرفاق صورة"
+              >
+                📷
+              </button>
 
               <textarea
                 ref={textareaRef}

@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { GameId } from "@/lib/types/games";
 import { imageSearchTool, locationSearchTool } from "./tools";
+import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 
 /**
  * check_answer — AI declares correct/incorrect with explanation
@@ -21,18 +22,30 @@ export const checkAnswerTool = tool({
 });
 
 /**
- * give_hint — AI provides a progressive hint
+ * give_hint — AI provides a progressive hint, optionally with images
  */
 export const giveHintTool = tool({
   description:
-    "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific).",
+    "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific). Optionally include imageQuery to show a relevant image alongside the hint.",
   inputSchema: z.object({
     hint: z.string().describe("The hint text in Palestinian Arabic"),
     hintNumber: z.number().describe("Which hint this is (1, 2, 3...)"),
     pointsDeduction: z.number().describe("Points deducted for using this hint"),
+    imageQuery: z.string().optional().describe("Optional search query to find a relevant image for this hint (e.g. 'كنافة نابلس' or 'dome of the rock jerusalem')"),
   }),
-  execute: async ({ hint, hintNumber, pointsDeduction }) => {
-    return { hint, hintNumber, pointsDeduction };
+  execute: async ({ hint, hintNumber, pointsDeduction, imageQuery }) => {
+    let images;
+    if (imageQuery) {
+      try {
+        const results = await searchImagesMultiSource(imageQuery, 2);
+        if (results.length > 0) {
+          images = results;
+        }
+      } catch {
+        // Silently skip images on failure
+      }
+    }
+    return { hint, hintNumber, pointsDeduction, images };
   },
 });
 
@@ -49,6 +62,27 @@ export const advanceRoundTool = tool({
   }),
   execute: async ({ roundCompleted, feedback, pointsEarned }) => {
     return { roundCompleted, feedback, pointsEarned };
+  },
+});
+
+/**
+ * present_options — Show clickable numbered options in the UI
+ */
+export const presentOptionsTool = tool({
+  description:
+    "Present selectable options for the player. Call this EVERY time you ask a question with choices. The frontend renders numbered buttons the kid can tap.",
+  inputSchema: z.object({
+    options: z
+      .array(z.string())
+      .min(2)
+      .max(6)
+      .describe("Option texts without numbers — the frontend adds 1️⃣2️⃣3️⃣ automatically"),
+    allowHint: z
+      .boolean()
+      .describe("Whether to show a hint button alongside the options"),
+  }),
+  execute: async ({ options, allowHint }) => {
+    return { options, allowHint, displayed: true };
   },
 });
 
@@ -84,22 +118,33 @@ type ToolCollection = Record<string, any>;
 const quizTools: ToolCollection = {
   check_answer: checkAnswerTool,
   give_hint: giveHintTool,
-  end_game: endGameTool,
-};
-
-const creativeTools: ToolCollection = {
-  advance_round: advanceRoundTool,
+  present_options: presentOptionsTool,
   end_game: endGameTool,
 };
 
 const explorerTools: ToolCollection = {
   check_answer: checkAnswerTool,
   give_hint: giveHintTool,
+  present_options: presentOptionsTool,
   end_game: endGameTool,
   image_search: imageSearchTool,
   location_search: locationSearchTool,
 };
 
+/** Creative games WITH selectable options (would-you-rather, recipe-chef) */
+const creativeToolsWithOptions: ToolCollection = {
+  advance_round: advanceRoundTool,
+  present_options: presentOptionsTool,
+  end_game: endGameTool,
+};
+
+/** Creative games WITHOUT options (story-builder, draw-describe) */
+const creativeToolsNoOptions: ToolCollection = {
+  advance_round: advanceRoundTool,
+  end_game: endGameTool,
+};
+
+/** Word games — free-form text input, no selectable options */
 const wordGameTools: ToolCollection = {
   check_answer: checkAnswerTool,
   give_hint: giveHintTool,
@@ -111,30 +156,33 @@ const wordGameTools: ToolCollection = {
  */
 export function getToolsForGame(gameId: GameId): ToolCollection {
   switch (gameId) {
-    // Educational games with rich media
+    // Educational games with rich media + options
     case "city-explorer":
     case "time-traveler":
       return explorerTools;
 
-    // Quiz-style games
+    // Quiz-style games with options
     case "palestine-quiz":
     case "cultural-detective":
     case "riddles":
     case "emoji-puzzle":
     case "memory-match":
-    case "twenty-questions":
       return quizTools;
 
-    // Word games
+    // Free-form word games (no options)
     case "word-chain":
+    case "twenty-questions":
       return wordGameTools;
 
-    // Creative games
+    // Creative games WITH options
+    case "would-you-rather":
+    case "recipe-chef":
+      return creativeToolsWithOptions;
+
+    // Creative games WITHOUT options
     case "story-builder":
     case "draw-describe":
-    case "recipe-chef":
-    case "would-you-rather":
-      return creativeTools;
+      return creativeToolsNoOptions;
 
     default:
       return quizTools;

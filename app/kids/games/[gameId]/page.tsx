@@ -5,6 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef, useMemo, FormEvent, KeyboardEvent, useCallback } from "react";
 import { GameId, GameDifficulty, GameConfig } from "@/lib/types/games";
+import { ImageResult } from "@/lib/types";
 import { getGameConfig, GAME_CONFIGS } from "@/lib/data/games";
 import { useGameState } from "@/lib/hooks/useGameState";
 import { useGameRewards } from "@/lib/hooks/useGameRewards";
@@ -16,7 +17,7 @@ import ErrorBoundary from "../../../components/ErrorBoundary";
 import AgeGate, { getKidsProfile, KidsProfile } from "../../../components/kids/AgeGate";
 import DifficultySelector from "../../../components/kids/games/DifficultySelector";
 import GameHeader from "../../../components/kids/games/GameHeader";
-import GameChatBubble, { GameTypingBubble } from "../../../components/kids/games/GameChatBubble";
+import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../components/kids/games/GameChatBubble";
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
@@ -199,7 +200,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     return aiMessages.map((msg) => {
       let textContent = "";
       let answerResult: { correct: boolean; explanation: string } | null = null;
-      let hintData: { hint: string; hintNumber: number } | null = null;
+      let hintData: { hint: string; hintNumber: number; images?: ImageResult[] } | null = null;
+      let optionsData: OptionsData | null = null;
 
       for (const part of msg.parts) {
         if (part.type === "text") {
@@ -221,6 +223,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               hintData = {
                 hint: toolPart.output.hint as string,
                 hintNumber: toolPart.output.hintNumber as number,
+                images: toolPart.output.images as ImageResult[] | undefined,
+              };
+            } else if (toolName === "present_options") {
+              optionsData = {
+                options: toolPart.output.options as string[],
+                allowHint: toolPart.output.allowHint as boolean,
               };
             }
           }
@@ -233,6 +241,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         content: textContent,
         answerResult,
         hintData,
+        optionsData,
       };
     });
   }, [aiMessages]);
@@ -248,6 +257,45 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     }
     prevMsgCountRef.current = displayMessages.length;
   }, [isLoading, displayMessages, autoReadMessage]);
+
+  // Find the active options data (from the last unanswered question)
+  // Skips hint exchanges (user "تلميح" + assistant hint response) so options stay active after hints
+  const activeOptions = useMemo<{ messageId: string; data: OptionsData } | null>(() => {
+    if (status === "streaming") return null;
+    for (let i = displayMessages.length - 1; i >= 0; i--) {
+      const msg = displayMessages[i];
+      if (msg.role === "user") {
+        const text = msg.content.trim();
+        const isHint = text === "تلميح" || text.toLowerCase() === "hint";
+        if (isHint) continue; // skip hint requests
+        return null; // real answer — disable options
+      }
+      if (msg.role === "assistant") {
+        if (msg.optionsData) return { messageId: msg.id, data: msg.optionsData };
+        if (msg.hintData && !msg.optionsData) continue; // skip hint responses
+      }
+    }
+    return null;
+  }, [displayMessages, status]);
+
+  const hasActiveOptions = activeOptions !== null;
+
+  const handleOptionClick = useCallback(
+    (optionNumber: number) => {
+      if (isLoading) return;
+      stopSpeaking();
+      playSound("click");
+      sendMessage({ text: String(optionNumber) });
+    },
+    [isLoading, playSound, sendMessage, stopSpeaking]
+  );
+
+  const handleHintClick = useCallback(() => {
+    if (isLoading) return;
+    stopSpeaking();
+    playSound("click");
+    sendMessage({ text: "تلميح" });
+  }, [isLoading, playSound, sendMessage, stopSpeaking]);
 
   const canSend = input.trim().length > 0 && !isLoading;
 
@@ -355,11 +403,24 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 }
                 answerResult={msg.answerResult}
                 hintData={msg.hintData}
+                optionsData={msg.optionsData}
+                isActiveOptions={false}
+                onOptionClick={handleOptionClick}
+                onHintClick={handleHintClick}
                 isSpeaking={currentMessageId === msg.id}
                 onSpeak={() => speakMessage(msg)}
                 onStopSpeaking={stopSpeaking}
               />
             ))}
+
+            {/* Active options — always rendered at the bottom of chat */}
+            {activeOptions && (
+              <ActiveOptionsBlock
+                optionsData={activeOptions.data}
+                onOptionClick={handleOptionClick}
+                onHintClick={handleHintClick}
+              />
+            )}
 
             {isLoading &&
               displayMessages[displayMessages.length - 1]?.role !== "assistant" && (
@@ -369,16 +430,16 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         </main>
 
         {/* Input area */}
-        <div className="shrink-0 border-t-2 border-[var(--kids-yellow)]/30 bg-white/90 backdrop-blur-sm px-4 py-3">
+        <div className={`shrink-0 border-t-2 border-[var(--kids-yellow)]/30 bg-white/90 backdrop-blur-sm px-4 transition-all ${hasActiveOptions ? "py-1.5" : "py-3"}`}>
           <form
             onSubmit={(event) => void handleSubmit(event)}
             className="mx-auto max-w-2xl"
           >
-            <div className="flex items-end gap-3 rounded-2xl border-2 border-[var(--kids-purple)]/30 bg-white px-3 py-2 shadow-md focus-within:border-[var(--kids-purple)] transition-colors">
+            <div className={`flex items-end gap-2 rounded-2xl border-2 border-[var(--kids-purple)]/30 bg-white px-3 shadow-md focus-within:border-[var(--kids-purple)] transition-all ${hasActiveOptions ? "py-1 gap-2" : "py-2 gap-3"}`}>
               <textarea
                 ref={textareaRef}
-                className="min-h-[36px] flex-1 resize-none bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none leading-5"
-                placeholder="اكتب جوابك هنا... ✍️"
+                className={`flex-1 resize-none bg-transparent text-gray-700 placeholder:text-gray-400 focus:outline-none leading-5 transition-all ${hasActiveOptions ? "min-h-[28px] text-xs" : "min-h-[36px] text-sm"}`}
+                placeholder={hasActiveOptions ? "أو اكتب جوابك... ✍️" : "اكتب جوابك هنا... ✍️"}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleKeyDown}
@@ -397,7 +458,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               <button
                 type="submit"
                 disabled={!canSend}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--kids-green)] text-white text-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-40 shadow-md"
+                className={`flex items-center justify-center rounded-xl bg-[var(--kids-green)] text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-40 shadow-md ${hasActiveOptions ? "h-8 w-8 text-base" : "h-10 w-10 text-lg"}`}
                 aria-label="إرسال"
               >
                 {isLoading ? (
@@ -414,5 +475,42 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         <Confetti show={showConfetti} variant="celebration" />
       </div>
     </AnimatedBackground>
+  );
+}
+
+const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
+
+function ActiveOptionsBlock({
+  optionsData,
+  onOptionClick,
+  onHintClick,
+}: {
+  optionsData: OptionsData;
+  onOptionClick: (n: number) => void;
+  onHintClick: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 animate-pop-in mr-10">
+      {optionsData.options.map((option, i) => (
+        <button
+          key={i}
+          onClick={() => onOptionClick(i + 1)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-right transition-all shadow-sm bg-purple-50 border-2 border-[var(--kids-purple)]/30 text-gray-700 hover:bg-purple-100 hover:border-[var(--kids-purple)] hover:scale-[1.02] active:scale-95 cursor-pointer"
+          dir="auto"
+        >
+          <span className="text-lg shrink-0">{NUMBER_EMOJIS[i]}</span>
+          <span className="leading-relaxed">{option}</span>
+        </button>
+      ))}
+      {optionsData.allowHint && (
+        <button
+          onClick={() => onHintClick()}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-500 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+        >
+          <span className="text-lg">💡</span>
+          <span>تلميح</span>
+        </button>
+      )}
+    </div>
   );
 }
