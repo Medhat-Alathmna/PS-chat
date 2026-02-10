@@ -9,9 +9,9 @@ import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
  */
 export const checkAnswerTool = tool({
   description:
-    "Use this tool to evaluate the player's answer. Declare if it's correct or incorrect, provide a brief explanation, and optionally share a fun fact.",
+    "Use this tool to evaluate the player's answer. Declare if it's correct or incorrect, provide a brief explanation, and optionally share a fun fact. IMPORTANT: If the player says 'مش عارف' or 'ما بعرف' or 'I don't know', this is NOT a correct answer — set correct to false.",
   inputSchema: z.object({
-    correct: z.boolean().describe("Whether the answer is correct"),
+    correct: z.boolean().describe("Whether the answer is correct. Must be false if the player said they don't know."),
     explanation: z.string().describe("Brief explanation in Palestinian Arabic"),
     funFact: z.string().optional().describe("Optional fun fact to share"),
     pointsEarned: z.number().describe("Points earned for this answer (0 if wrong)"),

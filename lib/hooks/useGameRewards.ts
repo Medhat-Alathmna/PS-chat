@@ -6,8 +6,8 @@ import { useStickers } from "@/lib/hooks/useStickers";
 import { GameSessionSummary } from "@/lib/types/games";
 import { getGameConfig } from "@/lib/data/games";
 
-export function useGameRewards() {
-  const rewards = useRewards();
+export function useGameRewards(profileId?: string) {
+  const rewards = useRewards(profileId);
   const stickers = useStickers(rewards.unlockedStickers, rewards.unlockSticker);
 
   const onCorrectAnswer = useCallback(

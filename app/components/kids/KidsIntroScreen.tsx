@@ -12,6 +12,7 @@ interface KidsIntroScreenProps {
   onSelect: (text: string) => void;
   points?: number;
   level?: RewardLevel;
+  playerName?: string;
 }
 
 /**
@@ -21,6 +22,7 @@ export default function KidsIntroScreen({
   onSelect,
   points = 0,
   level,
+  playerName,
 }: KidsIntroScreenProps) {
   const router = useRouter();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export default function KidsIntroScreen({
           {/* Welcome text */}
           <div className="mb-8 animate-fade-in-up">
             <h1 className="text-3xl sm:text-4xl font-bold text-[var(--kids-purple)] mb-3 bubble-text">
-              أهلاً يا بطل! 🌟
+              {playerName ? `أهلاً يا ${playerName}! 🌟` : "أهلاً يا بطل! 🌟"}
             </h1>
             <p className="text-lg sm:text-xl text-gray-600">
               أنا مدحت، صاحبك من فلسطين!

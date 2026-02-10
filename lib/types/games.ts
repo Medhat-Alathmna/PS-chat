@@ -64,9 +64,22 @@ export type GameSessionSummary = {
   stickerUnlocked: boolean;
 };
 
+export type ProfileAvatar = "🦁" | "🐯" | "🦊" | "🐼" | "🐸" | "🦋" | "🌻" | "🌟" | "🚀" | "🎨" | "⚽" | "🦄" | "🐬" | "🦅" | "🌈" | "🎵";
+
+export type ProfileColor = "purple" | "green" | "blue" | "orange" | "pink" | "red";
+
 export type KidsProfile = {
+  id: string;
+  name: string;
   age: number;
+  avatar: ProfileAvatar;
+  color: ProfileColor;
   createdAt: number;
+};
+
+export type ProfilesState = {
+  profiles: KidsProfile[];
+  activeProfileId: string | null;
 };
 
 export type KidsChatContext = {

@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GameCategory } from "@/lib/types/games";
 import { getGamesByCategory } from "@/lib/data/games";
 import AnimatedBackground from "../../components/kids/AnimatedBackground";
 import AnimatedMascot from "../../components/kids/AnimatedMascot";
 import GameCard from "../../components/kids/games/GameCard";
-import AgeGate, { getKidsProfile, KidsProfile } from "../../components/kids/AgeGate";
+import ProfileSetup from "../../components/kids/ProfileSetup";
+import ProfileSwitcher from "../../components/kids/ProfileSwitcher";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import RewardsBar from "../../components/kids/RewardsBar";
+import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useRewards } from "@/lib/hooks/useRewards";
 import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
@@ -30,27 +32,51 @@ export default function GamesHubPage() {
 
 function GamesHub() {
   const router = useRouter();
-  const [profile, setProfile] = useState<KidsProfile | null>(null);
-  const [profileChecked, setProfileChecked] = useState(false);
   const [activeCategory, setActiveCategory] = useState<GameCategory>("educational");
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
   const { soundEnabled, toggleSound, playClick } = useSounds();
-  const { points, level, unlockedStickers, progressToNextLevel } = useRewards();
+
+  const {
+    profiles,
+    activeProfile,
+    isLoaded,
+    createProfile,
+    updateProfile,
+    deleteProfile,
+    switchProfile,
+  } = useProfiles();
+
+  const profileId = activeProfile?.id;
+  const { points, level, unlockedStickers, progressToNextLevel } = useRewards(profileId);
   const { totalCount } = useStickers(unlockedStickers, () => {});
 
-  useEffect(() => {
-    setProfile(getKidsProfile());
-    setProfileChecked(true);
-  }, []);
+  if (!isLoaded) return null;
 
-  if (!profileChecked) return null;
-
-  if (!profile) {
+  if (profiles.length === 0 || showProfileSetup) {
     return (
-      <AgeGate
-        onComplete={(p) => setProfile(p)}
+      <ProfileSetup
+        onComplete={(data) => {
+          createProfile(data);
+          setShowProfileSetup(false);
+        }}
+        existingProfiles={profiles}
+        onCancel={profiles.length > 0 ? () => setShowProfileSetup(false) : undefined}
       />
     );
   }
+
+  if (activeProfile && !activeProfile.name) {
+    return (
+      <ProfileSetup
+        onComplete={(data) => {
+          updateProfile(activeProfile.id, data);
+        }}
+        existingProfiles={profiles}
+      />
+    );
+  }
+
+  if (!activeProfile) return null;
 
   const games = getGamesByCategory(activeCategory);
 
@@ -62,17 +88,29 @@ function GamesHub() {
 
         {/* Header */}
         <header className="shrink-0 px-4 py-3">
-          <RewardsBar
-            points={points}
-            level={level}
-            progress={progressToNextLevel()}
-            unlockedStickersCount={unlockedStickers.length}
-            totalStickersCount={totalCount}
-            pointsEarned={0}
-            onOpenStickers={() => {}}
-            soundEnabled={soundEnabled}
-            onToggleSound={toggleSound}
-          />
+          <div className="flex items-center gap-2">
+            <ProfileSwitcher
+              profiles={profiles}
+              activeProfile={activeProfile}
+              onSwitch={switchProfile}
+              onAddNew={() => setShowProfileSetup(true)}
+              onEdit={() => setShowProfileSetup(true)}
+              onDelete={deleteProfile}
+            />
+            <div className="flex-1">
+              <RewardsBar
+                points={points}
+                level={level}
+                progress={progressToNextLevel()}
+                unlockedStickersCount={unlockedStickers.length}
+                totalStickersCount={totalCount}
+                pointsEarned={0}
+                onOpenStickers={() => {}}
+                soundEnabled={soundEnabled}
+                onToggleSound={toggleSound}
+              />
+            </div>
+          </div>
         </header>
 
         {/* Content */}

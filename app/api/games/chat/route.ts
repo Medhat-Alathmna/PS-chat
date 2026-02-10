@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
       gameId,
       difficulty,
       chatContext,
-      kidsProfile?.age
+      kidsProfile?.age,
+      kidsProfile?.name
     );
 
     let tools = getToolsForGame(gameId);

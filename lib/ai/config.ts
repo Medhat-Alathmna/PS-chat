@@ -201,6 +201,22 @@ export const KIDS_SYSTEM_PROMPT = `أنت مدحت! 👦 طفل فلسطيني �
 - اختم بشي حلو! 🌟`;
 
 /**
+ * Build kids system prompt with optional player name personalization.
+ * Appends a name-aware section so Medhat uses the child's name for encouragement.
+ */
+export function buildKidsSystemPrompt(playerName?: string): string {
+  if (!playerName) return KIDS_SYSTEM_PROMPT;
+
+  return `${KIDS_SYSTEM_PROMPT}
+
+## اسم اللاعب
+- اسم الطفل: ${playerName}
+- نادي الطفل باسمه أحياناً (كل 2-3 رسائل، مش كل رسالة)
+- مثال: "يا ${playerName}! سؤالك حلو كتير!" أو "أحسنت يا ${playerName}! 🌟"
+- لا تكرر الاسم بكل جملة — خليها طبيعية`;
+}
+
+/**
  * Get or create OpenAI client instance
  */
 let openaiClient: OpenAI | null = null;

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useMemo, FormEvent, KeyboardEvent, useCall
 import { GameId, GameDifficulty, GameConfig } from "@/lib/types/games";
 import { ImageResult } from "@/lib/types";
 import { getGameConfig, GAME_CONFIGS } from "@/lib/data/games";
+import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useGameState } from "@/lib/hooks/useGameState";
 import { useGameRewards } from "@/lib/hooks/useGameRewards";
 import { useChatContext } from "@/lib/hooks/useChatContext";
@@ -14,7 +15,7 @@ import { useSounds } from "@/lib/hooks/useSounds";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import ErrorBoundary from "../../../components/ErrorBoundary";
-import AgeGate, { getKidsProfile, KidsProfile } from "../../../components/kids/AgeGate";
+import ProfileSetup from "../../../components/kids/ProfileSetup";
 import DifficultySelector from "../../../components/kids/games/DifficultySelector";
 import GameHeader from "../../../components/kids/games/GameHeader";
 import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../components/kids/games/GameChatBubble";
@@ -59,8 +60,6 @@ function GamePageInner() {
 
 function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig }) {
   const router = useRouter();
-  const [profile, setProfile] = useState<KidsProfile | null>(null);
-  const [profileChecked, setProfileChecked] = useState(false);
   const [difficulty, setDifficulty] = useState<GameDifficulty | null>(
     config.hasDifficulty ? null : "medium"
   );
@@ -71,6 +70,17 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const startSentRef = useRef(false);
+
+  // Profiles
+  const {
+    profiles,
+    activeProfile,
+    isLoaded,
+    createProfile,
+    updateProfile,
+  } = useProfiles();
+
+  const profileId = activeProfile?.id;
 
   const { soundEnabled, toggleSound, playSound } = useSounds();
   const {
@@ -83,15 +93,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     autoReadMessage,
     speakMessage,
   } = useVoiceSynthesis({ soundEnabled });
-  const { getContext } = useChatContext();
-  const gameState = useGameState(gameId, difficulty || undefined);
-  const gameRewards = useGameRewards();
-
-  // Check profile
-  useEffect(() => {
-    setProfile(getKidsProfile());
-    setProfileChecked(true);
-  }, []);
+  const { getContext } = useChatContext(profileId);
+  const gameState = useGameState(gameId, difficulty || undefined, profileId);
+  const gameRewards = useGameRewards(profileId);
 
   // Chat hook
   const {
@@ -107,10 +111,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             gameId,
             difficulty: difficulty || "medium",
             chatContext: getContext(),
-            kidsProfile: profile,
+            kidsProfile: activeProfile,
           },
         }),
-      [gameId, difficulty, profile, getContext]
+      [gameId, difficulty, activeProfile, getContext]
     ),
   });
 
@@ -321,11 +325,31 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   // --- RENDER ---
 
-  if (!profileChecked) return null;
+  if (!isLoaded) return null;
 
-  if (!profile) {
-    return <AgeGate onComplete={(p) => setProfile(p)} />;
+  if (profiles.length === 0) {
+    return (
+      <ProfileSetup
+        onComplete={(data) => {
+          createProfile(data);
+        }}
+        existingProfiles={profiles}
+      />
+    );
   }
+
+  if (activeProfile && !activeProfile.name) {
+    return (
+      <ProfileSetup
+        onComplete={(data) => {
+          updateProfile(activeProfile.id, data);
+        }}
+        existingProfiles={profiles}
+      />
+    );
+  }
+
+  if (!activeProfile) return null;
 
   // Difficulty selection
   if (config.hasDifficulty && !difficulty) {

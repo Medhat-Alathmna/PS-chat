@@ -24,7 +24,7 @@ import {
   TimelineEvent,
   Sticker,
 } from "@/lib/types";
-import { KIDS_SYSTEM_PROMPT } from "@/lib/ai/config";
+import { buildKidsSystemPrompt } from "@/lib/ai/config";
 
 // Kids components
 import KidsIntroScreen from "../components/kids/KidsIntroScreen";
@@ -40,10 +40,12 @@ import StickerCollection, {
 } from "../components/kids/StickerCollection";
 import Confetti from "../components/kids/Confetti";
 import ErrorBoundary from "../components/ErrorBoundary";
-import AgeGate, { getKidsProfile, KidsProfile } from "../components/kids/AgeGate";
+import ProfileSetup from "../components/kids/ProfileSetup";
+import ProfileSwitcher from "../components/kids/ProfileSwitcher";
 import SpeechInput from "../components/kids/SpeechInput";
 
 // Hooks
+import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useRewards } from "@/lib/hooks/useRewards";
 import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
@@ -64,8 +66,21 @@ function KidsPageInner() {
   const [started, setStarted] = useState(false);
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const [profile, setProfile] = useState<KidsProfile | null>(null);
-  const [profileChecked, setProfileChecked] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+
+  // Profiles system
+  const {
+    profiles,
+    activeProfile,
+    isLoaded,
+    createProfile,
+    updateProfile,
+    deleteProfile,
+    switchProfile,
+  } = useProfiles();
+
+  const profileId = activeProfile?.id;
 
   // Rewards system
   const {
@@ -78,7 +93,7 @@ function KidsPageInner() {
     recordMessage,
     unlockSticker,
     progressToNextLevel,
-  } = useRewards();
+  } = useRewards(profileId);
 
   // Stickers system
   const {
@@ -107,13 +122,13 @@ function KidsPageInner() {
   } = useVoiceSynthesis({ soundEnabled });
 
   // Chat context for game integration
-  const { addTopic } = useChatContext();
+  const { addTopic } = useChatContext(profileId);
 
-  // Age gate check
-  useEffect(() => {
-    setProfile(getKidsProfile());
-    setProfileChecked(true);
-  }, []);
+  // System prompt with name
+  const systemPrompt = useMemo(
+    () => buildKidsSystemPrompt(activeProfile?.name),
+    [activeProfile?.name]
+  );
 
   // UI state
   const [showPointsPopup, setShowPointsPopup] = useState(false);
@@ -127,21 +142,27 @@ function KidsPageInner() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imagePreview, setImagePreview] = useState<{ url: string; mediaType: string; file: File } | null>(null);
 
-  // AI Chat hook
+  // AI Chat hook — key by profileId so it resets on switch
+  const chatTransport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: {
+          config: {
+            mode: "localPrompt",
+            systemPrompt,
+          },
+        },
+      }),
+    [systemPrompt]
+  );
+
   const {
     messages: aiMessages,
     sendMessage,
     status,
   } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      body: {
-        config: {
-          mode: "localPrompt",
-          systemPrompt: KIDS_SYSTEM_PROMPT,
-        },
-      },
-    }),
+    transport: chatTransport,
   });
 
   const isLoading = status === "streaming" || status === "submitted";
@@ -419,11 +440,36 @@ function KidsPageInner() {
     }
   };
 
-  // Age gate
-  if (!profileChecked) return null;
-  if (!profile) {
-    return <AgeGate onComplete={(p) => setProfile(p)} />;
+  // Loading state
+  if (!isLoaded) return null;
+
+  // No profiles yet or explicit "add new" flow
+  if (profiles.length === 0 || showProfileSetup) {
+    return (
+      <ProfileSetup
+        onComplete={(data) => {
+          createProfile(data);
+          setShowProfileSetup(false);
+        }}
+        existingProfiles={profiles}
+        onCancel={profiles.length > 0 ? () => setShowProfileSetup(false) : undefined}
+      />
+    );
   }
+
+  // Migrated profile with no name — prompt for name completion
+  if (activeProfile && !activeProfile.name) {
+    return (
+      <ProfileSetup
+        onComplete={(data) => {
+          updateProfile(activeProfile.id, data);
+        }}
+        existingProfiles={profiles}
+      />
+    );
+  }
+
+  if (!activeProfile) return null;
 
   // Show intro screen
   if (!started) {
@@ -435,19 +481,37 @@ function KidsPageInner() {
         }}
         points={points}
         level={level}
+        playerName={activeProfile.name}
       />
     );
   }
 
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
-      <div className="relative flex h-screen flex-col overflow-hidden">
+      <div className="relative flex h-screen flex-col overflow-hidden" key={activeProfile.id}>
         {/* Palestinian Flag Stripe */}
         <div className="kids-ps-stripe shrink-0" />
 
         {/* Header with rewards */}
         <header className="shrink-0 px-4 py-3">
           <div className="flex items-center gap-2">
+            {/* Profile switcher */}
+            <ProfileSwitcher
+              profiles={profiles}
+              activeProfile={activeProfile}
+              onSwitch={(id) => {
+                switchProfile(id);
+                setStarted(false);
+                setInitialQuestion(null);
+              }}
+              onAddNew={() => setShowProfileSetup(true)}
+              onEdit={(id) => {
+                setEditingProfileId(id);
+                // For simplicity, use ProfileSetup to edit
+                setShowProfileSetup(true);
+              }}
+              onDelete={deleteProfile}
+            />
             <div className="flex-1">
               <RewardsBar
                 points={points}

@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * @deprecated Use ProfileSetup and useProfiles() instead.
+ * This component is kept only for backward compatibility.
+ * All functionality has been migrated to the multi-profile system.
+ */
+
 import { useState } from "react";
 import AnimatedMascot from "./AnimatedMascot";
 import AnimatedBackground from "./AnimatedBackground";
@@ -8,24 +14,6 @@ export type KidsProfile = {
   age: number;
   createdAt: number;
 };
-
-const STORAGE_KEY = "falastin_kids_profile";
-
-export function getKidsProfile(): KidsProfile | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {
-    // ignore
-  }
-  return null;
-}
-
-export function saveKidsProfile(profile: KidsProfile): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-}
 
 interface AgeGateProps {
   onComplete: (profile: KidsProfile) => void;
@@ -36,7 +24,6 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
 
   const handleConfirm = () => {
     const profile: KidsProfile = { age, createdAt: Date.now() };
-    saveKidsProfile(profile);
     onComplete(profile);
   };
 

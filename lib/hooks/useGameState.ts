@@ -6,8 +6,10 @@ import { getGameConfig } from "@/lib/data/games";
 
 const STORAGE_KEY_PREFIX = "falastin_game_state_";
 
-function getStorageKey(gameId: GameId): string {
-  return `${STORAGE_KEY_PREFIX}${gameId}`;
+function getStorageKey(gameId: GameId, profileId?: string): string {
+  return profileId
+    ? `${STORAGE_KEY_PREFIX}${profileId}_${gameId}`
+    : `${STORAGE_KEY_PREFIX}${gameId}`;
 }
 
 function createInitialState(gameId: GameId, difficulty?: GameDifficulty): GameState {
@@ -26,12 +28,12 @@ function createInitialState(gameId: GameId, difficulty?: GameDifficulty): GameSt
   };
 }
 
-export function useGameState(gameId: GameId, difficulty?: GameDifficulty) {
+export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profileId?: string) {
   const [state, setState] = useState<GameState>(() => {
     // Try to resume from localStorage
     if (typeof window !== "undefined") {
       try {
-        const stored = localStorage.getItem(getStorageKey(gameId));
+        const stored = localStorage.getItem(getStorageKey(gameId, profileId));
         if (stored) {
           const parsed = JSON.parse(stored) as GameState;
           if (parsed.status === "playing") return parsed;
@@ -48,9 +50,9 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty) {
   // Persist to localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(getStorageKey(gameId), JSON.stringify(state));
+      localStorage.setItem(getStorageKey(gameId, profileId), JSON.stringify(state));
     }
-  }, [state, gameId]);
+  }, [state, gameId, profileId]);
 
   // Difficulty multiplier
   const getMultiplier = useCallback((): number => {
@@ -138,20 +140,20 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty) {
 
     // Clear saved state
     if (typeof window !== "undefined") {
-      localStorage.removeItem(getStorageKey(gameId));
+      localStorage.removeItem(getStorageKey(gameId, profileId));
     }
 
     return gameSummary;
-  }, [gameId, state.hintsUsed, state.difficulty, state.startedAt]);
+  }, [gameId, profileId, state.hintsUsed, state.difficulty, state.startedAt]);
 
   // Reset game
   const resetGame = useCallback((newDifficulty?: GameDifficulty) => {
     setState(createInitialState(gameId, newDifficulty || difficulty));
     setSummary(null);
     if (typeof window !== "undefined") {
-      localStorage.removeItem(getStorageKey(gameId));
+      localStorage.removeItem(getStorageKey(gameId, profileId));
     }
-  }, [gameId, difficulty]);
+  }, [gameId, difficulty, profileId]);
 
   // Process tool call results from AI
   const processToolResult = useCallback((toolName: string, result: Record<string, unknown>) => {

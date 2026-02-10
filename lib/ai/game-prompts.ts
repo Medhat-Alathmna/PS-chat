@@ -241,7 +241,8 @@ export function buildGameSystemPrompt(
   gameId: GameId,
   difficulty?: GameDifficulty,
   chatContext?: KidsChatContext,
-  age?: number
+  age?: number,
+  playerName?: string
 ): string {
   const config = getGameConfig(gameId);
   const parts: string[] = [];
@@ -264,6 +265,14 @@ export function buildGameSystemPrompt(
     } else if (age <= 9) {
       parts.push(`## تكيّف العمر\nاللاعب عمره ${age} سنين. استخدم لغة مناسبة لعمره.`);
     }
+  }
+
+  // Player name personalization
+  if (playerName) {
+    parts.push(`## اسم اللاعب
+- اسم الطفل: ${playerName}
+- نادي الطفل باسمه بكل رسالة! مثال: "أحسنت يا ${playerName}! 🌟" أو "يلا يا ${playerName}، جرّب كمان!"
+- لا تكون محبط أبداً — شجّع دايماً!`);
   }
 
   // Chat context (topics discussed in main chat)
@@ -318,6 +327,13 @@ export function buildGameSystemPrompt(
 - لما يطلب تلميح: give_hint (بس!)
 - لما اللعبة تخلص: end_game (بس!)
 - ❌ لا تستخدم أكثر من أداة بنفس الرد (إلا present_options مع سؤال)
+
+### قاعدة "مش عارف" / "لا أعرف":
+- لما اللاعب يقول "مش عارف" أو "ما بعرف" أو "لا أعرف" أو "I don't know" → هاد مش جواب صح!
+- ❌ لا تستخدم check_answer مع correct: true — الطفل ما جاوب!
+- ✅ استخدم give_hint لتساعده يخمّن
+- ✅ أو استخدم check_answer مع correct: false وشجّعه يحاول مرة تانية
+- ❌ أبداً لا تعتبر "مش عارف" إجابة صحيحة مهما كان السياق
 
 ### قاعدة الانتظار:
 - بعد ما تسأل سؤال → لا تجاوب بنفسك — استنّى اللاعب!

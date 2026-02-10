@@ -58,7 +58,11 @@ export const POINTS_CONFIG = {
   gamePerfectScore: 50,
 };
 
-const STORAGE_KEY = "falastin_kids_rewards";
+const STORAGE_KEY_BASE = "falastin_kids_rewards";
+
+function getStorageKey(profileId?: string): string {
+  return profileId ? `${STORAGE_KEY_BASE}_${profileId}` : STORAGE_KEY_BASE;
+}
 
 function getLevelForPoints(points: number): RewardLevel {
   return (
@@ -68,19 +72,19 @@ function getLevelForPoints(points: number): RewardLevel {
   );
 }
 
-function getInitialState(): RewardState {
-  if (typeof window === "undefined") {
-    return {
-      points: 0,
-      level: REWARD_LEVELS[0],
-      messagesCount: 0,
-      unlockedStickers: [],
-      lastRewardAt: null,
-    };
-  }
+const DEFAULT_STATE: RewardState = {
+  points: 0,
+  level: REWARD_LEVELS[0],
+  messagesCount: 0,
+  unlockedStickers: [],
+  lastRewardAt: null,
+};
+
+function loadState(profileId?: string): RewardState {
+  if (typeof window === "undefined") return DEFAULT_STATE;
 
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(getStorageKey(profileId));
     if (stored) {
       const parsed = JSON.parse(stored);
       return {
@@ -92,26 +96,25 @@ function getInitialState(): RewardState {
     console.warn("[useRewards] Failed to load from localStorage:", e);
   }
 
-  return {
-    points: 0,
-    level: REWARD_LEVELS[0],
-    messagesCount: 0,
-    unlockedStickers: [],
-    lastRewardAt: null,
-  };
+  return DEFAULT_STATE;
 }
 
-export function useRewards() {
-  const [state, setState] = useState<RewardState>(getInitialState);
+export function useRewards(profileId?: string) {
+  const [state, setState] = useState<RewardState>(() => loadState(profileId));
   const [showCelebration, setShowCelebration] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
+
+  // Reload state when profileId changes
+  useEffect(() => {
+    setState(loadState(profileId));
+  }, [profileId]);
 
   // Persist state to localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(getStorageKey(profileId), JSON.stringify(state));
     }
-  }, [state]);
+  }, [state, profileId]);
 
   // Add points
   const addPoints = useCallback((amount: number, reason?: string) => {
@@ -221,15 +224,9 @@ export function useRewards() {
 
   // Reset all progress (for testing or user request)
   const resetProgress = useCallback(() => {
-    setState({
-      points: 0,
-      level: REWARD_LEVELS[0],
-      messagesCount: 0,
-      unlockedStickers: [],
-      lastRewardAt: null,
-    });
-    localStorage.removeItem(STORAGE_KEY);
-  }, []);
+    setState(DEFAULT_STATE);
+    localStorage.removeItem(getStorageKey(profileId));
+  }, [profileId]);
 
   return {
     // State
