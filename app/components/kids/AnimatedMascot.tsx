@@ -5,12 +5,13 @@ import { MascotState } from "@/lib/types";
 
 interface AnimatedMascotProps {
   state?: MascotState;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   showName?: boolean;
   className?: string;
 }
 
 const SIZE_CLASSES = {
+  xs: "w-10 h-10",
   sm: "w-16 h-16",
   md: "w-24 h-24",
   lg: "w-32 h-32",
@@ -168,13 +169,15 @@ export default function AnimatedMascot({
  */
 export function MiniMascot({
   state = "idle",
+  size = "sm",
   className = "",
 }: {
   state?: MascotState;
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
 }) {
   return (
-    <AnimatedMascot state={state} size="sm" showName={false} className={className} />
+    <AnimatedMascot state={state} size={size} showName={false} className={className} />
   );
 }
 

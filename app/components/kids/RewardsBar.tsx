@@ -51,15 +51,15 @@ export default function RewardsBar({
     <div
       className={`
         bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg
-        px-4 py-3 flex items-center gap-4
+        px-2.5 py-2 sm:px-4 sm:py-3 flex items-center gap-2 sm:gap-4
         border-2 border-[var(--kids-yellow)]/30
         ${className}
       `}
     >
       {/* Level Badge */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <span
-          className="text-3xl animate-pulse-grow"
+          className="text-2xl sm:text-3xl animate-pulse-grow"
           style={{ animationDuration: "3s" }}
         >
           {level.icon}
@@ -76,31 +76,31 @@ export default function RewardsBar({
       </div>
 
       {/* Points & Progress */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <div className="flex items-center justify-between mb-0.5 sm:mb-1">
           <div className="flex items-center gap-1">
-            <span className="text-lg font-bold text-[var(--kids-orange)]">
+            <span className="text-base sm:text-lg font-bold text-[var(--kids-orange)]">
               {points}
             </span>
-            <span className="text-sm text-gray-500">⭐</span>
+            <span className="text-xs sm:text-sm text-gray-500">⭐</span>
 
             {/* Points earned animation */}
             {pointsEarned > 0 && (
-              <span className="text-sm font-bold text-[var(--kids-green)] animate-pop-in ml-1">
+              <span className="text-xs sm:text-sm font-bold text-[var(--kids-green)] animate-pop-in ml-1">
                 +{pointsEarned}!
               </span>
             )}
           </div>
 
           {nextLevel && (
-            <span className="text-xs text-gray-400 hidden sm:block">
+            <span className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">
               {nextLevel.minPoints - points} للمستوى التالي
             </span>
           )}
         </div>
 
         {/* Progress bar */}
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-1.5 sm:h-2 bg-gray-200 rounded-full overflow-hidden w-full">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out"
             style={{
@@ -111,49 +111,54 @@ export default function RewardsBar({
         </div>
       </div>
 
-      {/* Stickers button */}
-      <button
-        onClick={onOpenStickers}
-        className="
-          flex items-center gap-1 px-3 py-2
-          bg-[var(--kids-purple)] text-white
-          rounded-xl text-sm font-bold
-          hover:scale-105 active:scale-95
-          transition-transform shadow-md
-        "
-      >
-        <span>🎯</span>
-        <span className="hidden sm:inline">ملصقات</span>
-        <span className="bg-white/20 px-1.5 rounded-lg text-xs">
-          {unlockedStickersCount}/{totalStickersCount}
-        </span>
-      </button>
-
-      {/* Voice toggle */}
-      {onToggleVoice && voiceSupported && (
-        <VoiceToggle
-          voiceEnabled={!!voiceEnabled}
-          onToggle={onToggleVoice}
-          isSpeaking={isSpeaking}
-          isSupported={voiceSupported}
-        />
-      )}
-
-      {/* Sound toggle */}
-      {onToggleSound && (
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Stickers button */}
         <button
-          onClick={onToggleSound}
+          onClick={onOpenStickers}
           className="
-            w-10 h-10 flex items-center justify-center
-            bg-gray-100 rounded-xl text-xl
-            hover:bg-gray-200 active:scale-95
-            transition-all
+            flex items-center justify-center gap-1
+            w-9 h-9 sm:w-auto sm:h-10 sm:px-3
+            bg-[var(--kids-purple)] text-white
+            rounded-xl text-xs sm:text-sm font-bold
+            hover:scale-105 active:scale-95
+            transition-all shadow-md
           "
-          aria-label={soundEnabled ? "كتم الصوت" : "تشغيل الصوت"}
+          aria-label="الملصقات"
         >
-          {soundEnabled ? "🔊" : "🔇"}
+          <span className="text-base sm:text-lg">🎯</span>
+          <span className="hidden sm:inline">ملصقات</span>
+          <span className="bg-white/20 px-1.5 rounded-lg text-[10px] sm:text-xs hidden sm:inline-block">
+            {unlockedStickersCount}/{totalStickersCount}
+          </span>
         </button>
-      )}
+
+        {/* Voice toggle */}
+        {onToggleVoice && voiceSupported && (
+          <VoiceToggle
+            voiceEnabled={!!voiceEnabled}
+            onToggle={onToggleVoice}
+            isSpeaking={isSpeaking}
+            isSupported={voiceSupported}
+            className="w-9 h-9 sm:w-10 sm:h-10 text-lg sm:text-xl"
+          />
+        )}
+
+        {/* Sound toggle */}
+        {onToggleSound && (
+          <button
+            onClick={onToggleSound}
+            className="
+              w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center
+              bg-gray-100 rounded-xl text-base sm:text-xl
+              hover:bg-gray-200 active:scale-95
+              transition-all
+            "
+            aria-label={soundEnabled ? "كتم الصوت" : "تشغيل الصوت"}
+          >
+            {soundEnabled ? "🔊" : "🔇"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

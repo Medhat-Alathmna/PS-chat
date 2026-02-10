@@ -183,12 +183,12 @@ function Stars() {
  */
 function GroundDecoration() {
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-32 overflow-hidden pointer-events-none">
+    <div className="absolute bottom-0 left-0 right-0 h-20 sm:h-32 overflow-hidden pointer-events-none z-0">
       {/* Hills */}
       <div className="absolute bottom-0 left-0 w-full">
         <svg
           viewBox="0 0 1200 120"
-          className="w-full h-24"
+          className="w-full h-16 sm:h-24"
           preserveAspectRatio="none"
         >
           <path
@@ -203,10 +203,10 @@ function GroundDecoration() {
       </div>
 
       {/* Olive trees */}
-      <span className="absolute bottom-8 left-[10%] text-4xl">🌳</span>
-      <span className="absolute bottom-12 left-[30%] text-3xl">🌳</span>
-      <span className="absolute bottom-6 left-[70%] text-4xl">🌳</span>
-      <span className="absolute bottom-10 left-[90%] text-3xl">🌳</span>
+      <span className="absolute bottom-6 sm:bottom-8 left-[10%] text-2xl sm:text-4xl transform -translate-x-1/2">🌳</span>
+      <span className="absolute bottom-8 sm:bottom-12 left-[30%] text-xl sm:text-3xl transform -translate-x-1/2">🌳</span>
+      <span className="absolute bottom-4 sm:bottom-6 left-[70%] text-2xl sm:text-4xl transform -translate-x-1/2">🌳</span>
+      <span className="absolute bottom-7 sm:bottom-10 left-[90%] text-xl sm:text-3xl transform -translate-x-1/2">🌳</span>
     </div>
   );
 }

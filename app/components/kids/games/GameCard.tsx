@@ -19,23 +19,12 @@ export default function GameCard({ game, onClick }: GameCardProps) {
   return (
     <button
       onClick={onClick}
-      className="relative p-4 rounded-2xl text-right bg-white/90 backdrop-blur-sm border-3 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl group"
+      className="relative p-3 sm:p-4 rounded-xl sm:rounded-2xl text-right bg-white/90 backdrop-blur-sm border-2 sm:border-3 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-xl group w-full flex flex-col items-center sm:items-stretch h-full"
       style={{ borderColor: `${game.color}50` }}
     >
-      {/* Emoji */}
-      <span className="text-4xl block mb-2 group-hover:animate-bounce-kids">
-        {game.emoji}
-      </span>
-
-      {/* Arabic name */}
-      <h3 className="font-bold text-gray-700 text-sm mb-1">{game.nameAr}</h3>
-
-      {/* Description */}
-      <p className="text-xs text-gray-500 line-clamp-2">{game.descriptionAr}</p>
-
-      {/* Category badge */}
+      {/* Category badge - Smaller on mobile */}
       <span
-        className="absolute top-2 left-2 text-xs px-2 py-0.5 rounded-full font-medium"
+        className="absolute top-2 left-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium"
         style={{
           backgroundColor: `${category.color}20`,
           color: category.color,
@@ -43,6 +32,21 @@ export default function GameCard({ game, onClick }: GameCardProps) {
       >
         {category.ar}
       </span>
+
+      {/* Emoji - Larger on mobile for visual impact */}
+      <span className="text-4xl sm:text-5xl block mb-1 sm:mb-2 mt-4 sm:mt-2 group-hover:animate-bounce-kids filter drop-shadow-sm">
+        {game.emoji}
+      </span>
+
+      {/* Arabic name */}
+      <h3 className="font-bold text-gray-800 text-sm sm:text-lg mb-0.5 sm:mb-1 text-center sm:text-right w-full truncate">
+        {game.nameAr}
+      </h3>
+
+      {/* Description - Hiden on very small screens, shown on larger */}
+      <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 text-center sm:text-right hidden xs:block">
+        {game.descriptionAr}
+      </p>
 
       {/* Color accent line */}
       <div

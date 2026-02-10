@@ -68,7 +68,7 @@ export default function KidsChatBubble({
       {/* Avatar */}
       {!isUser && (
         <div className="flex-shrink-0">
-          <MiniMascot state={isStreaming ? "thinking" : "happy"} />
+          <MiniMascot state={isStreaming ? "thinking" : "happy"} size="xs" />
         </div>
       )}
 
@@ -84,10 +84,9 @@ export default function KidsChatBubble({
           relative max-w-[80%] sm:max-w-[70%]
           rounded-3xl px-5 py-4
           transition-all duration-300
-          ${
-            isUser
-              ? "bg-gradient-to-br from-[var(--kids-green)] to-[#3DBDB2] text-white shadow-lg shadow-[var(--kids-green)]/30"
-              : `${bubbleColor?.bg} ${bubbleColor?.border} border-3 shadow-lg`
+          ${isUser
+            ? "bg-gradient-to-br from-[var(--kids-green)] to-[#3DBDB2] text-white shadow-lg shadow-[var(--kids-green)]/30"
+            : `${bubbleColor?.bg} ${bubbleColor?.border} border-3 shadow-lg`
           }
         `}
       >

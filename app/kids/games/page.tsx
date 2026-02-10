@@ -48,7 +48,7 @@ function GamesHub() {
 
   const profileId = activeProfile?.id;
   const { points, level, unlockedStickers, progressToNextLevel } = useRewards(profileId);
-  const { totalCount } = useStickers(unlockedStickers, () => {});
+  const { totalCount } = useStickers(unlockedStickers, () => { });
 
   if (!isLoaded) return null;
 
@@ -83,18 +83,20 @@ function GamesHub() {
   return (
     <AnimatedBackground variant="sky" showClouds>
       <div className="relative flex h-screen flex-col overflow-hidden">
-        {/* Header */}
-        <header className="shrink-0 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <ProfileSwitcher
-              profiles={profiles}
-              activeProfile={activeProfile}
-              onSwitch={switchProfile}
-              onAddNew={() => setShowProfileSetup(true)}
-              onEdit={() => setShowProfileSetup(true)}
-              onDelete={deleteProfile}
-            />
-            <div className="flex-1">
+        {/* Header - Consistent mobile style */}
+        <header className="shrink-0 px-3 py-2 sm:px-4 sm:py-3 z-10 w-full">
+          <div className="flex items-center gap-2 sm:gap-4 max-w-5xl mx-auto">
+            <div className="shrink-0">
+              <ProfileSwitcher
+                profiles={profiles}
+                activeProfile={activeProfile}
+                onSwitch={switchProfile}
+                onAddNew={() => setShowProfileSetup(true)}
+                onEdit={() => setShowProfileSetup(true)}
+                onDelete={deleteProfile}
+              />
+            </div>
+            <div className="flex-1 min-w-0 flex justify-end">
               <RewardsBar
                 points={points}
                 level={level}
@@ -102,7 +104,7 @@ function GamesHub() {
                 unlockedStickersCount={unlockedStickers.length}
                 totalStickersCount={totalCount}
                 pointsEarned={0}
-                onOpenStickers={() => {}}
+                onOpenStickers={() => { }}
                 soundEnabled={soundEnabled}
                 onToggleSound={toggleSound}
               />
@@ -111,19 +113,22 @@ function GamesHub() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto px-4 py-4">
-          <div className="mx-auto max-w-2xl">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth">
+          <div className="mx-auto max-w-2xl pb-20">
             {/* Title */}
-            <div className="text-center mb-6">
-              <AnimatedMascot state="happy" size="lg" />
-              <h1 className="text-2xl font-bold text-[var(--kids-purple)] mt-2 bubble-text">
+            <div className="text-center mb-6 pt-2">
+              <AnimatedMascot state="happy" size="lg" className="mb-2" />
+              <h1 className="text-2xl sm:text-3xl font-black text-[var(--kids-purple)] tracking-wide drop-shadow-sm bubble-text">
                 يلا نلعب! 🎮
               </h1>
-              <p className="text-gray-500 text-sm">اختار لعبة ممتعة!</p>
+              <p className="text-gray-600 text-sm sm:text-base font-medium mt-1">اختار لعبة ممتعة!</p>
             </div>
 
-            {/* Category tabs */}
-            <div className="flex gap-2 justify-center mb-6">
+            {/* Category tabs - Horizontally Scrollable on Mobile */}
+            <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 px-1 -mx-3 sm:mx-0 sm:justify-center sm:overflow-visible no-scrollbar scroll-pl-3 snap-x">
+              {/* Spacer for scroll start */}
+              <div className="w-1 sm:hidden shrink-0 snap-start" />
+
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
@@ -131,24 +136,27 @@ function GamesHub() {
                     setActiveCategory(cat.id);
                     playClick();
                   }}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                    activeCategory === cat.id
-                      ? "text-white shadow-md scale-105"
-                      : "bg-white/70 text-gray-600 hover:bg-white"
-                  }`}
+                  className={`snap-start shrink-0 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition-all border-2 ${activeCategory === cat.id
+                      ? "text-white shadow-lg scale-105 border-transparent"
+                      : "bg-white/60 text-gray-600 border-transparent hover:bg-white hover:border-white/50"
+                    }`}
                   style={
                     activeCategory === cat.id
-                      ? { backgroundColor: cat.color }
+                      ? { backgroundColor: cat.color, boxShadow: `0 4px 12px ${cat.color}66` }
                       : undefined
                   }
                 >
-                  {cat.emoji} {cat.label}
+                  <span className="mr-2 text-lg">{cat.emoji}</span>
+                  {cat.label}
                 </button>
               ))}
+
+              {/* Spacer for scroll end */}
+              <div className="w-1 sm:hidden shrink-0 snap-end" />
             </div>
 
             {/* Games grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
               {games.map((game, index) => (
                 <div
                   key={game.id}
@@ -168,12 +176,12 @@ function GamesHub() {
           </div>
         </main>
 
-        {/* Back button */}
-        <div className="shrink-0 px-4 py-4 bg-white/80 backdrop-blur-sm">
-          <div className="mx-auto max-w-2xl">
+        {/* Floating Back button */}
+        <div className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none">
+          <div className="mx-auto max-w-sm pointer-events-auto">
             <button
               onClick={() => router.push("/kids")}
-              className="w-full py-3 bg-[var(--kids-purple)] text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-transform shadow-md"
+              className="w-full py-3.5 bg-white/90 backdrop-blur-md text-[var(--kids-purple)] border-2 border-[var(--kids-purple)]/20 rounded-2xl font-black text-base shadow-[0_8px_20px_rgba(0,0,0,0.1)] hover:scale-[1.02] active:scale-95 transition-all hover:bg-[var(--kids-purple)] hover:text-white"
             >
               ← رجوع للدردشة
             </button>

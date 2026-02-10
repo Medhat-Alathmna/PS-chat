@@ -6,6 +6,7 @@ import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
 interface SpeechInputProps {
   onTranscript: (text: string) => void;
   disabled?: boolean;
+  className?: string;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -17,9 +18,8 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 /**
  * Mic input button for speech-to-text
- * Circular button matching send button style (h-12 w-12)
  */
-export default function SpeechInput({ onTranscript, disabled }: SpeechInputProps) {
+export default function SpeechInput({ onTranscript, disabled, className }: SpeechInputProps) {
   const {
     isListening,
     isSupported,
@@ -50,13 +50,11 @@ export default function SpeechInput({ onTranscript, disabled }: SpeechInputProps
         onClick={toggleListening}
         disabled={disabled}
         className={`
-          flex h-12 w-12 items-center justify-center rounded-2xl text-xl
-          transition-all hover:scale-105 active:scale-95
-          disabled:opacity-40 disabled:hover:scale-100 shadow-md
-          ${
-            isListening
-              ? "bg-red-500 text-white animate-mic-pulse"
-              : "bg-[var(--kids-blue)] text-white"
+          flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 shadow-md transform
+          ${className || "h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl"}
+          ${isListening
+            ? "bg-red-500 text-white animate-mic-pulse"
+            : "bg-[var(--kids-blue)] text-white"
           }
         `}
         aria-label={isListening ? "إيقاف الاستماع" : "تحدث بدل الكتابة"}

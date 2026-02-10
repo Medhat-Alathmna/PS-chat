@@ -35,70 +35,83 @@ export default function GameHeader({
   const diffLabel = state.difficulty ? DIFFICULTY_LABELS[state.difficulty] : null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-md">
+    <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-sm sm:shadow-md border border-[var(--kids-purple)]/10">
       {/* Back button */}
       <button
         onClick={onBack}
-        className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all text-lg"
+        className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all text-base sm:text-lg"
         aria-label="رجوع"
       >
-        →
+        <span className="transform -scale-x-100">➜</span>
       </button>
 
       {/* Game info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-lg">{config.emoji}</span>
-          <h2 className="font-bold text-sm text-gray-700 truncate">{config.nameAr}</h2>
+      <div className="flex-1 min-w-0 flex items-center gap-1.5 sm:gap-2">
+        <span className="text-base sm:text-lg shrink-0">{config.emoji}</span>
+        <div className="min-w-0 flex flex-col justify-center">
+          <h2 className="font-bold text-xs sm:text-sm text-gray-800 truncate leading-tight">
+            {config.nameAr}
+          </h2>
           {diffLabel && (
-            <span
-              className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
-              style={{
-                backgroundColor: `${diffLabel.color}20`,
-                color: diffLabel.color,
-              }}
-            >
-              {diffLabel.stars}
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] sm:text-xs text-gray-400 leading-tight hidden sm:inline">Normal</span>
+              <span
+                className="text-[10px] sm:text-xs px-1.5 py-0 rounded-full font-medium inline-flex items-center"
+                style={{
+                  backgroundColor: `${diffLabel.color}15`,
+                  color: diffLabel.color,
+                }}
+              >
+                {diffLabel.ar}
+              </span>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Round counter */}
-      <div className="text-center px-2">
-        <div className="text-xs text-gray-500">جولة</div>
-        <div className="font-bold text-sm text-[var(--kids-purple)]">
-          {state.round}
-          {typeof state.totalRounds === "number" && `/${state.totalRounds}`}
+      <div className="flex items-center gap-1 sm:gap-3 px-1 sm:px-2 border-r border-l border-gray-100 mx-1">
+        {/* Round counter */}
+        <div className="text-center">
+          <div className="text-[10px] text-gray-400 hidden sm:block">جولة</div>
+          <div className="font-bold text-xs sm:text-sm text-[var(--kids-purple)] flex items-center gap-0.5">
+            <span className="sm:hidden text-[10px]">🔄</span>
+            {state.round}
+            {typeof state.totalRounds === "number" && <span className="opacity-60 text-[10px] sm:text-xs">/{state.totalRounds}</span>}
+          </div>
+        </div>
+
+        {/* Score */}
+        <div className="text-center">
+          <div className="text-[10px] text-gray-400 hidden sm:block">نقاط</div>
+          <div className="font-bold text-xs sm:text-sm text-[var(--kids-orange)] flex items-center gap-0.5">
+            <span className="sm:hidden text-[10px]">⭐</span>
+            {state.score}
+          </div>
         </div>
       </div>
 
-      {/* Score */}
-      <div className="text-center px-2 border-r border-gray-200">
-        <div className="text-xs text-gray-500">نقاط</div>
-        <div className="font-bold text-sm text-[var(--kids-orange)]">
-          {state.score} ⭐
-        </div>
+      {/* Actions */}
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        {/* Voice toggle */}
+        {onToggleVoice && voiceSupported && (
+          <VoiceToggle
+            voiceEnabled={!!voiceEnabled}
+            onToggle={onToggleVoice}
+            isSpeaking={isSpeaking}
+            isSupported={voiceSupported}
+            className="w-8 h-8 sm:w-9 sm:h-9 text-base sm:text-lg border border-gray-100"
+          />
+        )}
+
+        {/* Sound toggle */}
+        <button
+          onClick={onToggleSound}
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all text-sm sm:text-base"
+          aria-label={soundEnabled ? "كتم الصوت" : "تشغيل الصوت"}
+        >
+          {soundEnabled ? "🔊" : "🔇"}
+        </button>
       </div>
-
-      {/* Voice toggle */}
-      {onToggleVoice && voiceSupported && (
-        <VoiceToggle
-          voiceEnabled={!!voiceEnabled}
-          onToggle={onToggleVoice}
-          isSpeaking={isSpeaking}
-          isSupported={voiceSupported}
-        />
-      )}
-
-      {/* Sound toggle */}
-      <button
-        onClick={onToggleSound}
-        className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
-        aria-label={soundEnabled ? "كتم الصوت" : "تشغيل الصوت"}
-      >
-        {soundEnabled ? "🔊" : "🔇"}
-      </button>
     </div>
   );
 }

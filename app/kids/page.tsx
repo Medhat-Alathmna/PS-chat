@@ -421,14 +421,14 @@ function KidsPageInner() {
       text: trimmed || "🖼️",
       ...(currentImage
         ? {
-            files: [
-              {
-                type: "file" as const,
-                mediaType: currentImage.mediaType,
-                url: currentImage.url,
-              },
-            ],
-          }
+          files: [
+            {
+              type: "file" as const,
+              mediaType: currentImage.mediaType,
+              url: currentImage.url,
+            },
+          ],
+        }
         : {}),
     });
   };
@@ -489,9 +489,9 @@ function KidsPageInner() {
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
       <div className="relative flex h-screen flex-col overflow-hidden" key={activeProfile.id}>
-        {/* Header with rewards */}
-        <header className="shrink-0 px-4 py-3">
-          <div className="flex items-center gap-2">
+        {/* Header with rewards - Optimized for mobile */}
+        <header className="shrink-0 px-3 py-2 sm:px-4 sm:py-3 z-10">
+          <div className="flex items-center gap-2 sm:gap-4 max-w-5xl mx-auto">
             {/* Profile switcher */}
             <ProfileSwitcher
               profiles={profiles}
@@ -504,12 +504,12 @@ function KidsPageInner() {
               onAddNew={() => setShowProfileSetup(true)}
               onEdit={(id) => {
                 setEditingProfileId(id);
-                // For simplicity, use ProfileSetup to edit
                 setShowProfileSetup(true);
               }}
               onDelete={deleteProfile}
             />
-            <div className="flex-1">
+
+            <div className="flex-1 min-w-0">
               <RewardsBar
                 points={points}
                 level={level}
@@ -526,18 +526,20 @@ function KidsPageInner() {
                 voiceSupported={voiceSupported}
               />
             </div>
+
             <button
               onClick={() => router.push("/kids/games")}
-              className="shrink-0 px-3 py-2 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-xl font-bold text-sm hover:scale-105 active:scale-95 transition-transform shadow-md"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-2xl font-bold text-sm sm:text-base hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
             >
-              🎮 ألعاب
+              <span className="text-lg">🎮</span>
+              <span className="hidden sm:inline">ألعاب</span>
             </button>
           </div>
         </header>
 
         {/* Chat Messages */}
-        <main className="flex-1 overflow-y-auto px-4 py-4" ref={chatContainerRef}>
-          <div className="mx-auto max-w-2xl flex flex-col gap-4">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
+          <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
             {messages.map((message, index) => (
               <KidsChatBubble
                 key={message.id}
@@ -560,21 +562,21 @@ function KidsPageInner() {
           </div>
         </main>
 
-        {/* Input Area */}
-        <div className="shrink-0 border-t-2 border-[var(--kids-yellow)]/30 bg-white/90 backdrop-blur-sm px-4 py-4">
+        {/* Input Area - Modern Floating Design */}
+        <div className="shrink-0 p-3 sm:p-4 z-20">
           {/* Image preview */}
           {imagePreview && (
-            <div className="mx-auto max-w-2xl mb-2">
-              <div className="relative inline-block">
+            <div className="mx-auto max-w-2xl mb-3 animate-fade-in-up">
+              <div className="relative inline-block group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imagePreview.url}
                   alt="معاينة الصورة"
-                  className="h-20 w-20 object-cover rounded-2xl border-3 border-[var(--kids-purple)]/30 shadow-md"
+                  className="h-24 w-24 object-cover rounded-2xl border-4 border-white shadow-lg rotate-2 group-hover:rotate-0 transition-transform duration-300"
                 />
                 <button
                   onClick={() => setImagePreview(null)}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md hover:scale-110 active:scale-95 transition-transform"
+                  className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md hover:scale-110 active:scale-95 transition-transform border-2 border-white"
                   aria-label="إزالة الصورة"
                 >
                   ✕
@@ -596,56 +598,63 @@ function KidsPageInner() {
               onChange={handleImageSelect}
             />
 
-            <div className="flex items-end gap-3 rounded-3xl border-3 border-[var(--kids-purple)]/30 bg-white px-4 py-3 shadow-lg focus-within:border-[var(--kids-purple)] transition-colors">
-              {/* Mini mascot */}
-              <AnimatedMascot
-                state={isSpeaking ? "speaking" : isLoading ? "thinking" : "idle"}
-                size="sm"
-                className="hidden sm:block"
-              />
+            <div className="flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/80 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white">
 
               {/* Camera button */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--kids-purple)]/10 text-lg transition-all hover:scale-105 hover:bg-[var(--kids-purple)]/20 active:scale-95 disabled:opacity-40"
+                className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-purple-50 text-[var(--kids-purple)] transition-all hover:bg-purple-100 active:scale-90 disabled:opacity-40"
                 aria-label="إرفاق صورة"
               >
-                📷
+                <span className="text-xl sm:text-2xl">📷</span>
               </button>
 
-              <textarea
-                ref={textareaRef}
-                className="min-h-[40px] flex-1 resize-none bg-transparent text-base text-gray-700 placeholder:text-gray-400 focus:outline-none leading-6"
-                placeholder="اسأل مدحت عن فلسطين! 🇵🇸"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                maxLength={500}
-                disabled={isLoading}
-                dir="auto"
-              />
+              <div className="flex-1 min-w-0 py-2 sm:py-3">
+                <textarea
+                  ref={textareaRef}
+                  className="w-full max-h-[120px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-1"
+                  placeholder="اسأل مدحت... 🇵🇸"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  maxLength={500}
+                  disabled={isLoading}
+                  dir="auto"
+                />
+              </div>
 
               {/* Mic button for speech input */}
-              <SpeechInput
-                onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
-                disabled={isLoading}
-              />
+              <div className="shrink-0">
+                <SpeechInput
+                  onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                  disabled={isLoading}
+                />
+              </div>
 
               <button
                 type="submit"
                 disabled={!canSend}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--kids-green)] text-white text-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 shadow-md"
+                className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
                 aria-label="إرسال"
               >
                 {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
-                  "🚀"
+                  <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
                 )}
               </button>
+            </div>
+
+            {/* Helper text or mascot placement */}
+            <div className="flex justify-center mt-2 h-6">
+              <AnimatedMascot
+                state={isSpeaking ? "speaking" : isLoading ? "thinking" : "idle"}
+                size="xs"
+                className={isLoading || isSpeaking ? "opacity-100 scale-100" : "opacity-0 scale-90"}
+              />
             </div>
           </form>
         </div>

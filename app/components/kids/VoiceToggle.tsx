@@ -5,6 +5,7 @@ interface VoiceToggleProps {
   onToggle: () => void;
   isSpeaking: boolean;
   isSupported: boolean;
+  className?: string;
 }
 
 /**
@@ -16,13 +17,14 @@ export default function VoiceToggle({
   onToggle,
   isSpeaking,
   isSupported,
+  className = "w-10 h-10 text-xl",
 }: VoiceToggleProps) {
   if (!isSupported) return null;
 
   return (
     <button
       onClick={onToggle}
-      className="relative w-10 h-10 flex items-center justify-center bg-gray-100 rounded-xl text-xl hover:bg-gray-200 active:scale-95 transition-all"
+      className={`relative flex items-center justify-center bg-gray-100 rounded-xl hover:bg-gray-200 active:scale-95 transition-all ${className}`}
       aria-label={voiceEnabled ? "إيقاف القراءة الصوتية" : "تفعيل القراءة الصوتية"}
       role="switch"
       aria-checked={voiceEnabled}

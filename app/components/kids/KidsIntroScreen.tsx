@@ -73,8 +73,13 @@ export default function KidsIntroScreen({
         {/* Main content */}
         <div className="text-center max-w-2xl mx-auto">
           {/* Mascot */}
-          <div className="mb-6">
-            <AnimatedMascot state="waving" size="xl" showName />
+          <div className="mb-4 sm:mb-6">
+            <div className="sm:hidden">
+              <AnimatedMascot state="waving" size="lg" showName />
+            </div>
+            <div className="hidden sm:block">
+              <AnimatedMascot state="waving" size="xl" showName />
+            </div>
           </div>
 
           {/* Welcome text */}
@@ -92,7 +97,7 @@ export default function KidsIntroScreen({
           </div>
 
           {/* Suggestion cards */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-xl mx-auto w-full">
             {prompts.map((prompt, index) => (
               <PromptCard
                 key={prompt.id}
@@ -109,12 +114,12 @@ export default function KidsIntroScreen({
           {/* Games button */}
           <button
             onClick={() => router.push("/kids/games")}
-            className="mt-6 w-full max-w-xl mx-auto flex items-center justify-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white font-bold text-lg shadow-lg hover:scale-105 active:scale-95 transition-all animate-fade-in-up"
+            className="mt-6 w-full max-w-xl mx-auto flex items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white font-bold text-base sm:text-lg shadow-lg hover:scale-105 active:scale-95 transition-all animate-fade-in-up"
             style={{ animationDelay: "400ms" }}
           >
-            <span className="text-2xl">🎮</span>
+            <span className="text-xl sm:text-2xl">🎮</span>
             يلا نلعب ألعاب!
-            <span className="text-2xl">🎯</span>
+            <span className="text-xl sm:text-2xl">🎯</span>
           </button>
 
           {/* Or type your own */}
@@ -125,8 +130,10 @@ export default function KidsIntroScreen({
           </div>
         </div>
 
-        {/* Fun decorations */}
-        <FloatingEmojis />
+        {/* Fun decorations - Hidden on mobile */}
+        <div className="hidden sm:block">
+          <FloatingEmojis />
+        </div>
       </div>
 
       {/* علم فلسطين - سارية في الأسفل */}

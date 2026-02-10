@@ -394,24 +394,26 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
       <div className="relative flex h-screen flex-col overflow-hidden">
-        {/* Game header */}
-        <header className="shrink-0 px-4 py-2">
-          <GameHeader
-            config={config}
-            state={gameState.state}
-            soundEnabled={soundEnabled}
-            onToggleSound={toggleSound}
-            onBack={() => router.push("/kids/games")}
-            voiceEnabled={voiceEnabled}
-            onToggleVoice={toggleVoice}
-            isSpeaking={isSpeaking}
-            voiceSupported={voiceSupported}
-          />
+        {/* Game header - Mobile Compact */}
+        <header className="shrink-0 px-3 py-2 z-10 w-full">
+          <div className="mx-auto max-w-4xl">
+            <GameHeader
+              config={config}
+              state={gameState.state}
+              soundEnabled={soundEnabled}
+              onToggleSound={toggleSound}
+              onBack={() => router.push("/kids/games")}
+              voiceEnabled={voiceEnabled}
+              onToggleVoice={toggleVoice}
+              isSpeaking={isSpeaking}
+              voiceSupported={voiceSupported}
+            />
+          </div>
         </header>
 
         {/* Chat area */}
-        <main className="flex-1 overflow-y-auto px-4 py-4" ref={chatContainerRef}>
-          <div className="mx-auto max-w-2xl flex flex-col gap-3">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
+          <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
             {displayMessages.map((msg, index) => (
               <GameChatBubble
                 key={msg.id}
@@ -434,7 +436,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               />
             ))}
 
-            {/* Active options — always rendered at the bottom of chat */}
+            {/* Active options — render prominently at bottom */}
             {activeOptions && (
               <ActiveOptionsBlock
                 optionsData={activeOptions.data}
@@ -450,16 +452,17 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           </div>
         </main>
 
-        {/* Input area */}
-        <div className={`shrink-0 border-t-2 border-[var(--kids-yellow)]/30 bg-white/90 backdrop-blur-sm px-4 transition-all ${hasActiveOptions ? "py-1.5" : "py-3"}`}>
+        {/* Input area - Floating Capsule Design */}
+        <div className="shrink-0 p-3 sm:p-4 z-20">
           <form
             onSubmit={(event) => void handleSubmit(event)}
             className="mx-auto max-w-2xl"
           >
-            <div className={`flex items-end gap-2 rounded-2xl border-2 border-[var(--kids-purple)]/30 bg-white px-3 shadow-md focus-within:border-[var(--kids-purple)] transition-all ${hasActiveOptions ? "py-1 gap-2" : "py-2 gap-3"}`}>
+            <div className={`flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/90 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white ${hasActiveOptions ? "opacity-90 grayscale-[0.5]" : ""}`}>
+
               <textarea
                 ref={textareaRef}
-                className={`flex-1 resize-none bg-transparent text-gray-700 placeholder:text-gray-400 focus:outline-none leading-5 transition-all ${hasActiveOptions ? "min-h-[28px] text-xs" : "min-h-[36px] text-sm"}`}
+                className="flex-1 max-h-[100px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-2 py-2"
                 placeholder={hasActiveOptions ? "أو اكتب جوابك... ✍️" : "اكتب جوابك هنا... ✍️"}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
@@ -471,21 +474,23 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               />
 
               {/* Mic button for speech input */}
-              <SpeechInput
-                onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
-                disabled={isLoading}
-              />
+              <div className="shrink-0">
+                <SpeechInput
+                  onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                  disabled={isLoading}
+                />
+              </div>
 
               <button
                 type="submit"
                 disabled={!canSend}
-                className={`flex items-center justify-center rounded-xl bg-[var(--kids-green)] text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-40 shadow-md ${hasActiveOptions ? "h-8 w-8 text-base" : "h-10 w-10 text-lg"}`}
+                className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
                 aria-label="إرسال"
               >
                 {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
-                  "🚀"
+                  <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
                 )}
               </button>
             </div>
@@ -511,25 +516,32 @@ function ActiveOptionsBlock({
   onHintClick: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-2 animate-pop-in mr-10">
-      {optionsData.options.map((option, i) => (
-        <button
-          key={i}
-          onClick={() => onOptionClick(i + 1)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-right transition-all shadow-sm bg-purple-50 border-2 border-[var(--kids-purple)]/30 text-gray-700 hover:bg-purple-100 hover:border-[var(--kids-purple)] hover:scale-[1.02] active:scale-95 cursor-pointer"
-          dir="auto"
-        >
-          <span className="text-lg shrink-0">{NUMBER_EMOJIS[i]}</span>
-          <span className="leading-relaxed">{option}</span>
-        </button>
-      ))}
+    <div className="flex flex-col gap-3 animate-pop-in my-2">
+      <div className="text-center text-sm text-[var(--kids-purple)] font-bold opacity-80 mb-1">
+        اختار الإجابة الصحيحة 👇
+      </div>
+      <div className="grid gap-3">
+        {optionsData.options.map((option, i) => (
+          <button
+            key={i}
+            onClick={() => onOptionClick(i + 1)}
+            className="group relative flex items-center gap-3 px-5 py-4 rounded-3xl text-right transition-all shadow-md bg-white border-2 border-[var(--kids-purple)]/20 text-gray-800 hover:bg-purple-50 hover:border-[var(--kids-purple)] hover:scale-[1.02] hover:shadow-lg active:scale-95 cursor-pointer overflow-hidden"
+            dir="auto"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[var(--kids-purple)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="text-2xl shrink-0 filter drop-shadow-sm">{NUMBER_EMOJIS[i]}</span>
+            <span className="text-base sm:text-lg font-bold leading-relaxed">{option}</span>
+          </button>
+        ))}
+      </div>
+
       {optionsData.allowHint && (
         <button
           onClick={() => onHintClick()}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-500 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+          className="self-center mt-2 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm sm:text-base font-bold bg-yellow-100 text-yellow-800 border-2 border-yellow-300 hover:bg-yellow-200 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"
         >
-          <span className="text-lg">💡</span>
-          <span>تلميح</span>
+          <span className="text-xl">💡</span>
+          <span>أحتاج مساعدة (تلميح)</span>
         </button>
       )}
     </div>

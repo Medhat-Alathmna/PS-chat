@@ -51,17 +51,17 @@ export default function ProfileSwitcher({
       {/* Collapsed pill */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all border-2"
+        className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all border-2"
         style={{ borderColor: accentColor }}
       >
-        <span className="text-lg">{activeProfile.avatar}</span>
+        <span className="text-base sm:text-lg">{activeProfile.avatar}</span>
         <span
-          className="font-bold text-sm max-w-[80px] truncate"
+          className="font-bold text-xs sm:text-sm max-w-[80px] truncate hidden sm:block"
           style={{ color: accentColor }}
         >
           {activeProfile.name || "بطل"}
         </span>
-        <span className={`text-xs text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}>
+        <span className={`text-[10px] sm:text-xs text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}>
           ▼
         </span>
       </button>
@@ -74,11 +74,10 @@ export default function ProfileSwitcher({
             {profiles.map((p) => (
               <div
                 key={p.id}
-                className={`flex items-center gap-2 px-3 py-2.5 transition-colors ${
-                  p.id === activeProfile.id
+                className={`flex items-center gap-2 px-3 py-2.5 transition-colors ${p.id === activeProfile.id
                     ? "bg-[var(--kids-purple)]/10"
                     : "hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <button
                   onClick={() => {
