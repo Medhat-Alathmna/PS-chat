@@ -43,8 +43,6 @@ export default function AnimatedBackground({
       {/* Stars (for night mode) */}
       {(showStars || variant === "night") && <Stars />}
 
-      {/* Palestinian flag stripe at top */}
-      <div className="kids-ps-stripe" />
 
       {/* Content */}
       <div className="relative z-10">{children}</div>

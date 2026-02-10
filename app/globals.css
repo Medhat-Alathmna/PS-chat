@@ -524,21 +524,6 @@ code {
   100% { background-position: 0% 50%; }
 }
 
-/* Palestinian flag stripe for kids */
-.kids-ps-stripe {
-  height: 8px;
-  background: linear-gradient(to right,
-    var(--ps-black) 0%,
-    var(--ps-black) 25%,
-    var(--ps-white) 25%,
-    var(--ps-white) 50%,
-    var(--ps-green) 50%,
-    var(--ps-green) 75%,
-    var(--ps-red) 75%,
-    var(--ps-red) 100%
-  );
-}
-
 /* Bubble text for kids */
 .bubble-text {
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);

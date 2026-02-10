@@ -489,9 +489,6 @@ function KidsPageInner() {
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
       <div className="relative flex h-screen flex-col overflow-hidden" key={activeProfile.id}>
-        {/* Palestinian Flag Stripe */}
-        <div className="kids-ps-stripe shrink-0" />
-
         {/* Header with rewards */}
         <header className="shrink-0 px-4 py-3">
           <div className="flex items-center gap-2">

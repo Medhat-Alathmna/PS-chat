@@ -83,9 +83,6 @@ function GamesHub() {
   return (
     <AnimatedBackground variant="sky" showClouds>
       <div className="relative flex h-screen flex-col overflow-hidden">
-        {/* Palestinian stripe */}
-        <div className="kids-ps-stripe shrink-0" />
-
         {/* Header */}
         <header className="shrink-0 px-4 py-3">
           <div className="flex items-center gap-2">

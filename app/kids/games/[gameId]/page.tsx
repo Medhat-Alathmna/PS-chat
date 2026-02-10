@@ -394,9 +394,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
       <div className="relative flex h-screen flex-col overflow-hidden">
-        {/* Palestinian stripe */}
-        <div className="kids-ps-stripe shrink-0" />
-
         {/* Game header */}
         <header className="shrink-0 px-4 py-2">
           <GameHeader
