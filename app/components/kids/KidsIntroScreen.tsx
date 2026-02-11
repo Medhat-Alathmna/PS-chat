@@ -13,6 +13,9 @@ interface KidsIntroScreenProps {
   points?: number;
   level?: RewardLevel;
   playerName?: string;
+  isMusicPlaying?: boolean;
+  isMusicLoaded?: boolean;
+  onToggleMusic?: () => void;
 }
 
 /**
@@ -23,6 +26,9 @@ export default function KidsIntroScreen({
   points = 0,
   level,
   playerName,
+  isMusicPlaying = false,
+  isMusicLoaded = false,
+  onToggleMusic,
 }: KidsIntroScreenProps) {
   const router = useRouter();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -60,6 +66,21 @@ export default function KidsIntroScreen({
       )}
 
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+        {/* Music toggle button - Top left */}
+        {onToggleMusic && (
+          <button
+            onClick={onToggleMusic}
+            disabled={!isMusicLoaded}
+            className="absolute top-4 left-4 flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 z-20"
+            aria-label={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+            title={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+          >
+            <span className="text-2xl sm:text-3xl">
+              {isMusicPlaying ? "🎵" : "🔇"}
+            </span>
+          </button>
+        )}
+
         {/* Level indicator (if exists) */}
         {level && points > 0 && (
           <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">

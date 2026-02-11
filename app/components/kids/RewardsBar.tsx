@@ -143,21 +143,7 @@ export default function RewardsBar({
           />
         )}
 
-        {/* Sound toggle */}
-        {onToggleSound && (
-          <button
-            onClick={onToggleSound}
-            className="
-              w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center
-              bg-gray-100 rounded-xl text-base sm:text-xl
-              hover:bg-gray-200 active:scale-95
-              transition-all
-            "
-            aria-label={soundEnabled ? "كتم الصوت" : "تشغيل الصوت"}
-          >
-            {soundEnabled ? "🔊" : "🔇"}
-          </button>
-        )}
+       
       </div>
     </div>
   );

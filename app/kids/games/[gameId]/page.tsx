@@ -102,7 +102,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   const profileId = activeProfile?.id;
 
-  const { soundEnabled, toggleSound, playSound } = useSounds();
+  const { soundEnabled, playSound } = useSounds();
   const {
     voiceEnabled,
     isSpeaking,
@@ -450,8 +450,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             <GameHeader
               config={config}
               state={gameState.state}
-              soundEnabled={soundEnabled}
-              onToggleSound={toggleSound}
               onBack={() => router.push("/kids/games")}
               voiceEnabled={voiceEnabled}
               onToggleVoice={toggleVoice}

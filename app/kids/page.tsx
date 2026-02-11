@@ -67,6 +67,7 @@ import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
 import { useChatContext } from "@/lib/hooks/useChatContext";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
+import { useBackgroundMusicContext } from "./layout";
 import { getStickerById } from "@/lib/data/stickers";
 
 export default function KidsPage() {
@@ -87,6 +88,9 @@ function KidsPageInner() {
 
   // Map state
   const [highlightedCityId, setHighlightedCityId] = useState<string | null>(null);
+
+  // Background music - Use context from layout to avoid duplicate music
+  const { isPlaying: isMusicPlaying, toggle: toggleMusic, isLoaded: isMusicLoaded } = useBackgroundMusicContext();
 
   // Profiles system
   const {
@@ -520,6 +524,9 @@ function KidsPageInner() {
         points={points}
         level={level}
         playerName={activeProfile.name}
+        isMusicPlaying={isMusicPlaying}
+        isMusicLoaded={isMusicLoaded}
+        onToggleMusic={toggleMusic}
       />
     );
   }
@@ -564,6 +571,19 @@ function KidsPageInner() {
                 voiceSupported={voiceSupported}
               />
             </div>
+
+            {/* Background music toggle */}
+            <button
+              onClick={toggleMusic}
+              disabled={!isMusicLoaded}
+              className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+              aria-label={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+              title={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+            >
+              <span className="text-xl sm:text-2xl">
+                {isMusicPlaying ? "🎵" : "🔇"}
+              </span>
+            </button>
 
             <button
               onClick={() => router.push("/kids/games")}

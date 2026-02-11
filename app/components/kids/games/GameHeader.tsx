@@ -2,6 +2,7 @@
 
 import { GameConfig, GameState, GameDifficulty } from "@/lib/types/games";
 import VoiceToggle from "../VoiceToggle";
+import { useBackgroundMusicContext } from "@/app/kids/layout";
 
 const DIFFICULTY_LABELS: Record<GameDifficulty, { ar: string; stars: string; color: string }> = {
   easy: { ar: "سهل", stars: "⭐", color: "#00B894" },
@@ -12,8 +13,6 @@ const DIFFICULTY_LABELS: Record<GameDifficulty, { ar: string; stars: string; col
 interface GameHeaderProps {
   config: GameConfig;
   state: GameState;
-  soundEnabled: boolean;
-  onToggleSound: () => void;
   onBack: () => void;
   voiceEnabled?: boolean;
   onToggleVoice?: () => void;
@@ -24,8 +23,6 @@ interface GameHeaderProps {
 export default function GameHeader({
   config,
   state,
-  soundEnabled,
-  onToggleSound,
   onBack,
   voiceEnabled,
   onToggleVoice,
@@ -33,6 +30,9 @@ export default function GameHeader({
   voiceSupported = false,
 }: GameHeaderProps) {
   const diffLabel = state.difficulty ? DIFFICULTY_LABELS[state.difficulty] : null;
+
+  // Get background music context for controlling music
+  const backgroundMusic = useBackgroundMusicContext();
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-sm sm:shadow-md border border-[var(--kids-purple)]/10">
@@ -103,13 +103,13 @@ export default function GameHeader({
           />
         )}
 
-        {/* Sound toggle */}
+        {/* Music toggle - controls background music */}
         <button
-          onClick={onToggleSound}
+          onClick={backgroundMusic.toggle}
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all text-sm sm:text-base"
-          aria-label={soundEnabled ? "كتم الصوت" : "تشغيل الصوت"}
+          aria-label={backgroundMusic.isPlaying ? "كتم الموسيقى" : "تشغيل الموسيقى"}
         >
-          {soundEnabled ? "🔊" : "🔇"}
+          {backgroundMusic.isPlaying ? "🔊" : "🔇"}
         </button>
       </div>
     </div>
