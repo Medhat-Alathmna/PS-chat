@@ -22,7 +22,20 @@ import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../componen
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
-import CartoonPalestineMap, { CITIES } from "../../../components/kids/CartoonPalestineMap";
+import dynamic from "next/dynamic";
+import { CITIES, detectCityInText } from "@/lib/data/cities";
+
+const PalestineLeafletMap = dynamic(
+  () => import("../../../components/kids/PalestineLeafletMap"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full bg-sky-100/30 rounded-2xl">
+        <div className="w-6 h-6 border-2 border-[var(--kids-purple)]/30 border-t-[var(--kids-purple)] rounded-full animate-spin" />
+      </div>
+    ),
+  }
+);
 
 export default function GamePage() {
   return (
@@ -57,27 +70,6 @@ function GamePageInner() {
   }
 
   return <GameSession gameId={gameId} config={config} />;
-}
-
-// City name → city ID mapping for map integration
-const CITY_NAME_MAP: Record<string, string> = {};
-for (const city of CITIES) {
-  CITY_NAME_MAP[city.nameAr] = city.id;
-  CITY_NAME_MAP[city.name.toLowerCase()] = city.id;
-}
-// Additional Arabic variants
-CITY_NAME_MAP["القدس الشريف"] = "jerusalem";
-CITY_NAME_MAP["عكة"] = "acre";
-CITY_NAME_MAP["الخليل"] = "hebron";
-CITY_NAME_MAP["رام الله"] = "ramallah";
-CITY_NAME_MAP["بيت لحم"] = "bethlehem";
-
-/** Scan text for a city name and return its ID */
-function detectCityInText(text: string): string | null {
-  for (const [name, id] of Object.entries(CITY_NAME_MAP)) {
-    if (text.includes(name)) return id;
-  }
-  return null;
 }
 
 function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig }) {
@@ -485,7 +477,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               </button>
               {mapExpanded && (
                 <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-1.5 shadow-md overflow-hidden animate-pop-in">
-                  <CartoonPalestineMap
+                  <PalestineLeafletMap
                     gameMode
                     revealedCities={revealedCities}
                     highlightRegion={highlightRegion || undefined}

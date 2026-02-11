@@ -654,12 +654,69 @@ code {
   animation: regionPulse 1.5s ease-in-out infinite;
 }
 
+/* =========================================
+   LEAFLET MAP — Kids Theme Overrides
+   ========================================= */
+
+/* Remove default div-icon background/border */
+.city-emoji-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Kids-friendly popup styling */
+.kids-leaflet-popup .leaflet-popup-content-wrapper {
+  border-radius: 1rem;
+  border: 2px solid var(--kids-purple);
+  box-shadow: 0 4px 16px rgba(165, 94, 234, 0.2);
+  padding: 4px;
+}
+
+.kids-leaflet-popup .leaflet-popup-tip {
+  border-top-color: var(--kids-purple);
+}
+
+.kids-leaflet-popup .leaflet-popup-content {
+  margin: 8px 10px;
+  direction: rtl;
+  text-align: center;
+}
+
+/* Fogged marker — subtle bob */
+@keyframes fogBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.city-marker-fogged {
+  animation: fogBob 3s ease-in-out infinite;
+}
+
+/* Region hint — pulsing glow */
+.city-marker-region-hint {
+  animation: regionPulse 1.5s ease-in-out infinite;
+}
+
+/* Revealed marker — pop-in */
+.city-marker-revealed {
+  animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Hide Leaflet default attribution on small screens in kids mode */
+.leaflet-control-attribution {
+  font-size: 8px !important;
+  opacity: 0.6;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-speaking,
   .animate-mic-pulse,
   .animate-wave-bar,
-  .animate-region-pulse {
+  .animate-region-pulse,
+  .city-marker-fogged,
+  .city-marker-region-hint,
+  .city-marker-revealed {
     animation: none;
   }
 }

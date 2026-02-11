@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   ChatMessage,
   ImageResult,
@@ -25,6 +26,8 @@ import {
   Sticker,
 } from "@/lib/types";
 import { buildKidsSystemPrompt } from "@/lib/ai/config";
+import { detectCityInText, CITIES } from "@/lib/data/cities";
+import type { City } from "@/lib/data/cities";
 
 // Kids components
 import KidsIntroScreen from "../components/kids/KidsIntroScreen";
@@ -43,6 +46,19 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import ProfileSetup from "../components/kids/ProfileSetup";
 import ProfileSwitcher from "../components/kids/ProfileSwitcher";
 import SpeechInput from "../components/kids/SpeechInput";
+
+// Leaflet map — dynamic import (no SSR)
+const PalestineLeafletMap = dynamic(
+  () => import("../components/kids/PalestineLeafletMap"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full bg-sky-100/30 rounded-2xl">
+        <div className="w-6 h-6 border-2 border-[var(--kids-purple)]/30 border-t-[var(--kids-purple)] rounded-full animate-spin" />
+      </div>
+    ),
+  }
+);
 
 // Hooks
 import { useProfiles } from "@/lib/hooks/useProfiles";
@@ -68,6 +84,9 @@ function KidsPageInner() {
   const [input, setInput] = useState("");
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+
+  // Map state
+  const [highlightedCityId, setHighlightedCityId] = useState<string | null>(null);
 
   // Profiles system
   const {
@@ -384,6 +403,25 @@ function KidsPageInner() {
     }
   }, [isLoading, messages, playDing, addTopic, autoReadMessage]);
 
+  // Auto-highlight cities when AI mentions them
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role === "assistant" && lastMsg.content) {
+      const cityId = detectCityInText(lastMsg.content);
+      if (cityId) {
+        setHighlightedCityId(cityId);
+      }
+    }
+  }, [messages]);
+
+  // City click handler — fill input with question about the city
+  const handleCityClick = (city: City) => {
+    setInput(`أخبرني عن ${city.nameAr}`);
+    setHighlightedCityId(city.id);
+    textareaRef.current?.focus();
+  };
+
   const handleImageSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
@@ -491,7 +529,7 @@ function KidsPageInner() {
       <div className="relative flex h-screen flex-col overflow-hidden" key={activeProfile.id}>
         {/* Header with rewards - Optimized for mobile */}
         <header className="shrink-0 px-3 py-2 sm:px-4 sm:py-3 z-10">
-          <div className="flex items-center gap-2 sm:gap-4 max-w-5xl mx-auto">
+          <div className="flex items-center gap-2 sm:gap-4 max-w-6xl mx-auto">
             {/* Profile switcher */}
             <ProfileSwitcher
               profiles={profiles}
@@ -537,126 +575,150 @@ function KidsPageInner() {
           </div>
         </header>
 
-        {/* Chat Messages */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
-          <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
-            {messages.map((message, index) => (
-              <KidsChatBubble
-                key={message.id}
-                message={message}
-                isStreaming={
-                  status === "streaming" &&
-                  index === messages.length - 1 &&
-                  message.role === "assistant"
-                }
-                isSpeaking={currentMessageId === message.id}
-                onSpeak={() => speakMessage(message)}
-                onStopSpeaking={stopSpeaking}
-              />
-            ))}
+        {/* Two-column layout: Map beside Chat (always side-by-side) */}
+        <div className="flex-1 flex flex-row overflow-hidden">
 
-            {/* Typing indicator */}
-            {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-              <TypingBubble />
-            )}
-          </div>
-        </main>
-
-        {/* Input Area - Modern Floating Design */}
-        <div className="shrink-0 p-3 sm:p-4 z-20">
-          {/* Image preview */}
-          {imagePreview && (
-            <div className="mx-auto max-w-2xl mb-3 animate-fade-in-up">
-              <div className="relative inline-block group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imagePreview.url}
-                  alt="معاينة الصورة"
-                  className="h-24 w-24 object-cover rounded-2xl border-4 border-white shadow-lg rotate-2 group-hover:rotate-0 transition-transform duration-300"
+          {/* === Map Sidebar === */}
+          <aside className="shrink-0 w-[140px] sm:w-[200px] md:w-[280px] lg:w-[360px] flex flex-col p-1.5 sm:p-2 lg:p-3 z-10">
+            <div className="flex-1 bg-white/70 backdrop-blur-sm rounded-2xl p-1 sm:p-1.5 lg:p-2 shadow-md overflow-hidden flex flex-col">
+              <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-bold text-[var(--kids-purple)] px-1.5 sm:px-2 py-1">
+                <span>🗺️</span>
+                <span className="hidden sm:inline">خريطة فلسطين</span>
+              </div>
+              <div className="flex-1 min-h-0">
+                <PalestineLeafletMap
+                  onCityClick={handleCityClick}
+                  highlightedCity={highlightedCityId || undefined}
+                  className="h-full"
                 />
-                <button
-                  onClick={() => setImagePreview(null)}
-                  className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md hover:scale-110 active:scale-95 transition-transform border-2 border-white"
-                  aria-label="إزالة الصورة"
-                >
-                  ✕
-                </button>
               </div>
             </div>
-          )}
+          </aside>
 
-          <form
-            onSubmit={(event) => void handleSubmit(event)}
-            className="mx-auto max-w-2xl"
-          >
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageSelect}
-            />
+          {/* === Chat Column === */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            {/* Chat Messages */}
+            <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
+              <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
+                {messages.map((message, index) => (
+                  <KidsChatBubble
+                    key={message.id}
+                    message={message}
+                    isStreaming={
+                      status === "streaming" &&
+                      index === messages.length - 1 &&
+                      message.role === "assistant"
+                    }
+                    isSpeaking={currentMessageId === message.id}
+                    onSpeak={() => speakMessage(message)}
+                    onStopSpeaking={stopSpeaking}
+                  />
+                ))}
 
-            <div className="flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/80 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white">
-
-              {/* Camera button */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-purple-50 text-[var(--kids-purple)] transition-all hover:bg-purple-100 active:scale-90 disabled:opacity-40"
-                aria-label="إرفاق صورة"
-              >
-                <span className="text-xl sm:text-2xl">📷</span>
-              </button>
-
-              <div className="flex-1 min-w-0 py-2 sm:py-3">
-                <textarea
-                  ref={textareaRef}
-                  className="w-full max-h-[120px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-1"
-                  placeholder="اسأل مدحت... 🇵🇸"
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  maxLength={500}
-                  disabled={isLoading}
-                  dir="auto"
-                />
-              </div>
-
-              {/* Mic button for speech input */}
-              <div className="shrink-0">
-                <SpeechInput
-                  onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!canSend}
-                className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
-                aria-label="إرسال"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
+                {/* Typing indicator */}
+                {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+                  <TypingBubble />
                 )}
-              </button>
-            </div>
+              </div>
+            </main>
 
-            {/* Helper text or mascot placement */}
-            <div className="flex justify-center mt-2 h-6">
-              <AnimatedMascot
-                state={isSpeaking ? "speaking" : isLoading ? "thinking" : "idle"}
-                size="xs"
-                className={isLoading || isSpeaking ? "opacity-100 scale-100" : "opacity-0 scale-90"}
-              />
+            {/* Input Area - Modern Floating Design */}
+            <div className="shrink-0 p-3 sm:p-4 z-20">
+              {/* Image preview */}
+              {imagePreview && (
+                <div className="mx-auto max-w-2xl mb-3 animate-fade-in-up">
+                  <div className="relative inline-block group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreview.url}
+                      alt="معاينة الصورة"
+                      className="h-24 w-24 object-cover rounded-2xl border-4 border-white shadow-lg rotate-2 group-hover:rotate-0 transition-transform duration-300"
+                    />
+                    <button
+                      onClick={() => setImagePreview(null)}
+                      className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md hover:scale-110 active:scale-95 transition-transform border-2 border-white"
+                      aria-label="إزالة الصورة"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <form
+                onSubmit={(event) => void handleSubmit(event)}
+                className="mx-auto max-w-2xl"
+              >
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelect}
+                />
+
+                <div className="flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/80 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white">
+
+                  {/* Camera button */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading}
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-purple-50 text-[var(--kids-purple)] transition-all hover:bg-purple-100 active:scale-90 disabled:opacity-40"
+                    aria-label="إرفاق صورة"
+                  >
+                    <span className="text-xl sm:text-2xl">📷</span>
+                  </button>
+
+                  <div className="flex-1 min-w-0 py-2 sm:py-3">
+                    <textarea
+                      ref={textareaRef}
+                      className="w-full max-h-[120px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-1"
+                      placeholder="اسأل مدحت... 🇵🇸"
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                      onKeyDown={handleKeyDown}
+                      rows={1}
+                      maxLength={500}
+                      disabled={isLoading}
+                      dir="auto"
+                    />
+                  </div>
+
+                  {/* Mic button for speech input */}
+                  <div className="shrink-0">
+                    <SpeechInput
+                      onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!canSend}
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
+                    aria-label="إرسال"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Helper text or mascot placement */}
+                <div className="flex justify-center mt-2 h-6">
+                  <AnimatedMascot
+                    state={isSpeaking ? "speaking" : isLoading ? "thinking" : "idle"}
+                    size="xs"
+                    className={isLoading || isSpeaking ? "opacity-100 scale-100" : "opacity-0 scale-90"}
+                  />
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
 
         {/* Confetti celebration */}

@@ -1,102 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { CITIES } from "@/lib/data/cities";
+import type { City } from "@/lib/data/cities";
 
-interface City {
-  id: string;
-  name: string;
-  nameAr: string;
-  emoji: string;
-  x: number; // percentage from left
-  y: number; // percentage from top
-  color: string;
-  fact: string;
-}
-
-const CITIES: City[] = [
-  {
-    id: "jerusalem",
-    name: "Jerusalem",
-    nameAr: "القدس",
-    emoji: "🕌",
-    x: 48,
-    y: 52,
-    color: "#FFD700",
-    fact: "أولى القبلتين وثالث الحرمين",
-  },
-  {
-    id: "gaza",
-    name: "Gaza",
-    nameAr: "غزة",
-    emoji: "🌊",
-    x: 22,
-    y: 72,
-    color: "#54A0FF",
-    fact: "مدينة على شاطئ البحر",
-  },
-  {
-    id: "nablus",
-    name: "Nablus",
-    nameAr: "نابلس",
-    emoji: "🏔️",
-    x: 52,
-    y: 32,
-    color: "#4ECDC4",
-    fact: "مشهورة بالكنافة اللذيذة!",
-  },
-  {
-    id: "bethlehem",
-    name: "Bethlehem",
-    nameAr: "بيت لحم",
-    emoji: "⭐",
-    x: 50,
-    y: 58,
-    color: "#FF9FF3",
-    fact: "مدينة السلام",
-  },
-  {
-    id: "hebron",
-    name: "Hebron",
-    nameAr: "الخليل",
-    emoji: "🏺",
-    x: 52,
-    y: 68,
-    color: "#FF9F43",
-    fact: "مشهورة بالزجاج والخزف",
-  },
-  {
-    id: "ramallah",
-    name: "Ramallah",
-    nameAr: "رام الله",
-    emoji: "🏛️",
-    x: 48,
-    y: 42,
-    color: "#A55EEA",
-    fact: "مدينة الثقافة والفن",
-  },
-  {
-    id: "jaffa",
-    name: "Jaffa",
-    nameAr: "يافا",
-    emoji: "🍊",
-    x: 32,
-    y: 38,
-    color: "#FF6B6B",
-    fact: "عروس البحر - مشهورة بالبرتقال",
-  },
-  {
-    id: "acre",
-    name: "Acre",
-    nameAr: "عكا",
-    emoji: "⚓",
-    x: 38,
-    y: 12,
-    color: "#4ECDC4",
-    fact: "مدينة الميناء التاريخية",
-  },
-];
-
-/** Export CITIES for use in game page city matching */
+/** Re-export for backward compatibility */
 export { CITIES };
 export type { City };
 
