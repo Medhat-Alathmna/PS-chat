@@ -11,13 +11,21 @@ import { logError } from "../utils/error-handler";
  *
  * @param query - Search query
  * @param limit - Maximum number of images to return (default: 4)
+ * @param isKidsMode - If true, adds "cartoon child-friendly illustration" to ensure age-appropriate images (default: false)
  * @returns Promise<ImageResult[]> - Array of images from available sources
  */
 export async function searchImagesMultiSource(
   query: string,
-  limit: number = 4
+  limit: number = 4,
+  isKidsMode: boolean = false
 ): Promise<ImageResult[]> {
-  const trimmedQuery = query.trim();
+  let trimmedQuery = query.trim();
+
+  // NEW: Add kid-friendly keywords to ensure safe, appropriate images
+  if (isKidsMode && trimmedQuery) {
+    trimmedQuery = `${trimmedQuery} cartoon child-friendly illustration`;
+    console.log(`[multi-image-search] Kids mode ON - Enhanced query: "${trimmedQuery}"`);
+  }
 
   if (!trimmedQuery) {
     return [];
@@ -87,9 +95,15 @@ export async function searchImagesMultiSource(
 export async function searchImagesFromSource(
   query: string,
   source: "wikimedia" | "unsplash" | "pexels" | "openverse",
-  limit: number = 4
+  limit: number = 4,
+  isKidsMode: boolean = false
 ): Promise<ImageResult[]> {
-  const trimmedQuery = query.trim();
+  let trimmedQuery = query.trim();
+
+  // Add kid-friendly keywords if in kids mode
+  if (isKidsMode && trimmedQuery) {
+    trimmedQuery = `${trimmedQuery} cartoon child-friendly illustration`;
+  }
 
   if (!trimmedQuery) {
     return [];

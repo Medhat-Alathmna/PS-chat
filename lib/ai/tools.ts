@@ -10,11 +10,13 @@ import { ImageResult, Coordinates, VideoResult, NewsItem, TimelineEvent } from "
 /**
  * Image Search Tool
  * Searches for images related to Palestinian places, culture, and history
+ * NEW: Automatically uses kid-friendly mode for games (adds "cartoon child-friendly" to queries)
  */
 export const imageSearchTool = tool({
   description:
     "ابحث عن صور متعلقة بفلسطين. استخدم هذه الأداة عندما يسأل المستخدم عن مكان أو موضوع ويحتاج صور توضيحية. " +
-    "Search for images related to Palestine. Use this tool when the user asks about a place or topic and needs illustrative images.",
+    "Search for images related to Palestine. Use this tool when the user asks about a place or topic and needs illustrative images. " +
+    "For games, images are automatically kid-friendly (cartoon style).",
   inputSchema: z.object({
     query: z
       .string()
@@ -27,10 +29,15 @@ export const imageSearchTool = tool({
       .max(8)
       .default(4)
       .describe("Number of images to return (1-8)"),
+    isKidsMode: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe("Use kid-friendly images (cartoon style). Default: true for games."),
   }),
-  execute: async ({ query, limit = 4 }): Promise<ImageSearchResult> => {
+  execute: async ({ query, limit = 4, isKidsMode = true }): Promise<ImageSearchResult> => {
     try {
-      const images = await searchImagesMultiSource(query, limit);
+      const images = await searchImagesMultiSource(query, limit, isKidsMode);
 
       if (images.length === 0) {
         return {

@@ -55,36 +55,17 @@ export async function POST(req: NextRequest) {
       kidsProfile?.name
     );
 
-    let tools = getToolsForGame(gameId);
+    const tools = getToolsForGame(gameId);
 
-    // When the player asks for a hint, restrict tools to only give_hint
-    // This prevents the AI from also calling check_answer or present_options
-    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    let lastUserText = "";
-    if (lastUserMsg) {
-      // UIMessage uses parts array with { type: "text", text: "..." }
-      if (Array.isArray(lastUserMsg.parts)) {
-        const textPart = lastUserMsg.parts.find(
-          (p: Record<string, unknown>) => p.type === "text"
-        ) as { text?: string } | undefined;
-        lastUserText = textPart?.text?.trim() || "";
-      } else if (typeof (lastUserMsg as unknown as Record<string, unknown>).content === "string") {
-        lastUserText = ((lastUserMsg as unknown as Record<string, unknown>).content as string).trim();
-      }
-    }
-    console.log("[game-chat] lastUserText:", JSON.stringify(lastUserText));
-    const isHintRequest = lastUserText === "تلميح" || lastUserText.toLowerCase() === "hint";
-    if (isHintRequest && tools.give_hint) {
-      console.log("[game-chat] HINT REQUEST detected — restricting tools to give_hint only");
-      tools = { give_hint: tools.give_hint, end_game: tools.end_game };
-    }
+    // NEW: No tool restrictions! AI can use multiple tools for richer experiences
+    // Multi-tool combinations are now encouraged (e.g., check_answer + image_search)
 
     const result = streamText({
       model: openai(getModel()),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools,
-      stopWhen: stepCountIs(isHintRequest ? 2 : 5),
+      stopWhen: stepCountIs(7), // Increased from 5 to 7 for multi-tool support
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[game-chat] Stream finished", {
           gameId,

@@ -316,42 +316,50 @@ export function buildGameSystemPrompt(
 - ❌ Don't use present_options together with check_answer in the same response`);
   }
 
-  // Tool usage reminder with strict rules + intent detection
+  // Tool usage reminder with NEW multi-tool rules + intent detection
   parts.push(`## Tool Usage Rules (VERY IMPORTANT!) ⚠️
 
-### Hint Rule:
-- When the player says "تلميح" (hint) → use give_hint only!
-- ❌ Never use check_answer with a hint!
-- ❌ Don't answer the question yourself!
-- ❌ Don't skip to the next question!
-- ✅ Give a hint only and wait for the player's answer
-- 🖼️ You can add imageQuery with the hint to show a helpful image (e.g., imageQuery: "كنافة نابلس")
-- Use imageQuery with visual games like quizzes, city explorer, and heritage detective
+### 🆕 Multi-Tool Support (NEW RULE!):
+- ✅ You can now use multiple tools in ONE response for richer, faster experiences!
+- ✅ Allowed combinations:
+  • check_answer + image_search (show celebratory image when correct! 🎉)
+  • give_hint + image_search (visual hint to help the player 🖼️)
+  • check_answer + location_search (reveal city on map when guessed correctly 🗺️)
+  • advance_round + image_search (celebration image for creative games 🌟)
+- ❌ NEVER use the same tool twice in one response (e.g., image_search + image_search = waste!)
+- ❌ NEVER use present_options with check_answer (they conflict!)
+- 💡 When using multiple tools, they execute together = INSTANT visual wow factor!
 
-### One Tool Per Response Rule:
-- Each response must have only one tool (except present_options with the question)
-- When asking a new question: question text + present_options (only!)
-- When the player answers: check_answer or advance_round (only!)
-- When they ask for a hint: give_hint (only!)
-- When the game ends: end_game (only!)
-- ❌ Never use more than one tool per response (except present_options with a question)
+### 🆕 "I Don't Know" Rule (NEW APPROACH!):
+When the player says: "مش عارف", "ما بعرف", "لا أعرف", "help", "ساعدني", "I don't know":
+1. **Reply with encouragement FIRST**: "ما في مشكلة يا [name]! خليني ساعدك... 🌟"
+2. **Use give_hint** (automatic, free in Easy mode!)
+3. **NEVER use check_answer** — they didn't give an answer!
+4. **You can combine**: give_hint + image_search for visual assistance
+
+### 🆕 Hint Points Deduction (NEW SYSTEM!):
+- **Easy mode (age 4-6)**: pointsDeduction = 0 (FREE hints! 🎁)
+- **Medium mode (age 7-9)**: pointsDeduction = 1
+- **Hard mode (age 10-12)**: pointsDeduction = 2
+- The system automatically calculates this based on difficulty level
 
 ### User Intent Detection (CRITICAL — read carefully!) 🧠
 Use your judgment to detect the player's intent from their message. The examples below are NOT exhaustive — use common sense for ALL languages and phrasings:
 
 | User Signal | Examples | Your Action |
 |-------------|----------|-------------|
-| **Confusion / "I don't know"** | "مش عارف", "ما بعرف", "لا أعرف", "help", "ساعدني", "I'm stuck", "صعبة", "شو هاد؟", "مش فاهم" | Use \`give_hint\` — NEVER \`check_answer\`. The child didn't answer! |
+| **Confusion / "I don't know"** | "مش عارف", "ما بعرف", "لا أعرف", "help", "ساعدني", "I'm stuck", "صعبة", "شو هاد؟", "مش فاهم" | Encouragement message + \`give_hint\` (can add \`+ image_search\`). NEVER \`check_answer\`! |
 | **Giving up / Skip** | "skip", "next", "مش قادر", "بدي أطلع", "خلص", "بدي غيره" | Encourage first + \`give_hint\`. If they insist again → \`check_answer(correct: false)\` + reveal the answer |
 | **Frustration / Boredom** | "صعبة كتير", "boring", "ملل", "مش حلوة", "بدي ألعب غيرها" | Extra encouragement + easier hint. Stay positive! |
 | **Off-topic / Playful** | Random messages, jokes, unrelated chat | Respond briefly and playfully, then redirect to the game. No tool call needed |
-| **Actual answer** | A number (1, 2, 3...), a city name, a word, a specific guess | Use \`check_answer\` to evaluate |
+| **Actual answer** | A number (1, 2, 3...), a city name, a word, a specific guess | Use \`check_answer\` (can add \`+ image_search\` or \`+ location_search\` if correct!) |
 
 Key rules:
-- ❌ NEVER treat "I don't know" or confusion as a correct answer
-- ❌ NEVER use check_answer with correct: true when the child didn't actually answer
-- ✅ When in doubt, use give_hint — it's always safe
+- ❌ NEVER treat "I don't know" or confusion as a wrong answer
+- ❌ NEVER use check_answer when the child didn't actually answer
+- ✅ When in doubt, use give_hint — it's always safe and kind
 - ✅ Be generous with encouragement for confused or frustrated players
+- ✅ Use multi-tool combinations for instant visual feedback!
 
 ### Wait Rule:
 - After asking a question → don't answer yourself — wait for the player!

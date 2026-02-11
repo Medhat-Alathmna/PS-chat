@@ -9,9 +9,9 @@ import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
  */
 export const checkAnswerTool = tool({
   description:
-    "Use this tool to evaluate the player's answer. Declare if it's correct or incorrect, provide a brief explanation, and optionally share a fun fact. IMPORTANT: If the player says 'مش عارف' or 'ما بعرف' or 'I don't know', this is NOT a correct answer — set correct to false.",
+    "Use this tool to evaluate the player's answer. Declare if it's correct or incorrect, provide a brief explanation, and optionally share a fun fact. IMPORTANT: If the player says 'مش عارف' or 'ما بعرف' or 'I don't know', do NOT use this tool — use give_hint instead to help them!",
   inputSchema: z.object({
-    correct: z.boolean().describe("Whether the answer is correct. Must be false if the player said they don't know."),
+    correct: z.boolean().describe("Whether the answer is correct"),
     explanation: z.string().describe("Brief explanation in Palestinian Arabic"),
     funFact: z.string().optional().describe("Optional fun fact to share"),
     pointsEarned: z.number().describe("Points earned for this answer (0 if wrong)"),
@@ -23,21 +23,23 @@ export const checkAnswerTool = tool({
 
 /**
  * give_hint — AI provides a progressive hint, optionally with images
+ * NEW: Points deduction based on difficulty (Easy=0, Medium=1, Hard=2)
  */
 export const giveHintTool = tool({
   description:
-    "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific). Optionally include imageQuery to show a relevant image alongside the hint.",
+    "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific). Optionally include imageQuery to show a relevant image alongside the hint. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
   inputSchema: z.object({
     hint: z.string().describe("The hint text in Palestinian Arabic"),
     hintNumber: z.number().describe("Which hint this is (1, 2, 3...)"),
-    pointsDeduction: z.number().describe("Points deducted for using this hint"),
+    pointsDeduction: z.number().describe("Points deducted for using this hint: Easy=0, Medium=1, Hard=2 (system calculates based on difficulty)"),
     imageQuery: z.string().optional().describe("Optional search query to find a relevant image for this hint (e.g. 'كنافة نابلس' or 'dome of the rock jerusalem')"),
   }),
   execute: async ({ hint, hintNumber, pointsDeduction, imageQuery }) => {
     let images;
     if (imageQuery) {
       try {
-        const results = await searchImagesMultiSource(imageQuery, 2);
+        // Use kid-friendly mode for safe, cartoon-style images
+        const results = await searchImagesMultiSource(imageQuery, 2, true);
         if (results.length > 0) {
           images = results;
         }
