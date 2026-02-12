@@ -584,10 +584,10 @@ function KidsPageInner() {
         </header>
 
         {/* Two-column layout: Map beside Chat (always side-by-side) */}
-        <div className="flex-1 flex flex-row overflow-hidden">
+        <div className="flex-1 flex flex-row overflow-hidden gap-2 sm:gap-3 lg:gap-4 pl-1 pr-2 sm:pl-2 sm:pr-3 lg:pl-3 lg:pr-4 py-2">
 
           {/* === Map Sidebar === */}
-          <aside className="shrink-0 w-[140px] sm:w-[200px] md:w-[280px] lg:w-[360px] flex flex-col p-1.5 sm:p-2 lg:p-3 z-10">
+          <aside className="w-[80px] sm:w-[110px] md:w-[130px] lg:w-[170px] flex flex-col flex-shrink-0 z-10">
             <ExpandableMap
               onCityClick={handleCityClick}
               highlightedCity={highlightedCityId || undefined}
@@ -599,8 +599,8 @@ function KidsPageInner() {
           {/* === Chat Column === */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Chat Messages */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
-              <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 py-3 scroll-smooth" ref={chatContainerRef}>
+              <div className="mx-auto w-full max-w-none flex flex-col gap-4 pb-4">
                 {messages.map((message, index) => (
                   <KidsChatBubble
                     key={message.id}
@@ -624,10 +624,10 @@ function KidsPageInner() {
             </main>
 
             {/* Input Area - Modern Floating Design */}
-            <div className="shrink-0 p-3 sm:p-4 z-20">
+            <div className="shrink-0 p-2 sm:p-3 z-20">
               {/* Image preview */}
               {imagePreview && (
-                <div className="mx-auto max-w-2xl mb-3 animate-fade-in-up">
+                <div className="mx-auto w-full max-w-none mb-3 animate-fade-in-up">
                   <div className="relative inline-block group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -648,7 +648,7 @@ function KidsPageInner() {
 
               <form
                 onSubmit={(event) => void handleSubmit(event)}
-                className="mx-auto max-w-2xl"
+                className="mx-auto w-full max-w-none"
               >
                 {/* Hidden file input */}
                 <input
@@ -676,7 +676,7 @@ function KidsPageInner() {
                     <textarea
                       ref={textareaRef}
                       className="w-full max-h-[140px] resize-none bg-transparent text-lg sm:text-xl text-gray-800 placeholder:text-gray-500 focus:outline-none leading-relaxed px-2 font-medium"
-                      placeholder="اسأل مدحت... 🇵🇸"
+                      placeholder="اسأل مدحت..."
                       value={input}
                       onChange={(event) => setInput(event.target.value)}
                       onKeyDown={handleKeyDown}
