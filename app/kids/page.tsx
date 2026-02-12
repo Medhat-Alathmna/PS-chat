@@ -12,7 +12,6 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import {
   ChatMessage,
   ImageResult,
@@ -47,18 +46,8 @@ import ProfileSetup from "../components/kids/ProfileSetup";
 import ProfileSwitcher from "../components/kids/ProfileSwitcher";
 import SpeechInput from "../components/kids/SpeechInput";
 
-// Leaflet map — dynamic import (no SSR)
-const PalestineLeafletMap = dynamic(
-  () => import("../components/kids/PalestineLeafletMap"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full bg-sky-100/30 rounded-2xl">
-        <div className="w-6 h-6 border-2 border-[var(--kids-purple)]/30 border-t-[var(--kids-purple)] rounded-full animate-spin" />
-      </div>
-    ),
-  }
-);
+// Expandable map component
+import ExpandableMap from "../components/kids/ExpandableMap";
 
 // Hooks
 import { useProfiles } from "@/lib/hooks/useProfiles";
@@ -600,19 +589,12 @@ function KidsPageInner() {
 
           {/* === Map Sidebar === */}
           <aside className="shrink-0 w-[140px] sm:w-[200px] md:w-[280px] lg:w-[360px] flex flex-col p-1.5 sm:p-2 lg:p-3 z-10">
-            <div className="flex-1 bg-white/70 backdrop-blur-sm rounded-2xl p-1 sm:p-1.5 lg:p-2 shadow-md overflow-hidden flex flex-col">
-              <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-bold text-[var(--kids-purple)] px-1.5 sm:px-2 py-1">
-                <span>🗺️</span>
-                <span className="hidden sm:inline">خريطة فلسطين</span>
-              </div>
-              <div className="flex-1 min-h-0">
-                <PalestineLeafletMap
-                  onCityClick={handleCityClick}
-                  highlightedCity={highlightedCityId || undefined}
-                  className="h-full"
-                />
-              </div>
-            </div>
+            <ExpandableMap
+              onCityClick={handleCityClick}
+              highlightedCity={highlightedCityId || undefined}
+              size="lg"
+              className="h-full"
+            />
           </aside>
 
           {/* === Chat Column === */}

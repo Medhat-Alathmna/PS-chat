@@ -22,20 +22,8 @@ import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../componen
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
-import dynamic from "next/dynamic";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
-
-const PalestineLeafletMap = dynamic(
-  () => import("../../../components/kids/PalestineLeafletMap"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full bg-sky-100/30 rounded-2xl">
-        <div className="w-6 h-6 border-2 border-[var(--kids-purple)]/30 border-t-[var(--kids-purple)] rounded-full animate-spin" />
-      </div>
-    ),
-  }
-);
+import ExpandableMap from "../../../components/kids/ExpandableMap";
 
 export default function GamePage() {
   return (
@@ -85,7 +73,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const isCityExplorer = gameId === "city-explorer";
   const [revealedCities, setRevealedCities] = useState<string[]>([]);
   const [highlightRegion, setHighlightRegion] = useState<string | null>(null);
-  const [mapExpanded, setMapExpanded] = useState(true);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -429,7 +416,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           // Reset map state
           setRevealedCities([]);
           setHighlightRegion(null);
-          setMapExpanded(true);
           if (config.hasDifficulty) {
             setDifficulty(null);
           } else {
@@ -463,26 +449,15 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         {isCityExplorer && (
           <div className="shrink-0 px-3 z-10">
             <div className="mx-auto max-w-2xl">
-              <button
-                onClick={() => setMapExpanded((v) => !v)}
-                className="flex items-center gap-2 text-sm font-bold text-[var(--kids-purple)] bg-white/80 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-sm mb-1 hover:bg-white transition-colors"
-              >
-                <span>{mapExpanded ? "▼" : "▶"}</span>
-                <span>🗺️ خريطة فلسطين</span>
-                <span className="text-xs font-normal text-gray-500">
-                  {revealedCities.length}/{CITIES.length} مدن مكتشفة 🌟
-                </span>
-              </button>
-              {mapExpanded && (
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-1.5 shadow-md overflow-hidden animate-pop-in">
-                  <PalestineLeafletMap
-                    gameMode
-                    revealedCities={revealedCities}
-                    highlightRegion={highlightRegion || undefined}
-                    className="h-36 sm:h-40"
-                  />
-                </div>
-              )}
+              <ExpandableMap
+                gameMode
+                revealedCities={revealedCities}
+                highlightRegion={highlightRegion || undefined}
+                size="sm"
+                collapsible
+                initialCollapsed={false}
+                subtitle={`${revealedCities.length}/${CITIES.length} مدن مكتشفة 🌟`}
+              />
             </div>
           </div>
         )}

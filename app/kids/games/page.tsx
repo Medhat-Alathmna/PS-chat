@@ -15,6 +15,7 @@ import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useRewards } from "@/lib/hooks/useRewards";
 import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
+import ExpandableMap from "../../components/kids/ExpandableMap";
 
 const CATEGORIES: { id: GameCategory; label: string; emoji: string; color: string }[] = [
   { id: "educational", label: "تعليمي", emoji: "📚", color: "#6C5CE7" },
@@ -116,12 +117,23 @@ function GamesHub() {
         <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth">
           <div className="mx-auto max-w-2xl pb-20">
             {/* Title */}
-            <div className="text-center mb-6 pt-2">
+            <div className="text-center mb-4 pt-2">
               <AnimatedMascot state="happy" size="lg" className="mb-2" />
               <h1 className="text-2xl sm:text-3xl font-black text-[var(--kids-purple)] tracking-wide drop-shadow-sm bubble-text">
                 يلا نلعب! 🎮
               </h1>
               <p className="text-gray-600 text-sm sm:text-base font-medium mt-1">اختار لعبة ممتعة!</p>
+            </div>
+
+            {/* Palestine Map - Collapsible */}
+            <div className="mb-4">
+              <ExpandableMap
+                size="sm"
+                collapsible
+                initialCollapsed
+                title="🗺️ خريطة فلسطين"
+                subtitle="اكتشف المدن"
+              />
             </div>
 
             {/* Category tabs - Horizontally Scrollable on Mobile */}

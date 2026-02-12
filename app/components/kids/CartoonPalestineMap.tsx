@@ -98,7 +98,9 @@ export default function CartoonPalestineMap({
           >
             <span className="text-2xl block">{hoveredCity.emoji}</span>
             <p className="font-bold text-gray-700">{hoveredCity.nameAr}</p>
-            {!gameMode && <p className="text-xs text-gray-500">{hoveredCity.fact}</p>}
+            {!gameMode && hoveredCity.facts && hoveredCity.facts.length > 0 && (
+              <p className="text-xs text-gray-500">{hoveredCity.facts[0]}</p>
+            )}
             {/* Arrow */}
             <div
               className="absolute w-3 h-3 bg-white rotate-45"

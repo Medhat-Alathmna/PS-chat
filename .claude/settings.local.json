@@ -33,7 +33,10 @@
       "Bash(npx next build:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(node --version:*)",
+      "Bash(node:*)",
+      "Bash(exit 0)"
     ]
   }
 }

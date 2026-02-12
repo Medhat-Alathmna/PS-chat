@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { City, CITIES } from "@/lib/data/cities";
+import { useEffect, useState, useMemo } from "react";
+import { City, CITIES, CityRegion } from "@/lib/data/cities";
+import { createCustomMarkerHTML, getMarkerSize, getMarkerAnchor, getPopupAnchor, MarkerState } from "@/app/components/map/CustomMarker";
+import CityPopover from "@/app/components/map/CityPopover";
+import MapControls from "@/app/components/map/MapControls";
+import "@/app/components/map/map-styles.css";
 
 interface PalestineLeafletMapProps {
   onCityClick?: (city: City) => void;
@@ -13,30 +17,181 @@ interface PalestineLeafletMapProps {
   revealedCities?: string[];
   /** City ID to pulse as a region clue */
   highlightRegion?: string;
+  /** Show map controls (search, filter, reset) */
+  showControls?: boolean;
+  /** Enable full map interaction (zoom, pan, drag) */
+  enableFullInteraction?: boolean;
+  /** Custom height (default: "100%") */
+  height?: string;
 }
 
-// Simplified Palestine outline (GeoJSON polygon)
+// Detailed Palestine historical borders (1948 British Mandate borders)
+// Based on actual geographic landmarks and historical maps
+// Reference: خارطة فلسطين التاريخية
 const PALESTINE_OUTLINE: [number, number][] = [
-  [33.3, 35.6],   // North-east (near Lebanese border)
-  [33.1, 35.1],   // North (Acre area)
-  [32.9, 35.07],  // Acre
-  [32.5, 34.9],   // Haifa coast
-  [32.1, 34.8],   // North of Jaffa
-  [31.95, 34.75], // Jaffa coast
-  [31.7, 34.6],   // South of Jaffa
-  [31.5, 34.45],  // Gaza coast north
-  [31.3, 34.3],   // Gaza coast south
-  [31.2, 34.25],  // Rafah
-  [31.2, 34.9],   // Southern Negev border
-  [31.4, 35.1],   // Hebron area
-  [31.5, 35.15],  // South Hebron
-  [31.7, 35.22],  // Jerusalem-Bethlehem
-  [31.9, 35.25],  // Ramallah
-  [32.1, 35.35],  // Nablus area
-  [32.4, 35.5],   // Jordan valley
-  [32.7, 35.55],  // Upper Jordan valley
-  [33.0, 35.6],   // Northern border east
-  [33.3, 35.6],   // Close loop
+  // === NORTHERN BORDER (Lebanon/Syria) ===
+  // Starting from Ras al-Naqoura on Mediterranean coast
+  [33.086, 35.104], // رأس الناقورة - Ras al-Naqoura
+  [33.085, 35.150],
+  [33.090, 35.200],
+  [33.095, 35.250],
+  [33.100, 35.300],
+  [33.105, 35.350],
+  [33.110, 35.400],
+  [33.150, 35.450],
+  [33.200, 35.500],
+  [33.250, 35.550],
+  [33.280, 35.600],
+  [33.310, 35.650],
+  [33.330, 35.700],
+  [33.340, 35.750],
+  [33.330, 35.800], // Near Banias - بانياس (NE corner)
+
+  // === EASTERN BORDER (Syria/Jordan) ===
+  // Border includes Sea of Galilee (eastern shore ~35.65)
+  [33.280, 35.700],
+  [33.200, 35.690],
+  [33.100, 35.680],
+  [33.000, 35.670],
+  [32.900, 35.660], // East shore of Sea of Galilee - الشاطئ الشرقي لبحيرة طبريا
+  [32.800, 35.650],
+  [32.750, 35.630],
+  [32.700, 35.620], // Yarmouk River - نهر اليرموك
+
+  // Jordan River - نهر الأردن (border along the river ~35.57)
+  [32.650, 35.600],
+  [32.600, 35.590],
+  [32.550, 35.580],
+  [32.500, 35.575],
+  [32.450, 35.570],
+  [32.400, 35.568],
+  [32.350, 35.565],
+  [32.300, 35.560], // Beit She'an / بيسان
+  [32.250, 35.558],
+  [32.200, 35.555],
+  [32.150, 35.552],
+  [32.100, 35.550],
+  [32.050, 35.548],
+  [32.000, 35.545],
+  [31.950, 35.542],
+  [31.900, 35.540],
+  [31.850, 35.535],
+  [31.800, 35.530],
+  [31.750, 35.525],
+  [31.700, 35.520],
+  [31.650, 35.515],
+  [31.600, 35.510],
+  [31.550, 35.505],
+  [31.500, 35.500], // Near Jericho - قرب أريحا
+
+  // Dead Sea - البحر الميت (border ~35.50 middle of sea)
+  [31.450, 35.500],
+  [31.400, 35.500],
+  [31.350, 35.495],
+  [31.300, 35.490],
+  [31.250, 35.485],
+  [31.200, 35.480],
+  [31.150, 35.475],
+  [31.100, 35.470], // Dead Sea south - جنوب البحر الميت
+
+  // Wadi Araba - وادي عربة
+  [31.050, 35.460],
+  [31.000, 35.450],
+  [30.950, 35.430],
+  [30.900, 35.400],
+  [30.850, 35.370],
+  [30.800, 35.340],
+  [30.750, 35.310],
+  [30.700, 35.280],
+  [30.650, 35.250],
+  [30.600, 35.220],
+  [30.550, 35.190],
+  [30.500, 35.160],
+  [30.450, 35.130],
+  [30.400, 35.100],
+  [30.350, 35.080],
+  [30.300, 35.060],
+  [30.250, 35.045],
+  [30.200, 35.030],
+  [30.150, 35.015],
+  [30.100, 35.005],
+  [30.050, 34.995],
+  [30.000, 34.985],
+  [29.950, 34.978],
+  [29.900, 34.972],
+  [29.850, 34.968],
+  [29.800, 34.965],
+  [29.750, 34.962],
+  [29.700, 34.960],
+  [29.650, 34.958],
+  [29.600, 34.956],
+  [29.550, 34.955], // إيلات / أم الرشراش - Eilat / Umm Rashrash
+
+  // === SOUTHERN BORDER (Egypt - Sinai) ===
+  // Gulf of Aqaba to Rafah - خليج العقبة إلى رفح
+  [29.550, 34.950],
+  [29.600, 34.910],
+  [29.700, 34.870],
+  [29.800, 34.830],
+  [29.900, 34.790],
+  [30.000, 34.750],
+  [30.100, 34.710],
+  [30.200, 34.670],
+  [30.300, 34.630],
+  [30.400, 34.590],
+  [30.500, 34.550],
+  [30.600, 34.510],
+  [30.700, 34.470],
+  [30.800, 34.430],
+  [30.900, 34.390],
+  [31.000, 34.350],
+  [31.100, 34.310],
+  [31.220, 34.270], // رفح - Rafah
+
+  // === WESTERN BORDER (Mediterranean Coast) ===
+  // Gaza coast - ساحل غزة
+  [31.230, 34.260],
+  [31.280, 34.270],
+  [31.330, 34.300],
+  [31.380, 34.330], // خان يونس - Khan Yunis
+  [31.430, 34.360],
+  [31.480, 34.390], // غزة - Gaza City
+  [31.530, 34.430],
+  [31.580, 34.470],
+
+  // Central coast - الساحل الأوسط
+  [31.630, 34.510],
+  [31.680, 34.540], // عسقلان - Ashkelon
+  [31.730, 34.570],
+  [31.780, 34.600], // إسدود - Ashdod
+  [31.830, 34.630],
+  [31.880, 34.660],
+  [31.930, 34.690], // يافا - Jaffa
+  [31.980, 34.720],
+  [32.030, 34.745],
+  [32.080, 34.770], // تل أبيب - Tel Aviv
+  [32.130, 34.790],
+  [32.180, 34.810],
+  [32.230, 34.830],
+  [32.280, 34.850],
+  [32.330, 34.870],
+  [32.380, 34.885],
+  [32.430, 34.900],
+  [32.480, 34.915],
+  [32.530, 34.930], // قيسارية - Caesarea
+  [32.580, 34.940],
+  [32.630, 34.950],
+  [32.680, 34.960],
+  [32.730, 34.970],
+  [32.780, 34.980],
+  [32.820, 34.990], // حيفا - Haifa
+  [32.860, 35.000],
+  [32.900, 35.015],
+  [32.940, 35.035], // عكا - Acre
+  [32.980, 35.055],
+  [33.020, 35.075],
+  [33.050, 35.090],
+  [33.086, 35.104], // العودة لرأس الناقورة - Back to Ras al-Naqoura
 ];
 
 export default function PalestineLeafletMap(props: PalestineLeafletMapProps) {
@@ -64,10 +219,30 @@ function LeafletMapInner({
   gameMode = false,
   revealedCities = [],
   highlightRegion,
+  showControls = false,
+  enableFullInteraction = false,
+  height = "100%",
 }: PalestineLeafletMapProps) {
   const [mapModules, setMapModules] = useState<any>(null);
   const [leafletLib, setLeafletLib] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Map controls state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRegions, setSelectedRegions] = useState<CityRegion[]>([]);
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+
+  // Filter cities based on search and region - MUST be before early returns
+  const filteredCities = useMemo(() => {
+    let filtered = CITIES;
+
+    // Filter by selected regions
+    if (selectedRegions.length > 0) {
+      filtered = filtered.filter((city) => selectedRegions.includes(city.region));
+    }
+
+    return filtered;
+  }, [selectedRegions]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -113,66 +288,78 @@ function LeafletMapInner({
   const { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } = mapModules;
   const L = leafletLib;
 
-  function createCityIcon(city: City, state: "normal" | "fogged" | "regionHint" | "revealed", isHighlighted: boolean) {
-    if (state === "fogged") {
-      return L.divIcon({
-        className: "city-emoji-marker city-marker-fogged",
-        html: `<div style="width:26px;height:26px;border-radius:50%;background:#D1D5DB;opacity:0.6;display:flex;align-items:center;justify-content:center;border:2px solid rgba(156,163,175,0.5);font-size:13px;">❓</div>`,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13],
-      });
-    }
-
-    if (state === "regionHint") {
-      return L.divIcon({
-        className: "city-emoji-marker city-marker-region-hint",
-        html: `<div style="width:32px;height:32px;border-radius:50%;background:${city.color}80;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px ${city.color}40,0 0 16px ${city.color}60;font-size:16px;">❓</div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
-    }
-
-    const active = isHighlighted;
-    const size = active ? 38 : 32;
-    const half = size / 2;
-
+  function createCityIcon(city: City, state: MarkerState, isHighlighted: boolean) {
+    const markerState = isHighlighted ? "highlighted" : state;
     return L.divIcon({
-      className: `city-emoji-marker ${state === "revealed" ? "city-marker-revealed" : ""}`,
-      html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${city.color};display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px ${city.color}50,0 3px 8px rgba(0,0,0,0.2);font-size:${active ? 18 : 15}px;cursor:pointer;${active ? "filter:brightness(1.1);" : ""}">${city.emoji}</div><div style="text-align:center;margin-top:1px;font-size:9px;font-weight:700;color:#374151;background:rgba(255,255,255,0.9);padding:0 4px;border-radius:9999px;white-space:nowrap;">${city.nameAr}</div>`,
-      iconSize: [size, size + 14],
-      iconAnchor: [half, half],
-      popupAnchor: [0, -half],
+      className: "custom-marker",
+      html: createCustomMarkerHTML(city, markerState),
+      iconSize: getMarkerSize(markerState),
+      iconAnchor: getMarkerAnchor(markerState),
+      popupAnchor: getPopupAnchor(markerState),
     });
   }
 
-  function FlyToCity({ cityId }: { cityId?: string }) {
+  function FlyToCity({ cityId, zoomLevel }: { cityId?: string; zoomLevel: number }) {
     const map = useMap();
     useEffect(() => {
       if (!cityId) return;
       const city = CITIES.find((c) => c.id === cityId);
       if (city) {
-        map.flyTo([city.lat, city.lng], 10, { duration: 1 });
+        map.flyTo([city.lat, city.lng], zoomLevel, { duration: 1 });
       }
-    }, [cityId, map]);
+    }, [cityId, map, zoomLevel]);
     return null;
   }
 
-  const bounds = L.latLngBounds([31.0, 34.1], [33.4, 35.9]);
+  const handleCitySelect = (cityId: string) => {
+    setSelectedCityId(cityId);
+    const city = CITIES.find((c) => c.id === cityId);
+    if (city) {
+      onCityClick?.(city);
+    }
+  };
+
+  const handleRegionFilter = (regions: CityRegion[]) => {
+    setSelectedRegions(regions);
+  };
+
+  const handleReset = () => {
+    setSelectedRegions([]);
+    setSearchQuery("");
+    setSelectedCityId(null);
+  };
+
+  // Define bounds for Palestine with some padding
+  const bounds = L.latLngBounds(
+    [29.40, 34.10],  // South-West corner (Umm Rashrash area with padding)
+    [33.50, 35.85]   // North-East corner (includes Sea of Galilee)
+  );
 
   return (
-    <div className={`rounded-2xl overflow-hidden ${className}`}>
+    <div className={`rounded-2xl overflow-hidden relative ${className}`} style={{ height }}>
+      {/* Map Controls */}
+      {showControls && (
+        <MapControls
+          onCitySelect={handleCitySelect}
+          onRegionFilter={handleRegionFilter}
+          onReset={handleReset}
+          filteredCount={filteredCities.length}
+          totalCount={CITIES.length}
+        />
+      )}
+
       <MapContainer
-        center={[31.9, 35.0]}
-        zoom={8}
+        center={[31.4, 35.0]}
+        zoom={enableFullInteraction ? 7 : 7}
         style={{ height: "100%", width: "100%" }}
-        scrollWheelZoom={false}
-        dragging={false}
-        doubleClickZoom={false}
-        maxBounds={bounds}
-        maxBoundsViscosity={1.0}
-        minZoom={8}
-        maxZoom={8}
-        zoomControl={false}
+        scrollWheelZoom={enableFullInteraction}
+        dragging={enableFullInteraction}
+        doubleClickZoom={enableFullInteraction}
+        maxBounds={enableFullInteraction ? bounds : undefined}
+        maxBoundsViscosity={0.7}
+        minZoom={6}
+        maxZoom={enableFullInteraction ? 12 : 10}
+        zoomControl={enableFullInteraction}
         attributionControl={false}
       >
         {/* Very clean, minimal tile layer — labels only for context */}
@@ -181,27 +368,43 @@ function LeafletMapInner({
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
 
-        {/* Palestine country outline */}
+        {/* Palestine border shadow (3D effect) */}
         <Polygon
           positions={PALESTINE_OUTLINE}
           pathOptions={{
-            color: "#2E8B57",
-            weight: 3,
-            fillColor: "#90EE90",
-            fillOpacity: 0.25,
-            dashArray: "6, 4",
+            color: "#000000",
+            weight: 5,
+            opacity: 0.15,
+            fill: false,
           }}
         />
 
-        {/* Animated sea label area — just a subtle visual */}
-        <FlyToCity cityId={highlightedCity} />
+        {/* Palestine country outline - solid green border */}
+        <Polygon
+          positions={PALESTINE_OUTLINE}
+          pathOptions={{
+            color: "#009639", // Palestinian flag green
+            weight: 3,
+            fillColor: "#009639",
+            fillOpacity: 0.08,
+            lineCap: "round",
+            lineJoin: "round",
+          }}
+        />
 
-        {CITIES.map((city) => {
+        {/* Fly to city when highlighted or selected */}
+        <FlyToCity
+          cityId={highlightedCity || selectedCityId || undefined}
+          zoomLevel={enableFullInteraction ? 11 : 10}
+        />
+
+        {/* Render filtered cities */}
+        {filteredCities.map((city) => {
           const isRevealed = revealedCities.includes(city.id);
           const isRegionHint = highlightRegion === city.id;
-          const isHighlighted = highlightedCity === city.id;
+          const isHighlighted = highlightedCity === city.id || selectedCityId === city.id;
 
-          let markerState: "normal" | "fogged" | "regionHint" | "revealed" = "normal";
+          let markerState: MarkerState = "normal";
           if (gameMode) {
             if (isRevealed) markerState = "revealed";
             else if (isRegionHint) markerState = "regionHint";
@@ -217,19 +420,26 @@ function LeafletMapInner({
               position={[city.lat, city.lng]}
               icon={icon}
               eventHandlers={{
-                click: () => onCityClick?.(city),
+                click: () => {
+                  onCityClick?.(city);
+                  setSelectedCityId(city.id);
+                },
               }}
             >
               {showPopup && (
-                <Popup className="kids-leaflet-popup">
-                  <div className="text-center" dir="rtl">
-                    <span className="text-2xl block">{city.emoji}</span>
-                    <p className="font-bold text-gray-700 text-sm">{city.nameAr}</p>
-                    <p className="text-xs text-gray-500">{city.name}</p>
-                    {!gameMode && (
-                      <p className="text-xs text-gray-400 mt-1">{city.fact}</p>
-                    )}
-                  </div>
+                <Popup className="city-popup-custom">
+                  {showControls ? (
+                    <CityPopover city={city} />
+                  ) : (
+                    <div className="text-center" dir="rtl">
+                      <span className="text-2xl block">{city.emoji}</span>
+                      <p className="font-bold text-gray-700 text-sm">{city.nameAr}</p>
+                      <p className="text-xs text-gray-500">{city.name}</p>
+                      {!gameMode && city.facts && city.facts.length > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">{city.facts[0]}</p>
+                      )}
+                    </div>
+                  )}
                 </Popup>
               )}
             </Marker>
