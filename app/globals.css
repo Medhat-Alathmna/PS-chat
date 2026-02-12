@@ -304,6 +304,18 @@ code {
   }
 }
 
+/* Subtle pulse for typing indicator */
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
 /* Sparkle animation */
 @keyframes sparkle {
   0%, 100% {
@@ -431,6 +443,10 @@ code {
 
 .animate-pulse-grow {
   animation: pulseGrow 2s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2s ease-in-out infinite;
 }
 
 .animate-sparkle {

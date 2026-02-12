@@ -31,32 +31,47 @@ interface PalestineLeafletMapProps {
 const PALESTINE_OUTLINE: [number, number][] = [
   // === NORTHERN BORDER (Lebanon/Syria) ===
   // Starting from Ras al-Naqoura on Mediterranean coast
-  [33.086, 35.104], // رأس الناقورة - Ras al-Naqoura
-  [33.085, 35.150],
-  [33.090, 35.200],
-  [33.095, 35.250],
-  [33.100, 35.300],
-  [33.105, 35.350],
-  [33.110, 35.400],
-  [33.150, 35.450],
-  [33.200, 35.500],
-  [33.250, 35.550],
-  [33.280, 35.600],
-  [33.310, 35.650],
-  [33.330, 35.700],
-  [33.340, 35.750],
-  [33.330, 35.800], // Near Banias - بانياس (NE corner)
+  [33.089, 35.104], // رأس الناقورة - Ras al-Naqoura (coastal border)
+
+  // Border extends north then curves east
+  [33.095, 35.140],
+  [33.105, 35.180],
+  [33.120, 35.220],
+  [33.138, 35.260],
+  [33.158, 35.300],
+  [33.180, 35.340],
+  [33.205, 35.380],
+  [33.232, 35.420],
+  [33.260, 35.460],
+  [33.285, 35.500],
+  [33.308, 35.540],
+  [33.325, 35.580],
+  [33.338, 35.620], // Maximum northern extent
+
+  // Curves southeast toward Banias
+  [33.345, 35.660],
+  [33.348, 35.700],
+  [33.345, 35.740],
+  [33.338, 35.775], // بانياس - Banias area (NE corner)
 
   // === EASTERN BORDER (Syria/Jordan) ===
-  // Border includes Sea of Galilee (eastern shore ~35.65)
-  [33.280, 35.700],
-  [33.200, 35.690],
-  [33.100, 35.680],
-  [33.000, 35.670],
-  [32.900, 35.660], // East shore of Sea of Galilee - الشاطئ الشرقي لبحيرة طبريا
-  [32.800, 35.650],
-  [32.750, 35.630],
-  [32.700, 35.620], // Yarmouk River - نهر اليرموك
+  // Border descends south along Golan Heights
+  [33.320, 35.770],
+  [33.290, 35.760],
+  [33.250, 35.745],
+  [33.200, 35.730],
+  [33.150, 35.715],
+  [33.100, 35.700],
+  [33.050, 35.685],
+  [33.000, 35.675],
+  [32.950, 35.670],
+
+  // Eastern shore of Sea of Galilee - الشاطئ الشرقي لبحيرة طبريا
+  [32.900, 35.665],
+  [32.850, 35.660],
+  [32.800, 35.655],
+  [32.750, 35.645],
+  [32.700, 35.630], // Yarmouk River - نهر اليرموك
 
   // Jordan River - نهر الأردن (border along the river ~35.57)
   [32.650, 35.600],
@@ -188,10 +203,11 @@ const PALESTINE_OUTLINE: [number, number][] = [
   [32.860, 35.000],
   [32.900, 35.015],
   [32.940, 35.035], // عكا - Acre
-  [32.980, 35.055],
-  [33.020, 35.075],
-  [33.050, 35.090],
-  [33.086, 35.104], // العودة لرأس الناقورة - Back to Ras al-Naqoura
+  [32.970, 35.050],
+  [33.000, 35.065],
+  [33.030, 35.078],
+  [33.055, 35.090],
+  [33.089, 35.104], // العودة لرأس الناقورة - Back to Ras al-Naqoura
 ];
 
 export default function PalestineLeafletMap(props: PalestineLeafletMapProps) {
@@ -332,7 +348,7 @@ function LeafletMapInner({
   // Define bounds for Palestine with some padding
   const bounds = L.latLngBounds(
     [29.40, 34.10],  // South-West corner (Umm Rashrash area with padding)
-    [33.50, 35.85]   // North-East corner (includes Sea of Galilee)
+    [33.40, 35.85]   // North-East corner (extended to include northern border)
   );
 
   return (

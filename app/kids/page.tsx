@@ -129,7 +129,6 @@ function KidsPageInner() {
     currentMessageId,
     toggleVoice,
     stop: stopSpeaking,
-    autoReadMessage,
     speakMessage,
   } = useVoiceSynthesis({ soundEnabled });
 
@@ -155,18 +154,20 @@ function KidsPageInner() {
   const [imagePreview, setImagePreview] = useState<{ url: string; mediaType: string; file: File } | null>(null);
 
   // AI Chat hook — key by profileId so it resets on switch
+  // Uses dedicated /api/kids/chat endpoint with limited tools (image_search, location_search)
   const chatTransport = useMemo(
     () =>
       new DefaultChatTransport({
-        api: "/api/chat",
+        api: "/api/kids/chat",
         body: {
           config: {
             mode: "localPrompt",
             systemPrompt,
           },
+          playerName: activeProfile?.name,
         },
       }),
-    [systemPrompt]
+    [systemPrompt, activeProfile?.name]
   );
 
   const {
@@ -376,7 +377,7 @@ function KidsPageInner() {
     }
   }, [showCelebration, playFanfare]);
 
-  // Handle response received - add points, track topics, auto-read
+  // Handle response received - add points, track topics
   useEffect(() => {
     if (
       !isLoading &&
@@ -385,16 +386,14 @@ function KidsPageInner() {
     ) {
       playDing();
 
-      // Auto-read the new assistant message
       const lastMsg = messages[messages.length - 1];
-      autoReadMessage(lastMsg);
 
       // Track topics for game context
       if (lastMsg.location?.name) {
         addTopic(lastMsg.location.name);
       }
     }
-  }, [isLoading, messages, playDing, addTopic, autoReadMessage]);
+  }, [isLoading, messages, playDing, addTopic]);
 
   // Auto-highlight cities when AI mentions them
   useEffect(() => {
@@ -660,23 +659,23 @@ function KidsPageInner() {
                   onChange={handleImageSelect}
                 />
 
-                <div className="flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/80 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white">
+                <div className="flex items-end gap-3 sm:gap-4 rounded-[2rem] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] transition-all focus-within:shadow-[0_12px_48px_rgba(108,92,231,0.25)] focus-within:ring-4 focus-within:ring-[var(--kids-purple)]/20 border-2 border-white p-3 sm:p-4">
 
                   {/* Camera button */}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isLoading}
-                    className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-purple-50 text-[var(--kids-purple)] transition-all hover:bg-purple-100 active:scale-90 disabled:opacity-40"
+                    className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-purple-50 text-[var(--kids-purple)] transition-all hover:from-purple-200 hover:to-purple-100 hover:scale-110 active:scale-90 disabled:opacity-40 shadow-md"
                     aria-label="إرفاق صورة"
                   >
-                    <span className="text-xl sm:text-2xl">📷</span>
+                    <span className="text-2xl sm:text-3xl">📷</span>
                   </button>
 
-                  <div className="flex-1 min-w-0 py-2 sm:py-3">
+                  <div className="flex-1 min-w-0 py-3 sm:py-4">
                     <textarea
                       ref={textareaRef}
-                      className="w-full max-h-[120px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-1"
+                      className="w-full max-h-[140px] resize-none bg-transparent text-lg sm:text-xl text-gray-800 placeholder:text-gray-500 focus:outline-none leading-relaxed px-2 font-medium"
                       placeholder="اسأل مدحت... 🇵🇸"
                       value={input}
                       onChange={(event) => setInput(event.target.value)}
@@ -685,6 +684,9 @@ function KidsPageInner() {
                       maxLength={500}
                       disabled={isLoading}
                       dir="auto"
+                      style={{
+                        minHeight: '32px',
+                      }}
                     />
                   </div>
 
@@ -699,23 +701,28 @@ function KidsPageInner() {
                   <button
                     type="submit"
                     disabled={!canSend}
-                    className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
+                    className="group relative flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/40 transition-all hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/60 active:scale-95 disabled:opacity-50 disabled:shadow-none disabled:grayscale disabled:cursor-not-allowed"
                     aria-label="إرسال"
                   >
                     {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-3 border-white/40 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
+                      <>
+                        <span className="text-2xl sm:text-3xl transform -translate-x-0.5 group-active:translate-x-2 group-active:-translate-y-2 transition-transform duration-200">🚀</span>
+                        {canSend && (
+                          <span className="absolute inset-0 rounded-full bg-white/30 scale-0 group-active:scale-110 group-active:opacity-0 transition-all duration-300"></span>
+                        )}
+                      </>
                     )}
                   </button>
                 </div>
 
                 {/* Helper text or mascot placement */}
-                <div className="flex justify-center mt-2 h-6">
+                <div className="flex justify-center mt-3 h-8">
                   <AnimatedMascot
                     state={isSpeaking ? "speaking" : isLoading ? "thinking" : "idle"}
-                    size="xs"
-                    className={isLoading || isSpeaking ? "opacity-100 scale-100" : "opacity-0 scale-90"}
+                    size="sm"
+                    className={`transition-all duration-300 ${isLoading || isSpeaking ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}
                   />
                 </div>
               </form>

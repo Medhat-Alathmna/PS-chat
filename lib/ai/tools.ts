@@ -454,3 +454,12 @@ export const allTools = {
   news_search: newsSearchTool,
   timeline_search: timelineSearchTool,
 };
+
+/**
+ * Kids chat tools - limited set with conversational usage
+ * Only image_search and location_search for child-friendly experience
+ */
+export const kidsTools = {
+  image_search: imageSearchTool,
+  location_search: locationSearchTool,
+};

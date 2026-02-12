@@ -49,6 +49,36 @@ export default function KidsChatBubble({
     return BUBBLE_COLORS[index];
   }, [message.id, isUser]);
 
+  // Determine mascot state based on message content
+  const mascotState = useMemo(() => {
+    if (isStreaming) return "thinking";
+    if (!message.content) return "happy";
+
+    const content = message.content.toLowerCase();
+
+    // Celebrating/Happy
+    if (content.includes("مبروك") || content.includes("برافو") || content.includes("ممتاز") ||
+        content.includes("رائع") || content.includes("يا سلام") || content.includes("🎉") ||
+        content.includes("⭐") || content.includes("🏆")) {
+      return "celebrating";
+    }
+
+    // Waving/Greeting
+    if (content.includes("أهلا") || content.includes("مرحبا") || content.includes("السلام عليكم") ||
+        content.includes("صباح") || content.includes("مساء") || content.includes("👋")) {
+      return "waving";
+    }
+
+    // Questions/Thinking
+    if (content.includes("؟") || content.includes("هل") || content.includes("ماذا") ||
+        content.includes("كيف") || content.includes("لماذا") || content.includes("متى")) {
+      return "thinking";
+    }
+
+    // Default happy
+    return "happy";
+  }, [message.content, isStreaming]);
+
   // Show thinking indicator for empty streaming
   if (isStreaming && !message.content) {
     return (
@@ -68,7 +98,7 @@ export default function KidsChatBubble({
       {/* Avatar */}
       {!isUser && (
         <div className="flex-shrink-0">
-          <MiniMascot state={isStreaming ? "thinking" : "happy"} size="xs" />
+          <MiniMascot state={mascotState} size="sm" />
         </div>
       )}
 
@@ -82,7 +112,7 @@ export default function KidsChatBubble({
       <div
         className={`
           relative max-w-[80%] sm:max-w-[70%]
-          rounded-3xl px-5 py-4
+          rounded-3xl px-4 py-3 sm:px-5 sm:py-4
           transition-all duration-300
           ${isUser
             ? "bg-gradient-to-br from-[var(--kids-green)] to-[#3DBDB2] text-white shadow-lg shadow-[var(--kids-green)]/30"
@@ -114,12 +144,12 @@ export default function KidsChatBubble({
         {/* Message content */}
         <div
           className={`
-            text-base leading-relaxed whitespace-pre-wrap
-            ${isUser ? "" : "text-gray-700"}
+            text-base sm:text-lg leading-relaxed whitespace-pre-wrap
+            ${isUser ? "" : "text-gray-800"}
           `}
           dir="auto"
         >
-          {formatKidsMessage(message.content)}
+          {formatKidsMessageWithIcons(message.content)}
         </div>
 
         {/* Images */}
@@ -244,9 +274,9 @@ export default function KidsChatBubble({
 
 /**
  * Format message for kids - add emojis and make it friendly
- * Also clean up URLs and links
+ * Also clean up URLs and links and add contextual icons
  */
-function formatKidsMessage(content: string): string {
+function formatKidsMessageWithIcons(content: string): string {
   let cleaned = content;
 
   // Remove image URLs (Wikimedia, Wikipedia, etc.)
@@ -261,29 +291,42 @@ function formatKidsMessage(content: string): string {
   // Remove leading/trailing whitespace
   cleaned = cleaned.trim();
 
+  // Add contextual icons (only if not already present)
+  if (!cleaned.match(/[🎉🎊⭐✨🏆👋🌟💫]/)) {
+    // Check for certain keywords and add appropriate emoji
+    if (cleaned.includes("مبروك") && !cleaned.includes("🎉")) {
+      cleaned = cleaned.replace(/مبروك/g, "مبروك 🎉");
+    }
+    if (cleaned.includes("فلسطين") && !cleaned.includes("🇵🇸")) {
+      cleaned = cleaned.replace(/فلسطين/g, "فلسطين 🇵🇸");
+    }
+  }
+
   return cleaned;
 }
 
 /**
- * Typing indicator bubble
+ * Typing indicator bubble with enhanced animation
  */
 export function TypingBubble() {
   return (
-    <div className="flex gap-3 animate-fade-in">
-      <MiniMascot state="thinking" />
-      <div className="bg-[var(--kids-blue)]/10 border-2 border-[var(--kids-blue)] rounded-3xl px-5 py-4">
-        <div className="flex gap-1">
+    <div className="flex gap-3 animate-fade-in-up">
+      <div className="flex-shrink-0">
+        <MiniMascot state="thinking" size="sm" />
+      </div>
+      <div className="bg-gradient-to-br from-[var(--kids-blue)]/15 to-[var(--kids-purple)]/10 border-3 border-[var(--kids-blue)] rounded-3xl px-6 py-4 shadow-lg animate-pulse-subtle">
+        <div className="flex gap-1.5 items-center">
           <span
-            className="w-2 h-2 bg-[var(--kids-blue)] rounded-full animate-bounce"
-            style={{ animationDelay: "0ms" }}
+            className="w-3 h-3 bg-[var(--kids-blue)] rounded-full animate-bounce"
+            style={{ animationDelay: "0ms", animationDuration: "1s" }}
           />
           <span
-            className="w-2 h-2 bg-[var(--kids-blue)] rounded-full animate-bounce"
-            style={{ animationDelay: "150ms" }}
+            className="w-3 h-3 bg-[var(--kids-purple)] rounded-full animate-bounce"
+            style={{ animationDelay: "200ms", animationDuration: "1s" }}
           />
           <span
-            className="w-2 h-2 bg-[var(--kids-blue)] rounded-full animate-bounce"
-            style={{ animationDelay: "300ms" }}
+            className="w-3 h-3 bg-[var(--kids-green)] rounded-full animate-bounce"
+            style={{ animationDelay: "400ms", animationDuration: "1s" }}
           />
         </div>
       </div>
