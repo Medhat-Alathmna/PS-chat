@@ -21,7 +21,7 @@ export default function MapControls({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegions, setSelectedRegions] = useState<CityRegion[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default
 
   // Filter cities based on search query
   const searchResults = useMemo(() => {

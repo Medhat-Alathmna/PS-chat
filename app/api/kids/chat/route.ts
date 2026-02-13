@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools: kidsTools, // Only image_search + location_search
-      stopWhen: stepCountIs(3), // Less steps since fewer tools
+      stopWhen: stepCountIs(5), // Allow more steps for tool calls + complete response
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[kids-chat] Stream finished", {
           textLength: text.length,

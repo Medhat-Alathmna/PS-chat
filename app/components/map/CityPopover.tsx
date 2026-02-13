@@ -6,13 +6,14 @@ import { useState } from "react";
 interface CityPopoverProps {
   city: City;
   onClose?: () => void;
+  onAskAboutCity?: (city: City) => void;
 }
 
 /**
  * Rich popover/card displaying city information
  * Shows image, name, and all facts about the city
  */
-export default function CityPopover({ city, onClose }: CityPopoverProps) {
+export default function CityPopover({ city, onClose, onAskAboutCity }: CityPopoverProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -96,6 +97,17 @@ export default function CityPopover({ city, onClose }: CityPopoverProps) {
             </div>
           ))}
         </div>
+
+        {/* Ask Medhat button */}
+        {onAskAboutCity && (
+          <button
+            onClick={() => onAskAboutCity(city)}
+            className="mt-4 w-full py-2.5 px-4 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+          >
+            <span>🤖</span>
+            <span>اسأل مدحت عن {city.nameAr}</span>
+          </button>
+        )}
       </div>
     </div>
   );

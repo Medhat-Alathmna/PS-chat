@@ -83,7 +83,12 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
         audio.addEventListener("ended", () => {
           if (audio.loop && isMounted) {
             audio.currentTime = 0;
-            audio.play().catch(console.error);
+            audio.play().catch((e) => {
+              // Ignore autoplay errors
+              if (e.name !== "NotAllowedError") {
+                console.error(e);
+              }
+            });
           }
         });
 
@@ -125,15 +130,24 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
       .then(() => {
         setIsPlaying(true);
       })
-      .catch(() => {
+      .catch((error) => {
         // Auto-play blocked by browser, start on first user interaction
         setIsPlaying(false);
+
+        // Don't log NotAllowedError as it's expected behavior
+        if (error.name !== "NotAllowedError") {
+          console.warn("Autoplay failed:", error);
+        }
 
         const startOnInteraction = () => {
           if (audioRef.current) {
             audioRef.current.play().then(() => {
               setIsPlaying(true);
-            }).catch(console.error);
+            }).catch((e) => {
+              if (e.name !== "NotAllowedError") {
+                console.error(e);
+              }
+            });
           }
         };
 
@@ -147,7 +161,9 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
     if (!audioRef.current || !isLoaded) return;
 
     audioRef.current.play().catch((err) => {
-      console.error("Error playing background music:", err);
+      if (err.name !== "NotAllowedError") {
+        console.error("Error playing background music:", err);
+      }
     });
     setIsPlaying(true);
   };

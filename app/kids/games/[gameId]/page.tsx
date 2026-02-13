@@ -164,8 +164,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 if (isCityExplorer && toolPart.output.explanation) {
                   const cityId = detectCityInText(toolPart.output.explanation as string);
                   if (cityId && !revealedCities.includes(cityId)) {
-                    setRevealedCities((prev) => [...prev, cityId]);
-                    setHighlightRegion(null);
+                    // Verify city has valid coordinates
+                    const city = CITIES.find((c) => c.id === cityId);
+                    if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+                      setRevealedCities((prev) => [...prev, cityId]);
+                      setHighlightRegion(null);
+                    }
                   }
                 }
               } else {
@@ -174,8 +178,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 if (isCityExplorer && toolPart.output.explanation) {
                   const cityId = detectCityInText(toolPart.output.explanation as string);
                   if (cityId && !revealedCities.includes(cityId)) {
-                    setRevealedCities((prev) => [...prev, cityId]);
-                    setHighlightRegion(null);
+                    // Verify city has valid coordinates
+                    const city = CITIES.find((c) => c.id === cityId);
+                    if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+                      setRevealedCities((prev) => [...prev, cityId]);
+                      setHighlightRegion(null);
+                    }
                   }
                 }
               }
@@ -185,7 +193,11 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               if (isCityExplorer && toolPart.output.hint) {
                 const cityId = detectCityInText(toolPart.output.hint as string);
                 if (cityId) {
-                  setHighlightRegion(cityId);
+                  // Verify city has valid coordinates
+                  const city = CITIES.find((c) => c.id === cityId);
+                  if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+                    setHighlightRegion(cityId);
+                  }
                 }
               }
             } else if (toolName === "advance_round") {

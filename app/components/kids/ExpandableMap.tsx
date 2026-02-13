@@ -19,6 +19,8 @@ const PalestineLeafletMap = dynamic(
 interface ExpandableMapProps {
   /** Callback when a city is clicked */
   onCityClick?: (city: City) => void;
+  /** Callback for "Ask Medhat about city" button in popup */
+  onAskAboutCity?: (city: City) => void;
   /** City ID to highlight */
   highlightedCity?: string;
   /** Enable game mode with fog/reveal mechanics */
@@ -47,6 +49,7 @@ interface ExpandableMapProps {
 
 export default function ExpandableMap({
   onCityClick,
+  onAskAboutCity,
   highlightedCity,
   gameMode = false,
   revealedCities = [],
@@ -112,6 +115,7 @@ export default function ExpandableMap({
           <div className="flex-1 min-h-0 p-2">
             <PalestineLeafletMap
               onCityClick={onCityClick}
+              onAskAboutCity={onAskAboutCity}
               highlightedCity={highlightedCity}
               gameMode={gameMode}
               revealedCities={revealedCities}
@@ -167,6 +171,7 @@ export default function ExpandableMap({
           <div className={mapHeight}>
             <PalestineLeafletMap
               onCityClick={onCityClick}
+              onAskAboutCity={onAskAboutCity}
               highlightedCity={highlightedCity}
               gameMode={gameMode}
               revealedCities={revealedCities}

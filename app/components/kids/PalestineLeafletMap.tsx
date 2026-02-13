@@ -9,6 +9,8 @@ import "@/app/components/map/map-styles.css";
 
 interface PalestineLeafletMapProps {
   onCityClick?: (city: City) => void;
+  /** Callback for "Ask Medhat about city" button in popup */
+  onAskAboutCity?: (city: City) => void;
   highlightedCity?: string;
   className?: string;
   /** Enable game mode with fog/reveal mechanics */
@@ -230,6 +232,7 @@ export default function PalestineLeafletMap(props: PalestineLeafletMapProps) {
 
 function LeafletMapInner({
   onCityClick,
+  onAskAboutCity,
   highlightedCity,
   className = "",
   gameMode = false,
@@ -318,10 +321,30 @@ function LeafletMapInner({
   function FlyToCity({ cityId, zoomLevel }: { cityId?: string; zoomLevel: number }) {
     const map = useMap();
     useEffect(() => {
-      if (!cityId) return;
+      // Skip if cityId is empty, null, or undefined
+      if (!cityId || cityId.trim() === "") return;
+
       const city = CITIES.find((c) => c.id === cityId);
-      if (city) {
-        map.flyTo([city.lat, city.lng], zoomLevel, { duration: 1 });
+
+      // Only fly to city if it exists and has valid coordinates
+      if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+        try {
+          // Check if map container has valid dimensions (prevents NaN during animation)
+          const container = map.getContainer();
+          if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
+            return;
+          }
+
+          // Double-check the values right before calling flyTo
+          const lat = Number(city.lat);
+          const lng = Number(city.lng);
+          if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng)) {
+            // Use setView instead of flyTo to avoid animation calculation issues on mobile
+            map.setView([lat, lng], zoomLevel, { animate: false });
+          }
+        } catch (error) {
+          console.error("FlyToCity error:", error, { cityId, lat: city.lat, lng: city.lng });
+        }
       }
     }, [cityId, map, zoomLevel]);
     return null;
@@ -415,52 +438,67 @@ function LeafletMapInner({
         />
 
         {/* Render filtered cities */}
-        {filteredCities.map((city) => {
-          const isRevealed = revealedCities.includes(city.id);
-          const isRegionHint = highlightRegion === city.id;
-          const isHighlighted = highlightedCity === city.id || selectedCityId === city.id;
+        {filteredCities
+          .filter((city) => typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng))
+          .map((city) => {
+            const isRevealed = revealedCities.includes(city.id);
+            const isRegionHint = highlightRegion === city.id;
+            const isHighlighted = highlightedCity === city.id || selectedCityId === city.id;
 
-          let markerState: MarkerState = "normal";
-          if (gameMode) {
-            if (isRevealed) markerState = "revealed";
-            else if (isRegionHint) markerState = "regionHint";
-            else markerState = "fogged";
-          }
+            let markerState: MarkerState = "normal";
+            if (gameMode) {
+              if (isRevealed) markerState = "revealed";
+              else if (isRegionHint) markerState = "regionHint";
+              else markerState = "fogged";
+            }
 
-          const icon = createCityIcon(city, markerState, isHighlighted);
-          const showPopup = !gameMode || isRevealed || markerState === "normal";
+            const icon = createCityIcon(city, markerState, isHighlighted);
+            const showPopup = !gameMode || isRevealed || markerState === "normal";
 
-          return (
-            <Marker
-              key={city.id}
-              position={[city.lat, city.lng]}
-              icon={icon}
-              eventHandlers={{
-                click: () => {
-                  onCityClick?.(city);
-                  setSelectedCityId(city.id);
-                },
-              }}
-            >
-              {showPopup && (
-                <Popup className="city-popup-custom">
-                  {showControls ? (
-                    <CityPopover city={city} />
-                  ) : (
-                    <div className="text-center" dir="rtl">
-                      <span className="text-2xl block">{city.emoji}</span>
-                      <p className="font-bold text-gray-700 text-sm">{city.nameAr}</p>
-                      <p className="text-xs text-gray-500">{city.name}</p>
-                      {!gameMode && city.facts && city.facts.length > 0 && (
-                        <p className="text-xs text-gray-400 mt-1">{city.facts[0]}</p>
-                      )}
-                    </div>
-                  )}
-                </Popup>
-              )}
-            </Marker>
-          );
-        })}
+            return (
+              <Marker
+                key={city.id}
+                position={[city.lat, city.lng]}
+                icon={icon}
+                eventHandlers={{
+                  click: () => {
+                    // Verify city has valid coordinates before triggering fly-to
+                    if (city.id && typeof city.lat === "number" && typeof city.lng === "number" &&
+                        !isNaN(city.lat) && !isNaN(city.lng) && isFinite(city.lat) && isFinite(city.lng)) {
+                      onCityClick?.(city);
+                      setSelectedCityId(city.id);
+                    }
+                  },
+                }}
+              >
+                {showPopup && (
+                  <Popup className="city-popup-custom">
+                    {showControls ? (
+                      <CityPopover city={city} onAskAboutCity={onAskAboutCity} />
+                    ) : (
+                      <div className="text-center" dir="rtl">
+                        <span className="text-2xl block">{city.emoji}</span>
+                        <p className="font-bold text-gray-700 text-sm">{city.nameAr}</p>
+                        <p className="text-xs text-gray-500">{city.name}</p>
+                        {!gameMode && city.facts && city.facts.length > 0 && (
+                          <p className="text-xs text-gray-400 mt-1">{city.facts[0]}</p>
+                        )}
+                        {onAskAboutCity && (
+                          <button
+                            onClick={() => onAskAboutCity(city)}
+                            className="mt-2 w-full py-1.5 px-3 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-lg font-bold text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5"
+                          >
+                            <span>🤖</span>
+                            <span>اسأل مدحت</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </Popup>
+                )}
+              </Marker>
+            );
+          })}
       </MapContainer>
     </div>
   );
