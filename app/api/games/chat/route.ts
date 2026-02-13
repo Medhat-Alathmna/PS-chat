@@ -8,6 +8,7 @@ import { getToolsForGame } from "@/lib/ai/game-tools";
 import { buildGameSystemPrompt } from "@/lib/ai/game-prompts";
 import { GameId, GameDifficulty, GameState, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { logError } from "@/lib/utils/error-handler";
+import { detectCityInText } from "@/lib/data/cities";
 
 type GameChatRequest = {
   messages: UIMessage[];
@@ -16,12 +17,44 @@ type GameChatRequest = {
   gameState?: GameState;
   chatContext?: KidsChatContext;
   kidsProfile?: KidsProfile;
+  discoveredCityIds?: string[];
 };
+
+/**
+ * Scan assistant messages for city names already mentioned (via check_answer explanations).
+ * Returns an array of city IDs so getData() can exclude them.
+ */
+function extractUsedCityIds(messages: UIMessage[]): string[] {
+  const ids = new Set<string>();
+  for (const msg of messages) {
+    if (msg.role !== "assistant") continue;
+    for (const part of msg.parts) {
+      // Check text parts for Arabic city names
+      if (part.type === "text" && part.text) {
+        const id = detectCityInText(part.text);
+        if (id) ids.add(id);
+      }
+      // Check tool invocation outputs (check_answer explanations)
+      if (
+        part.type === "tool-invocation" &&
+        "output" in part &&
+        part.output &&
+        typeof part.output === "object" &&
+        "explanation" in part.output &&
+        typeof (part.output as Record<string, unknown>).explanation === "string"
+      ) {
+        const id = detectCityInText((part.output as Record<string, unknown>).explanation as string);
+        if (id) ids.add(id);
+      }
+    }
+  }
+  return Array.from(ids);
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as GameChatRequest;
-    const { messages = [], gameId, difficulty, chatContext, kidsProfile } = body;
+    const { messages = [], gameId, difficulty, chatContext, kidsProfile, discoveredCityIds } = body;
 
     if (!messages || messages.length === 0) {
       return new Response(
@@ -47,12 +80,19 @@ export async function POST(req: NextRequest) {
 
     const openai = createOpenAI({ apiKey });
 
+    // Merge persisted discovered cities + session cities from messages
+    const sessionCityIds = extractUsedCityIds(messages);
+    const allUsedCityIds = Array.from(
+      new Set([...(discoveredCityIds || []), ...sessionCityIds])
+    );
+
     const systemPrompt = buildGameSystemPrompt(
       gameId,
       difficulty,
       chatContext,
       kidsProfile?.age,
-      kidsProfile?.name
+      kidsProfile?.name,
+      allUsedCityIds
     );
 
     const tools = getToolsForGame(gameId);

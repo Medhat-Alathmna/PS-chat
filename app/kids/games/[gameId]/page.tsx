@@ -12,6 +12,7 @@ import { useGameState } from "@/lib/hooks/useGameState";
 import { useGameRewards } from "@/lib/hooks/useGameRewards";
 import { useChatContext } from "@/lib/hooks/useChatContext";
 import { useSounds } from "@/lib/hooks/useSounds";
+import { useDiscoveredCities } from "@/lib/hooks/useDiscoveredCities";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import ErrorBoundary from "../../../components/ErrorBoundary";
@@ -73,6 +74,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const isCityExplorer = gameId === "city-explorer";
   const [revealedCities, setRevealedCities] = useState<string[]>([]);
   const [highlightRegion, setHighlightRegion] = useState<string | null>(null);
+  // Will be initialized from persisted data after discoveredCities loads (see useEffect below)
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,6 +105,17 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const { getContext } = useChatContext(profileId);
   const gameState = useGameState(gameId, difficulty || undefined, profileId);
   const gameRewards = useGameRewards(profileId);
+  const discoveredCities = useDiscoveredCities(profileId);
+
+  // Sync map revealed cities from persisted discovered cities on load
+  useEffect(() => {
+    if (isCityExplorer && discoveredCities.isLoaded && discoveredCities.discoveredIds.length > 0) {
+      setRevealedCities((prev) => {
+        const merged = new Set([...prev, ...discoveredCities.discoveredIds]);
+        return Array.from(merged);
+      });
+    }
+  }, [isCityExplorer, discoveredCities.isLoaded, discoveredCities.discoveredIds]);
 
   // Chat hook
   const {
@@ -120,9 +133,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             difficulty: difficulty || "medium",
             chatContext: getContext(),
             kidsProfile: activeProfile,
+            discoveredCityIds: isCityExplorer ? discoveredCities.discoveredIds : undefined,
           },
         }),
-      [gameId, difficulty, activeProfile, getContext]
+      [gameId, difficulty, activeProfile, getContext, isCityExplorer, discoveredCities.discoveredIds]
     ),
   });
 
@@ -169,6 +183,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                     if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
                       setRevealedCities((prev) => [...prev, cityId]);
                       setHighlightRegion(null);
+                      discoveredCities.addCity(cityId); // persist across sessions
                     }
                   }
                 }
@@ -183,6 +198,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                     if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
                       setRevealedCities((prev) => [...prev, cityId]);
                       setHighlightRegion(null);
+                      discoveredCities.addCity(cityId); // persist across sessions
                     }
                   }
                 }
@@ -468,7 +484,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 size="sm"
                 collapsible
                 initialCollapsed={false}
-                subtitle={`${revealedCities.length}/${CITIES.length} مدن مكتشفة 🌟`}
+                subtitle={`${discoveredCities.discoveredCount}/${discoveredCities.totalCities} مدن مكتشفة 🌟`}
               />
             </div>
           </div>

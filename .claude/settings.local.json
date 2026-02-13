@@ -36,7 +36,8 @@
       "Bash(git push:*)",
       "Bash(node --version:*)",
       "Bash(node:*)",
-      "Bash(exit 0)"
+      "Bash(exit 0)",
+      "Bash(grep:*)"
     ]
   }
 }
