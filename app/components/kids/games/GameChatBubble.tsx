@@ -139,21 +139,6 @@ export default function GameChatBubble({
           </div>
         )}
 
-        {/* Old options (grayed out) — active options are rendered separately at the bottom */}
-        {optionsData && !isActiveOptions && (
-          <div className="flex flex-wrap gap-1.5 opacity-40">
-            {optionsData.options.map((option, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs bg-gray-50 border border-gray-200 text-gray-400"
-                dir="auto"
-              >
-                <span className="text-sm">{NUMBER_EMOJIS[i]}</span>
-                <span>{option}</span>
-              </span>
-            ))}
-          </div>
-        )}
 
         {/* Speaking indicator */}
         {!isStreaming && onSpeak && (

@@ -472,7 +472,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       <div className="relative flex h-screen flex-col overflow-hidden">
         {/* Game header - Mobile Compact */}
         <header className="shrink-0 px-3 py-2 z-10 w-full">
-          <div className="mx-auto max-w-4xl">
+          <div className={`mx-auto ${isCityExplorer ? "max-w-7xl" : "max-w-4xl"}`}>
             <GameHeader
               config={config}
               state={gameState.state}
@@ -485,10 +485,11 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           </div>
         </header>
 
-        {/* Map panel for city-explorer */}
-        {isCityExplorer && (
-          <div className="shrink-0 px-3 z-10">
-            <div className="mx-auto max-w-2xl">
+        {/* Main content: side-by-side on desktop for city-explorer, stacked otherwise */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* Map panel for city-explorer — mobile only (stacked) */}
+          {isCityExplorer && (
+            <div className="shrink-0 px-3 z-10 md:hidden">
               <ExpandableMap
                 gameMode
                 revealedCities={revealedCities}
@@ -500,94 +501,115 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 subtitle={`${discoveredCities.discoveredCount}/${discoveredCities.totalCities} مدن مكتشفة 🌟`}
               />
             </div>
+          )}
+
+          {/* Chat + Input column — offset on desktop for city-explorer map */}
+          <div className={`flex-1 min-h-0 flex flex-col overflow-hidden `}>
+            {/* Chat area */}
+            <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
+              <div className={`mx-auto flex flex-col gap-4 pb-4 ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}>
+                {displayMessages.map((msg, index) => (
+                  <GameChatBubble
+                    key={msg.id}
+                    role={msg.role}
+                    content={msg.content}
+                    isStreaming={
+                      status === "streaming" &&
+                      index === displayMessages.length - 1 &&
+                      msg.role === "assistant"
+                    }
+                    answerResult={msg.answerResult}
+                    hintData={msg.hintData}
+                    optionsData={msg.optionsData}
+                    isActiveOptions={false}
+                    onOptionClick={handleOptionClick}
+                    onHintClick={handleHintClick}
+                    isSpeaking={currentMessageId === msg.id}
+                    onSpeak={() => speakMessage(msg)}
+                    onStopSpeaking={stopSpeaking}
+                  />
+                ))}
+
+                {/* Active options — render prominently at bottom */}
+                {activeOptions && (
+                  <ActiveOptionsBlock
+                    optionsData={activeOptions.data}
+                    onOptionClick={handleOptionClick}
+                    onHintClick={handleHintClick}
+                  />
+                )}
+
+                {isLoading &&
+                  displayMessages[displayMessages.length - 1]?.role !== "assistant" && (
+                    <GameTypingBubble />
+                  )}
+              </div>
+            </main>
+
+            {/* Input area - Floating Capsule Design */}
+            <div className="shrink-0 p-3 sm:p-4 z-20">
+              <form
+                onSubmit={(event) => void handleSubmit(event)}
+                className={`mx-auto ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}
+              >
+                <div className={`flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/90 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white ${hasActiveOptions ? "opacity-90 grayscale-[0.5]" : ""}`}>
+
+                  <textarea
+                    ref={textareaRef}
+                    className="flex-1 max-h-[100px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-2 py-2"
+                    placeholder={hasActiveOptions ? "أو اكتب جوابك... ✍️" : "اكتب جوابك هنا... ✍️"}
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    maxLength={300}
+                    disabled={isLoading}
+                    dir="auto"
+                  />
+
+                  {/* Mic button for speech input */}
+                  <div className="shrink-0">
+                    <SpeechInput
+                      onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!canSend}
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
+                    aria-label="إرسال"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop map panel — absolutely positioned, independent from chat */}
+        {isCityExplorer && (
+          <div className="hidden md:block absolute top-[60px] right-3 w-[25%] min-w-[200px] max-w-[350px] h-[70%] z-10" style={{ marginBlockStart: '5rem' }}>
+            <ExpandableMap
+              gameMode
+              revealedCities={revealedCities}
+              highlightRegion={highlightRegion || undefined}
+              flyToCity={flyToCity || undefined}
+              size="lg"
+              collapsible
+              initialCollapsed={false}
+              subtitle={`${discoveredCities.discoveredCount}/${discoveredCities.totalCities} مدن مكتشفة 🌟`}
+              className="h-full flex flex-col"
+              collapsedHeight="h-full"
+            />
           </div>
         )}
-
-        {/* Chat area */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
-          <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
-            {displayMessages.map((msg, index) => (
-              <GameChatBubble
-                key={msg.id}
-                role={msg.role}
-                content={msg.content}
-                isStreaming={
-                  status === "streaming" &&
-                  index === displayMessages.length - 1 &&
-                  msg.role === "assistant"
-                }
-                answerResult={msg.answerResult}
-                hintData={msg.hintData}
-                optionsData={msg.optionsData}
-                isActiveOptions={false}
-                onOptionClick={handleOptionClick}
-                onHintClick={handleHintClick}
-                isSpeaking={currentMessageId === msg.id}
-                onSpeak={() => speakMessage(msg)}
-                onStopSpeaking={stopSpeaking}
-              />
-            ))}
-
-            {/* Active options — render prominently at bottom */}
-            {activeOptions && (
-              <ActiveOptionsBlock
-                optionsData={activeOptions.data}
-                onOptionClick={handleOptionClick}
-                onHintClick={handleHintClick}
-              />
-            )}
-
-            {isLoading &&
-              displayMessages[displayMessages.length - 1]?.role !== "assistant" && (
-                <GameTypingBubble />
-              )}
-          </div>
-        </main>
-
-        {/* Input area - Floating Capsule Design */}
-        <div className="shrink-0 p-3 sm:p-4 z-20">
-          <form
-            onSubmit={(event) => void handleSubmit(event)}
-            className="mx-auto max-w-2xl"
-          >
-            <div className={`flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/90 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white ${hasActiveOptions ? "opacity-90 grayscale-[0.5]" : ""}`}>
-
-              <textarea
-                ref={textareaRef}
-                className="flex-1 max-h-[100px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-2 py-2"
-                placeholder={hasActiveOptions ? "أو اكتب جوابك... ✍️" : "اكتب جوابك هنا... ✍️"}
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                maxLength={300}
-                disabled={isLoading}
-                dir="auto"
-              />
-
-              {/* Mic button for speech input */}
-              <div className="shrink-0">
-                <SpeechInput
-                  onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!canSend}
-                className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
-                aria-label="إرسال"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
 
         {/* Confetti for correct answers */}
         <Confetti show={showConfetti} variant="celebration" />

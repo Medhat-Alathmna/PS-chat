@@ -142,7 +142,7 @@ export default function ExpandableMap({
   return (
     <div className={`${className}`}>
       {/* Header with title and controls */}
-      <div className="flex items-center justify-between gap-2 mb-1.5">
+      <div className="flex items-center justify-between gap-2 mb-1.5 shrink-0">
         <button
           onClick={collapsible ? toggleCollapse : undefined}
           className={`flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[var(--kids-purple)] ${collapsible ? "hover:opacity-80 cursor-pointer" : ""}`}
@@ -171,8 +171,8 @@ export default function ExpandableMap({
 
       {/* Map container */}
       {!isCollapsed && (
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-1 sm:p-1.5 shadow-md overflow-hidden animate-fade-in">
-          <div className={mapHeight}>
+        <div className={`bg-white/70 backdrop-blur-sm rounded-2xl p-1 sm:p-1.5 shadow-md overflow-hidden animate-fade-in ${mapHeight === "h-full" ? "flex-1 min-h-0" : ""}`}>
+          <div className={mapHeight === "h-full" ? "h-full" : mapHeight}>
             <PalestineLeafletMap
               onCityClick={onCityClick}
               onAskAboutCity={onAskAboutCity}
