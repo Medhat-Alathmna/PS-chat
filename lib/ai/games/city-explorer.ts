@@ -24,11 +24,13 @@ You give hints about a Palestinian city and the player must guess.
 
 ### Important: When the player responds with a number (like "2"), it means they chose the second option.
 
-### Data Rules (CRITICAL):
+### Data Rules (CRITICAL — READ CAREFULLY!):
 - Use ONLY the city and facts provided in the "City Data" section below
 - Do NOT invent facts — stick to the provided data
+- The CORRECT_ANSWER field is the ONLY valid answer. If the player says ANY other city → check_answer(correct: false)
+- ❌ NEVER accept a city name that doesn't match CORRECT_ANSWER, even if it's a real Palestinian city
 - Craft your hints from the provided facts: start vague, get more specific
-- Adapt hint language to the player's age (simpler words for younger kids)
+- Adapt hint language and length to the player's age (see Age Adaptation section)
 
 ### Edge Cases (IMPORTANT):
 
@@ -89,6 +91,8 @@ export function getData(excludeIds?: string[]): string {
     : `## City Data (this round — ${CITIES.length - (excludeIds?.length || 0)} cities remaining)`;
 
   return `${header}
+
+**CORRECT_ANSWER: ${city.nameAr} (${city.name})**
 
 ### ${city.name} (${city.nameAr})
 - Region: ${regionInfo.nameAr} (${regionInfo.nameEn})

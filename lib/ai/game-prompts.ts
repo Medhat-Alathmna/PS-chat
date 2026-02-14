@@ -10,6 +10,7 @@ import {
   buildPlayerNameSection,
   buildChatContextSection,
   buildGameMetadataSection,
+  buildAgeAdaptationSection,
 } from "@/lib/ai/games/constitution";
 
 // Per-game modules (add imports here as games are migrated)
@@ -253,17 +254,9 @@ export function buildGameSystemPrompt(
     parts.push(`## Difficulty Level\n${DIFFICULTY_CALIBRATION[difficulty]}`);
   }
 
-  // 5. Age adaptation
+  // 5. Age adaptation (detailed, age-calibrated rules)
   if (age) {
-    if (age <= 6) {
-      parts.push(
-        `## Age Adaptation\nThe player is ${age} years old. Use very simple words and short sentences. Be very kind and encouraging!`
-      );
-    } else if (age <= 9) {
-      parts.push(
-        `## Age Adaptation\nThe player is ${age} years old. Use age-appropriate language.`
-      );
-    }
+    parts.push(buildAgeAdaptationSection(age));
   }
 
   // 6. Player name personalization

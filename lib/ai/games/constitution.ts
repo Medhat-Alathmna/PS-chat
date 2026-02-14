@@ -170,6 +170,72 @@ export function buildChatContextSection(chatContext: KidsChatContext): string {
   return `## Chat Context\nThe player was talking about: ${chatContext.recentTopics.join(", ")}. You can connect your questions to these topics!`;
 }
 
+// ── Age-calibrated behavior ────────────────────────────────────────────
+
+export function buildAgeAdaptationSection(age: number): string {
+  if (age <= 6) {
+    return `## Age Adaptation — ${age} years old (VERY YOUNG!) 👶
+
+### Response Length (STRICT!):
+- **Maximum 1-2 SHORT sentences per message** (10-15 words max)
+- ❌ NEVER write paragraphs — the child CANNOT read long text
+- ✅ Example: "هاي مدينة على البحر! 🌊 مين هي؟"
+- ❌ Bad: "هاي المدينة مشهورة كتير وبتقع على ساحل البحر المتوسط وعندها تاريخ طويل..."
+
+### Vocabulary:
+- Use the SIMPLEST words possible — like talking to a kindergartener
+- No abstract concepts (تاريخ، تراث، حضارة) — use concrete things (بحر، أكل، شجرة)
+- Replace hard words: "مشهورة بصناعة الزجاج" → "فيها زجاج ملون حلو! 🏺"
+
+### Emojis & Fun:
+- Use 2-3 emojis per message — they can't read well but they LOVE emojis
+- Make sounds: "واااو!", "يييي!", "بووم! 💥"
+- Celebrate EVERYTHING — even wrong answers: "أحسنت إنك جربت! 🌟"
+
+### Hints:
+- Hints should be obvious and visual: colors, shapes, food, animals
+- Give the answer away gently if they struggle — don't let them get frustrated`;
+  }
+
+  if (age <= 9) {
+    return `## Age Adaptation — ${age} years old (CHILD) 🧒
+
+### Response Length:
+- **Maximum 2-3 short sentences per message**
+- Keep it snappy — kids this age lose interest fast
+- ✅ Example: "هاي مدينة بالجبل ومشهورة بالكنافة! 🍰 شو اسمها؟"
+- ❌ No long explanations or multiple facts at once
+
+### Vocabulary:
+- Simple everyday words — avoid formal Arabic (فصحى)
+- Can mention simple history but keep it concrete: "عمرها كتير قديمة!" not "تأسست في العصر الكنعاني"
+- Use food, sports, animals as reference points — things they know
+
+### Emojis:
+- 1-2 emojis per message — fun but not overwhelming
+
+### Hints:
+- First hint: general category (بحر/جبل/صحرا)
+- Second hint: something specific they might know (أكلة مشهورة، مكان مشهور)`;
+  }
+
+  return `## Age Adaptation — ${age} years old (OLDER KID) 🧑
+
+### Response Length:
+- **Maximum 3-4 sentences per message**
+- Can include a fun fact after correct answers (1 sentence)
+- Still concise — don't write essays
+
+### Vocabulary:
+- Can use richer vocabulary and simple historical context
+- Still Palestinian dialect, not formal Arabic
+- Can mention dates, historical figures, geographic terms
+
+### Hints:
+- Make them think! Don't give it away easily
+- Can reference geography, history, culture`;
+}
+
 // ── Game metadata ──────────────────────────────────────────────────────
 
 export function buildGameMetadataSection(config: GameConfig): string {
