@@ -7,6 +7,7 @@ interface SpeechInputProps {
   onTranscript: (text: string) => void;
   disabled?: boolean;
   className?: string;
+  playerAge?: number;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -19,7 +20,8 @@ const ERROR_MESSAGES: Record<string, string> = {
 /**
  * Mic input button for speech-to-text
  */
-export default function SpeechInput({ onTranscript, disabled, className }: SpeechInputProps) {
+export default function SpeechInput({ onTranscript, disabled, className, playerAge }: SpeechInputProps) {
+  const isYoungKid = playerAge !== undefined && playerAge <= 7;
   const {
     isListening,
     isSupported,
@@ -43,24 +45,35 @@ export default function SpeechInput({ onTranscript, disabled, className }: Speec
 
   if (!isSupported) return null;
 
+  const defaultSize = isYoungKid
+    ? "h-14 w-14 text-2xl"
+    : "h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl";
+
   return (
-    <div className="relative">
+    <div className="relative flex flex-col items-center">
       <button
         type="button"
         onClick={toggleListening}
         disabled={disabled}
         className={`
           flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 shadow-md transform
-          ${className || "h-10 w-10 sm:h-12 sm:w-12 text-lg sm:text-xl"}
+          ${className || defaultSize}
           ${isListening
             ? "bg-red-500 text-white animate-mic-pulse"
-            : "bg-[var(--kids-blue)] text-white"
+            : isYoungKid
+              ? "bg-[var(--kids-blue)] text-white ring-4 ring-blue-300/50 animate-pulse"
+              : "bg-[var(--kids-blue)] text-white"
           }
         `}
         aria-label={isListening ? "إيقاف الاستماع" : "تحدث بدل الكتابة"}
       >
         {isListening ? "⏹️" : "🎤"}
       </button>
+      {isYoungKid && !isListening && (
+        <span className="text-[10px] font-bold text-[var(--kids-blue)] mt-0.5 animate-pulse">
+          احكي!
+        </span>
+      )}
 
       {/* Interim transcript tooltip */}
       {isListening && interimTranscript && (

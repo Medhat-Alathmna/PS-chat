@@ -3,10 +3,12 @@ import { getGameConfig } from "@/lib/data/games";
 import {
   MEDHAT_BASE,
   SAFETY_RULES,
-  DIFFICULTY_CALIBRATION,
   GAMES_WITH_OPTIONS,
+  GAMES_WITH_SUGGEST_REPLIES,
   PRESENT_OPTIONS_RULES,
   TOOL_USAGE_RULES,
+  buildDifficultySection,
+  buildSuggestRepliesRules,
   buildPlayerNameSection,
   buildChatContextSection,
   buildGameMetadataSection,
@@ -258,9 +260,9 @@ export function buildGameSystemPrompt(
     if (data) parts.push(data);
   }
 
-  // 4. Difficulty calibration
+  // 4. Difficulty calibration (age-aware complexity)
   if (difficulty && config.hasDifficulty) {
-    parts.push(`## Difficulty Level\n${DIFFICULTY_CALIBRATION[difficulty]}`);
+    parts.push(buildDifficultySection(difficulty, age || 8));
   }
 
   // 5. Age adaptation (detailed, age-calibrated rules)
@@ -289,7 +291,12 @@ export function buildGameSystemPrompt(
     parts.push(PRESENT_OPTIONS_RULES);
   }
 
-  // 11. Tool usage rules
+  // 11. Quick reply suggestions (for free-form games)
+  if (GAMES_WITH_SUGGEST_REPLIES.includes(gameId)) {
+    parts.push(buildSuggestRepliesRules(age || 8));
+  }
+
+  // 12. Tool usage rules
   parts.push(TOOL_USAGE_RULES);
 
   return parts.join("\n\n");

@@ -28,22 +28,88 @@ export const SAFETY_RULES = `
 - ✅ Focus on culture, food, and beautiful history
 - ✅ Always encourage and praise children`;
 
-// ── Difficulty calibration ─────────────────────────────────────────────
+// ── Content complexity (age × difficulty) ─────────────────────────────
 
-export const DIFFICULTY_CALIBRATION: Record<GameDifficulty, string> = {
-  easy: `Easy level (age 4-6):
-- Very simple questions with only 2 options (use present_options with 2 options)
-- Very clear hints
-- Every answer is correct! Encourage a lot 🌟`,
-  medium: `Medium level (age 7-9):
-- Medium questions with 3 options (use present_options with 3 options)
-- Hints on request
-- Encourage trying again`,
-  hard: `Hard level (age 10-12):
-- Challenge questions with 4 options (use present_options with 4 options)
-- Limited hints
-- Additional information with each answer`,
-};
+/**
+ * Compute a 1-10 content-complexity score from the player's age and the
+ * chosen difficulty.  Higher = deeper / more abstract questions.
+ *
+ * Matrix:
+ *            Easy  Medium  Hard
+ *  Age 4-5:   1      3      4
+ *  Age 6:     2      4      5
+ *  Age 8:     4      5      7
+ *  Age 10:    5      6      8
+ *  Age 12:    6      8      9
+ */
+export function getContentComplexity(age: number, difficulty: GameDifficulty): number {
+  const clamped = Math.max(4, Math.min(12, age));
+  const ageBase = 1 + ((clamped - 4) / 8) * 5;
+  const offset: Record<GameDifficulty, number> = { easy: 0, medium: 1.5, hard: 3 };
+  return Math.max(1, Math.min(10, Math.round(ageBase + offset[difficulty])));
+}
+
+/**
+ * Turn a 1-10 complexity score into AI-facing guidance about question depth.
+ */
+export function getComplexityGuidance(level: number): string {
+  if (level <= 2) {
+    return `Content complexity: ${level}/10 — Recognition & obvious answers
+- Questions where the answer is almost visible in the question
+- "What color is the watermelon?" level of simplicity
+- Single concrete fact, no reasoning required`;
+  }
+  if (level <= 4) {
+    return `Content complexity: ${level}/10 — Basic recall & simple facts
+- Straightforward factual questions about familiar topics
+- "Which city is famous for knafeh?" style
+- One-step recall, no connections between facts`;
+  }
+  if (level <= 6) {
+    return `Content complexity: ${level}/10 — Connections & simple "why" questions
+- Questions that link two ideas together
+- "Why is Jaffa called the Bride of the Sea?" style
+- Simple cause-and-effect or category relationships`;
+  }
+  if (level <= 8) {
+    return `Content complexity: ${level}/10 — Historical context & comparisons
+- Questions involving historical background or comparing concepts
+- "How did Nablus soap-making differ from other cities?" style
+- Requires understanding context, not just isolated facts`;
+  }
+  return `Content complexity: ${level}/10 — Multi-step reasoning
+- Questions that require combining multiple pieces of knowledge
+- "What connects the olive tree to both Palestinian economy and culture?" style
+- Analysis, inference, or synthesis across topics`;
+}
+
+/**
+ * Build the full difficulty section: complexity guidance + unchanged mechanics.
+ */
+export function buildDifficultySection(difficulty: GameDifficulty, age: number): string {
+  const level = getContentComplexity(age, difficulty);
+  const guidance = getComplexityGuidance(level);
+
+  const mechanics: Record<GameDifficulty, string> = {
+    easy: `### Mechanics (Easy):
+- 2 options when using present_options
+- Hints are FREE (0 points)
+- Every attempt deserves celebration! 🌟`,
+    medium: `### Mechanics (Medium):
+- 3 options when using present_options
+- Hints cost 1 point
+- Encourage trying again after mistakes`,
+    hard: `### Mechanics (Hard):
+- 4 options when using present_options
+- Hints cost 2 points
+- Share extra facts with each answer`,
+  };
+
+  return `## Difficulty Level — ${difficulty.toUpperCase()}
+${guidance}
+
+${mechanics[difficulty]}`;
+}
 
 // ── Games that use present_options ─────────────────────────────────────
 
@@ -93,9 +159,9 @@ When the player says: "مش عارف", "ما بعرف", "لا أعرف", "help",
 4. **You can combine**: give_hint + image_search for visual assistance
 
 ### 🆕 Hint Points Deduction (NEW SYSTEM!):
-- **Easy mode (age 4-6)**: pointsDeduction = 0 (FREE hints! 🎁)
-- **Medium mode (age 7-9)**: pointsDeduction = 1
-- **Hard mode (age 10-12)**: pointsDeduction = 2
+- **Easy mode**: pointsDeduction = 0 (FREE hints! 🎁)
+- **Medium mode**: pointsDeduction = 1
+- **Hard mode**: pointsDeduction = 2
 - The system automatically calculates this based on difficulty level
 
 ### User Intent Detection (CRITICAL — read carefully!) 🧠
@@ -173,7 +239,7 @@ export function buildChatContextSection(chatContext: KidsChatContext): string {
 // ── Age-calibrated behavior ────────────────────────────────────────────
 
 export function buildAgeAdaptationSection(age: number): string {
-  if (age <= 6) {
+  if (age <= 5) {
     return `## Age Adaptation — ${age} years old (VERY YOUNG!) 👶
 
 ### Response Length (STRICT!):
@@ -195,6 +261,29 @@ export function buildAgeAdaptationSection(age: number): string {
 ### Hints:
 - Hints should be obvious and visual: colors, shapes, food, animals
 - Give the answer away gently if they struggle — don't let them get frustrated`;
+  }
+
+  if (age <= 7) {
+    return `## Age Adaptation — ${age} years old (YOUNG CHILD) 🧒
+
+### Response Length:
+- **Maximum 2 short sentences per message**
+- Keep it very snappy — attention span is still short
+- ✅ Example: "هاي مدينة بالجبل ومشهورة بالكنافة! 🍰 شو اسمها؟"
+- ❌ No long explanations
+
+### Vocabulary:
+- Simple everyday words — avoid formal Arabic (فصحى)
+- Keep everything concrete: food, colors, animals, places they might visit
+- Replace hard words: "عمرها كتير قديمة!" not "تأسست في العصر الكنعاني"
+
+### Emojis & Fun:
+- Use 2-3 emojis per message
+- Keep the energy high — lots of excitement and celebration
+
+### Hints:
+- Hints should be obvious: colors, shapes, food, animals
+- Second hint can be more specific but still simple`;
   }
 
   if (age <= 9) {
@@ -234,6 +323,42 @@ export function buildAgeAdaptationSection(age: number): string {
 ### Hints:
 - Make them think! Don't give it away easily
 - Can reference geography, history, culture`;
+}
+
+// ── Games that use suggest_replies ────────────────────────────────────
+
+export const GAMES_WITH_SUGGEST_REPLIES: GameId[] = [
+  "word-chain",
+  "twenty-questions",
+  "story-builder",
+  "draw-describe",
+];
+
+// ── suggest_replies instruction ──────────────────────────────────────
+
+export function buildSuggestRepliesRules(age: number): string {
+  const frequency = age <= 7
+    ? "ALWAYS use suggest_replies after every message — young kids struggle with typing"
+    : age <= 9
+    ? "Use suggest_replies often — helpful for most kids"
+    : "Use suggest_replies occasionally — older kids can type but it speeds things up";
+
+  return `## Quick Reply Suggestions (suggest_replies) 💬
+- Use suggest_replies to show tappable suggestion chips the kid can tap instead of typing
+- These are SOFT suggestions, NOT quiz answers (use present_options for quiz answers)
+- Suggestions must be SHORT (1-3 words each, Arabic)
+- ${frequency}
+
+### Per-game guidance:
+- **word-chain**: Suggest 3-4 valid Arabic words starting with the required letter
+- **twenty-questions**: Suggest common yes/no question patterns like "هل هو أكل؟", "هل في القدس؟"
+- **story-builder**: Suggest fun sentence starters like "وبعدين...", "وصلنا لـ..."
+- **draw-describe**: Suggest descriptive words like "أخضر", "كبير", "شكل دائري"
+
+### Rules:
+- Set showHintChip: true when hints are available
+- Can be combined with other tools (e.g., check_answer + suggest_replies for next turn)
+- ❌ NEVER use suggest_replies together with present_options (they serve different purposes)`;
 }
 
 // ── Game metadata ──────────────────────────────────────────────────────

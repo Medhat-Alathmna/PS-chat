@@ -23,6 +23,7 @@ import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../componen
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
+import QuickReplyChips, { QuickReplyData } from "../../../components/kids/games/QuickReplyChips";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
 import ExpandableMap from "../../../components/kids/ExpandableMap";
 
@@ -269,6 +270,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       let answerResult: { correct: boolean; explanation: string } | null = null;
       let hintData: { hint: string; hintNumber: number; images?: ImageResult[] } | null = null;
       let optionsData: OptionsData | null = null;
+      let suggestRepliesData: QuickReplyData | null = null;
 
       for (const part of msg.parts) {
         if (part.type === "text") {
@@ -297,6 +299,11 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 options: toolPart.output.options as string[],
                 allowHint: toolPart.output.allowHint as boolean,
               };
+            } else if (toolName === "suggest_replies") {
+              suggestRepliesData = {
+                suggestions: toolPart.output.suggestions as string[],
+                showHintChip: toolPart.output.showHintChip as boolean,
+              };
             }
           }
         }
@@ -309,6 +316,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         answerResult,
         hintData,
         optionsData,
+        suggestRepliesData,
       };
     });
   }, [aiMessages]);
@@ -352,6 +360,15 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     return null;
   }, [displayMessages, status]);
 
+  // Find active quick reply suggestions (from the last assistant message with suggest_replies)
+  const activeQuickReplies = useMemo<QuickReplyData | null>(() => {
+    if (status === "streaming") return null;
+    // Only show if the last message is from assistant (no user reply yet)
+    const lastMsg = displayMessages[displayMessages.length - 1];
+    if (!lastMsg || lastMsg.role !== "assistant") return null;
+    return lastMsg.suggestRepliesData;
+  }, [displayMessages, status]);
+
   const hasActiveOptions = activeOptions !== null;
 
   const handleOptionClick = useCallback(
@@ -371,6 +388,18 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     sendMessage({ text: "تلميح" });
   }, [isLoading, playSound, sendMessage, stopSpeaking]);
 
+  const handleChipClick = useCallback(
+    (text: string) => {
+      if (isLoading) return;
+      stopSpeaking();
+      playSound("click");
+      sendMessage({ text });
+    },
+    [isLoading, playSound, sendMessage, stopSpeaking]
+  );
+
+  const playerAge = activeProfile?.age;
+  const isYoungKid = playerAge !== undefined && playerAge <= 7;
   const canSend = input.trim().length > 0 && !isLoading;
 
   const handleSubmit = useCallback(
@@ -548,47 +577,76 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
             {/* Input area - Floating Capsule Design */}
             <div className="shrink-0 p-3 sm:p-4 z-20">
-              <form
-                onSubmit={(event) => void handleSubmit(event)}
-                className={`mx-auto ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}
-              >
-                <div className={`flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/90 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white ${hasActiveOptions ? "opacity-90 grayscale-[0.5]" : ""}`}>
-
-                  <textarea
-                    ref={textareaRef}
-                    className="flex-1 max-h-[100px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-2 py-2"
-                    placeholder={hasActiveOptions ? "أو اكتب جوابك... ✍️" : "اكتب جوابك هنا... ✍️"}
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    onKeyDown={handleKeyDown}
-                    rows={1}
-                    maxLength={300}
+              <div className={`mx-auto flex flex-col gap-2 ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}>
+                {/* Quick reply chips */}
+                {activeQuickReplies && (
+                  <QuickReplyChips
+                    data={activeQuickReplies}
+                    onChipClick={handleChipClick}
+                    onHintClick={handleHintClick}
                     disabled={isLoading}
-                    dir="auto"
                   />
+                )}
 
-                  {/* Mic button for speech input */}
-                  <div className="shrink-0">
-                    <SpeechInput
-                      onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
-                      disabled={isLoading}
-                    />
-                  </div>
+                <form onSubmit={(event) => void handleSubmit(event)}>
+                  <div className={`flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/90 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white ${hasActiveOptions ? "opacity-90 grayscale-[0.5]" : ""}`}>
 
-                  <button
-                    type="submit"
-                    disabled={!canSend}
-                    className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
-                    aria-label="إرسال"
-                  >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
+                    {/* Mic button FIRST for young kids (more prominent in RTL) */}
+                    {isYoungKid && (
+                      <div className="shrink-0">
+                        <SpeechInput
+                          onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                          disabled={isLoading}
+                          playerAge={playerAge}
+                        />
+                      </div>
                     )}
-                  </button>
-                </div>
-              </form>
+
+                    <textarea
+                      ref={textareaRef}
+                      className="flex-1 max-h-[100px] resize-none bg-transparent text-base sm:text-lg text-gray-800 placeholder:text-gray-400 focus:outline-none leading-relaxed px-2 py-2"
+                      placeholder={
+                        hasActiveOptions
+                          ? "أو اكتب جوابك... ✍️"
+                          : isYoungKid
+                            ? "احكي جوابك... 🎤"
+                            : "اكتب جوابك هنا... ✍️"
+                      }
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                      onKeyDown={handleKeyDown}
+                      rows={1}
+                      maxLength={300}
+                      disabled={isLoading}
+                      dir="auto"
+                    />
+
+                    {/* Mic button for older kids (after textarea) */}
+                    {!isYoungKid && (
+                      <div className="shrink-0">
+                        <SpeechInput
+                          onTranscript={(text) => setInput((prev) => prev ? prev + " " + text : text)}
+                          disabled={isLoading}
+                          playerAge={playerAge}
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={!canSend}
+                      className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[var(--kids-green)] to-emerald-400 text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-emerald-500/50 active:scale-90 disabled:opacity-50 disabled:shadow-none disabled:grayscale"
+                      aria-label="إرسال"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-xl sm:text-2xl transform -translate-x-0.5 -translate-y-0.5">🚀</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         </div>

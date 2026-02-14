@@ -27,7 +27,7 @@ export const checkAnswerTool = tool({
  */
 export const giveHintTool = tool({
   description:
-    "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific). Optionally include imageQuery to show a relevant image alongside the hint. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
+    "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific) and match the content complexity level. Optionally include imageQuery to show a relevant image alongside the hint. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
   inputSchema: z.object({
     hint: z.string().describe("The hint text in Palestinian Arabic"),
     hintNumber: z.number().describe("Which hint this is (1, 2, 3...)"),
@@ -89,6 +89,27 @@ export const presentOptionsTool = tool({
 });
 
 /**
+ * suggest_replies — Show tappable quick-reply chips for free-form games
+ */
+export const suggestRepliesTool = tool({
+  description:
+    "Suggest quick reply options the player can tap instead of typing. Use for free-form games to help kids who struggle with typing. These are soft suggestions, NOT quiz answers — use present_options for quiz answers.",
+  inputSchema: z.object({
+    suggestions: z
+      .array(z.string())
+      .min(2)
+      .max(5)
+      .describe("2-5 short Arabic suggestions the kid can tap"),
+    showHintChip: z
+      .boolean()
+      .describe("Whether to include a hint chip alongside suggestions"),
+  }),
+  execute: async ({ suggestions, showHintChip }) => {
+    return { suggestions, showHintChip, displayed: true };
+  },
+});
+
+/**
  * end_game — Signal game over with reason and final message
  */
 export const endGameTool = tool({
@@ -146,12 +167,14 @@ const cityExplorerTools: ToolCollection = {
 const creativeToolsWithOptions: ToolCollection = {
   advance_round: advanceRoundTool,
   present_options: presentOptionsTool,
+  suggest_replies: suggestRepliesTool,
   end_game: endGameTool,
 };
 
 /** Creative games WITHOUT options (story-builder, draw-describe) */
 const creativeToolsNoOptions: ToolCollection = {
   advance_round: advanceRoundTool,
+  suggest_replies: suggestRepliesTool,
   end_game: endGameTool,
 };
 
@@ -159,6 +182,7 @@ const creativeToolsNoOptions: ToolCollection = {
 const wordGameTools: ToolCollection = {
   check_answer: checkAnswerTool,
   give_hint: giveHintTool,
+  suggest_replies: suggestRepliesTool,
   end_game: endGameTool,
 };
 
