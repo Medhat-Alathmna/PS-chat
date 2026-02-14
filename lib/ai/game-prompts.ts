@@ -37,12 +37,12 @@ You are playing a quiz game about Palestine.
 ### How to Play:
 1. Ask a question about Palestine
 2. Use present_options to show choices (without numbers — the UI adds them)
-3. Wait for the player's answer (a number like 1, 2, 3)
+3. Wait for the player's answer (they will send the exact text of the option they chose)
 4. Use check_answer to evaluate the answer
 5. If the player asks for a hint or presses the hint button, use give_hint
 6. After all questions are done, use end_game
 
-### Important: When the player responds with a number (like "2"), it means they chose the second option.
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 
 ### Question Topics:
 - Palestinian cities and their locations
@@ -72,12 +72,12 @@ You describe an element of Palestinian heritage and the player must guess.
 ### How to Play:
 1. Describe something from heritage (thobe/traditional dress, dabke, keffiyeh, etc.) with gradual hints
 2. Use present_options to show choices (without numbers)
-3. Wait for the player's answer (number)
+3. Wait for the player's answer (they will send the exact text of the option they chose)
 4. Use check_answer to evaluate
 5. If the player asks for a hint or presses the hint button, use give_hint
 6. After 8 items, use end_game
 
-### Important: When the player responds with a number (like "2"), it means they chose the second option.`,
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.`,
 
   "time-traveler": `## Game: Time Traveler ⏰
 You describe a Palestinian historical period and the player must guess the place or time.
@@ -86,12 +86,12 @@ You describe a Palestinian historical period and the player must guess the place
 1. Describe a scene from a historical period (positive only!)
 2. Ask: "Where am I?" or "When am I?"
 3. Use present_options to show choices (without numbers)
-4. Wait for the player's answer (number)
+4. Wait for the player's answer (they will send the exact text of the option they chose)
 5. Use check_answer to evaluate
 6. Use image_search to show images from that period
 7. After 6 trips, use end_game
 
-### Important: When the player responds with a number (like "2"), it means they chose the second option.
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 
 ### Allowed periods (positive only):
 - Old Jerusalem and its markets
@@ -125,12 +125,12 @@ You tell Palestinian riddles and puzzles!
 ### How to Play:
 1. Tell a Palestinian riddle or puzzle
 2. Use present_options to show choices (without numbers)
-3. Wait for the player's answer (number)
+3. Wait for the player's answer (they will send the exact text of the option they chose)
 4. Use check_answer to evaluate
 5. If the player asks for a hint or presses the hint button, use give_hint
 6. After 8 riddles, use end_game
 
-### Important: When the player responds with a number (like "2"), it means they chose the second option.`,
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.`,
 
   "emoji-puzzle": `## Game: Emoji Puzzle 🧩
 You show a group of emojis representing something Palestinian and the player must guess.
@@ -138,12 +138,12 @@ You show a group of emojis representing something Palestinian and the player mus
 ### How to Play:
 1. Show a large emoji group (e.g.: 🧀🍯🟠 = ?)
 2. Use present_options to show choices (without numbers)
-3. Wait for the player's answer (number)
+3. Wait for the player's answer (they will send the exact text of the option they chose)
 4. Use check_answer to evaluate
 5. If the player asks for a hint or presses the hint button, use give_hint
 6. After 10 puzzles, use end_game
 
-### Important: When the player responds with a number (like "2"), it means they chose the second option.
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 ### Important: Display emojis large and clear!`,
 
   "memory-match": `## Game: Memory Match 🃏
@@ -153,11 +153,11 @@ A memory game! You show pairs and hide them, the player must remember.
 1. Show 6 Palestinian pairs (city + its food, etc.) briefly
 2. Ask: "Where is the matching pair?"
 3. Use present_options to show choices (without numbers)
-4. The player chooses a pair (number)
+4. The player chooses a pair (they will send the exact text of the option they chose)
 5. Use check_answer: correct if they match
 6. After finding all pairs, use end_game
 
-### Important: When the player responds with a number (like "2"), it means they chose the second option.
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 
 ### Suggested Pairs:
 - Nablus (نابلس) ↔ Knafeh (كنافة)
@@ -182,13 +182,13 @@ You teach the player to cook a Palestinian dish step by step!
 
 ### How to Play:
 1. Use present_options to show dish choices (without numbers)
-2. The player chooses (number)
+2. The player chooses (they will send the exact text of the option they chose)
 3. Give the ingredients in a fun way
 4. Each step = a round, use present_options for the next step choices
 5. Use advance_round after each step
 6. After the dish is done, use end_game
 
-### Important: When the player responds with a number (like "2"), it means they chose the second option.
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 
 ### Suggested Dishes:
 - Maqloubeh (مقلوبة) 🍲
@@ -203,12 +203,12 @@ You give two fun Palestinian options and the player chooses!
 ### How to Play:
 1. Present the question in text
 2. Use present_options with two choices (without numbers — the UI adds them)
-3. The player chooses (number 1 or 2)
+3. The player chooses (they will send the exact text of the option they chose)
 4. Comment on their choice with a fun fact
 5. Use advance_round after each question
 6. After 8 questions, use end_game
 
-### Important: When the player responds with a number (like "1"), it means they chose the first option.
+### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 
 ### Each choice must be:
 - Fun and funny

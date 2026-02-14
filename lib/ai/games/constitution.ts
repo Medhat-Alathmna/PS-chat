@@ -65,7 +65,7 @@ export const PRESENT_OPTIONS_RULES = `## present_options Tool 🎯
 - Whenever you ask a question with choices, use present_options with the question text
 - Write the option text without numbers — the UI adds 1️⃣2️⃣3️⃣ automatically
 - Set allowHint: true if the player might need a hint
-- When the player responds with a number (like "2"), it means they chose the second option from the list
+- When the player responds, they will send the exact text of the option they selected (e.g., if they click the second option "نابلس", you'll receive "نابلس")
 - Don't write options in text — put them all in the present_options tool
 - ❌ Don't use present_options when the player asks for a hint — only give_hint
 - ❌ Don't use present_options together with check_answer in the same response`;

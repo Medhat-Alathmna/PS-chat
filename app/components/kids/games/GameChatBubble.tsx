@@ -18,7 +18,7 @@ interface GameChatBubbleProps {
   hintData?: { hint: string; hintNumber: number; images?: ImageResult[] } | null;
   optionsData?: OptionsData | null;
   isActiveOptions?: boolean;
-  onOptionClick?: (optionNumber: number) => void;
+  onOptionClick?: (optionText: string) => void;
   onHintClick?: () => void;
   isSpeaking?: boolean;
   onSpeak?: () => void;

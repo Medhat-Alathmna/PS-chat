@@ -355,11 +355,11 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const hasActiveOptions = activeOptions !== null;
 
   const handleOptionClick = useCallback(
-    (optionNumber: number) => {
+    (optionText: string) => {
       if (isLoading) return;
       stopSpeaking();
       playSound("click");
-      sendMessage({ text: String(optionNumber) });
+      sendMessage({ text: optionText });
     },
     [isLoading, playSound, sendMessage, stopSpeaking]
   );
@@ -626,7 +626,7 @@ function ActiveOptionsBlock({
   onHintClick,
 }: {
   optionsData: OptionsData;
-  onOptionClick: (n: number) => void;
+  onOptionClick: (text: string) => void;
   onHintClick: () => void;
 }) {
   return (
@@ -638,7 +638,7 @@ function ActiveOptionsBlock({
         {optionsData.options.map((option, i) => (
           <button
             key={i}
-            onClick={() => onOptionClick(i + 1)}
+            onClick={() => onOptionClick(option)}
             className="group relative flex items-center gap-3 px-5 py-4 rounded-3xl text-right transition-all shadow-md bg-white border-2 border-[var(--kids-purple)]/20 text-gray-800 hover:bg-purple-50 hover:border-[var(--kids-purple)] hover:scale-[1.02] hover:shadow-lg active:scale-95 cursor-pointer overflow-hidden"
             dir="auto"
           >
