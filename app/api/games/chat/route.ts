@@ -5,7 +5,8 @@ import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getModel } from "@/lib/ai/config";
 import { getToolsForGame } from "@/lib/ai/game-tools";
-import { buildGameSystemPrompt } from "@/lib/ai/game-prompts";
+import { buildGameSystemPrompt, shouldTrimMessages } from "@/lib/ai/game-prompts";
+import { CITIES } from "@/lib/data/cities";
 import { GameId, GameDifficulty, GameState, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { logError } from "@/lib/utils/error-handler";
 import { detectCityInText } from "@/lib/data/cities";
@@ -19,6 +20,30 @@ type GameChatRequest = {
   kidsProfile?: KidsProfile;
   discoveredCityIds?: string[];
 };
+
+/**
+ * Count advance_round tool calls to determine the current round number.
+ * Used as a deterministic seed for city selection (same round = same city).
+ */
+function countAdvanceRounds(messages: UIMessage[]): number {
+  let count = 0;
+  for (const msg of messages) {
+    if (msg.role !== "assistant") continue;
+    for (const part of msg.parts) {
+      if (part.type === "tool-invocation") {
+        const p = part as Record<string, unknown>;
+        // Detect advance_round by toolName or output shape
+        if (
+          p.toolName === "advance_round" ||
+          (p.output && typeof p.output === "object" && "roundCompleted" in (p.output as object))
+        ) {
+          count++;
+        }
+      }
+    }
+  }
+  return count;
+}
 
 /**
  * Scan assistant messages for city names already mentioned (via check_answer explanations).
@@ -49,6 +74,55 @@ function extractUsedCityIds(messages: UIMessage[]): string[] {
     }
   }
   return Array.from(ids);
+}
+
+/**
+ * Trim completed-round messages, keeping only a brief Arabic summary + current round.
+ * The AI already gets fresh city data via the system prompt, so old round messages add no value.
+ */
+function trimCompletedRoundMessages(
+  messages: UIMessage[],
+  currentRound: number,
+  discoveredCityNames: string[],
+  score: number
+): UIMessage[] {
+  // Find the last advance_round tool invocation — everything before it is a completed round
+  let lastAdvanceIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role !== "assistant") continue;
+    for (const part of msg.parts) {
+      if (
+        part.type === "tool-invocation" &&
+        (part as Record<string, unknown>).toolName === "advance_round"
+      ) {
+        lastAdvanceIdx = i;
+        break;
+      }
+    }
+    if (lastAdvanceIdx !== -1) break;
+  }
+
+  if (lastAdvanceIdx === -1) return messages; // round 1 — nothing to trim
+
+  const citiesList = discoveredCityNames.length
+    ? discoveredCityNames.join("، ")
+    : "—";
+
+  const summaryText = `[ملخص الجولات السابقة]
+الجولة الحالية: ${currentRound + 1}
+المدن المكتشفة: ${citiesList}
+النقاط: ${score}
+---
+أكمل اللعبة من هنا!`;
+
+  const summaryMessage: UIMessage = {
+    id: "round-summary",
+    role: "user",
+    parts: [{ type: "text", text: summaryText }],
+  };
+
+  return [summaryMessage, ...messages.slice(lastAdvanceIdx + 1)];
 }
 
 export async function POST(req: NextRequest) {
@@ -86,24 +160,40 @@ export async function POST(req: NextRequest) {
       new Set([...(discoveredCityIds || []), ...sessionCityIds])
     );
 
+    // Deterministic round seed so the same round always picks the same city
+    const roundSeed = countAdvanceRounds(messages);
+
     const systemPrompt = buildGameSystemPrompt(
       gameId,
       difficulty,
       chatContext,
       kidsProfile?.age,
       kidsProfile?.name,
-      allUsedCityIds
+      allUsedCityIds,
+      roundSeed
     );
 
     const tools = getToolsForGame(gameId);
 
-    // NEW: No tool restrictions! AI can use multiple tools for richer experiences
-    // Multi-tool combinations are now encouraged (e.g., check_answer + image_search)
+    // Trim old-round messages for games that opt in (saves 3k-10k+ tokens per request)
+    let aiMessages = messages;
+    if (shouldTrimMessages(gameId) && roundSeed > 0) {
+      const discoveredNames = allUsedCityIds
+        .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
+        .filter(Boolean) as string[];
+      const score = body.gameState?.score ?? 0;
+      aiMessages = trimCompletedRoundMessages(messages, roundSeed, discoveredNames, score);
+      console.log("[game-chat] Trimmed messages", {
+        original: messages.length,
+        trimmed: aiMessages.length,
+        round: roundSeed + 1,
+      });
+    }
 
     const result = streamText({
       model: openai(getModel()),
       system: systemPrompt,
-      messages: await convertToModelMessages(messages),
+      messages: await convertToModelMessages(aiMessages),
       tools,
       stopWhen: stepCountIs(7), // Increased from 5 to 7 for multi-tool support
       onFinish: async ({ text, toolCalls, toolResults }) => {

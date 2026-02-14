@@ -32,7 +32,7 @@ export const giveHintTool = tool({
     hint: z.string().describe("The hint text in Palestinian Arabic"),
     hintNumber: z.number().describe("Which hint this is (1, 2, 3...)"),
     pointsDeduction: z.number().describe("Points deducted for using this hint: Easy=0, Medium=1, Hard=2 (system calculates based on difficulty)"),
-    imageQuery: z.string().optional().describe("Optional search query to find a relevant image for this hint (e.g. 'كنافة نابلس' or 'dome of the rock jerusalem')"),
+    imageQuery: z.string().optional().describe("Optional search query to find a relevant image for this hint. MUST include the city/place name for relevant results! (e.g. 'كنافة نابلسية', 'المسجد الأقصى القدس', 'برتقال يافا'). Use specific landmark names, not generic descriptions."),
   }),
   execute: async ({ hint, hintNumber, pointsDeduction, imageQuery }) => {
     let images;
@@ -133,6 +133,15 @@ const explorerTools: ToolCollection = {
   location_search: locationSearchTool,
 };
 
+/** City explorer — like explorer but NO location_search (map handles cities automatically) */
+const cityExplorerTools: ToolCollection = {
+  check_answer: checkAnswerTool,
+  give_hint: giveHintTool,
+  present_options: presentOptionsTool,
+  end_game: endGameTool,
+  image_search: imageSearchTool,
+};
+
 /** Creative games WITH selectable options (would-you-rather, recipe-chef) */
 const creativeToolsWithOptions: ToolCollection = {
   advance_round: advanceRoundTool,
@@ -158,8 +167,11 @@ const wordGameTools: ToolCollection = {
  */
 export function getToolsForGame(gameId: GameId): ToolCollection {
   switch (gameId) {
-    // Educational games with rich media + options
+    // City explorer — no location_search (map auto-handles cities)
     case "city-explorer":
+      return cityExplorerTools;
+
+    // Educational games with rich media + options
     case "time-traveler":
       return explorerTools;
 

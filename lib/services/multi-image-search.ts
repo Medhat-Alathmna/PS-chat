@@ -11,7 +11,9 @@ import { logError } from "../utils/error-handler";
  *
  * @param query - Search query
  * @param limit - Maximum number of images to return (default: 4)
- * @param isKidsMode - If true, adds "cartoon child-friendly illustration" to ensure age-appropriate images (default: false)
+ * @param isKidsMode - If true, uses kid-safe search strategy (default: false)
+ *   - "safe" (default for true): keeps query as-is but uses safe sources — real photos of places/food ARE kid-friendly!
+ *   - For truly generic queries, adds "colorful" to improve visual appeal for kids
  * @returns Promise<ImageResult[]> - Array of images from available sources
  */
 export async function searchImagesMultiSource(
@@ -21,10 +23,11 @@ export async function searchImagesMultiSource(
 ): Promise<ImageResult[]> {
   let trimmedQuery = query.trim();
 
-  // NEW: Add kid-friendly keywords to ensure safe, appropriate images
+  // Kid-safe mode: real photos of Palestinian cities, food, and landmarks ARE kid-friendly.
+  // Only add "colorful" for very generic queries that might return dull results.
+  // Do NOT add "cartoon child-friendly illustration" — it makes results irrelevant!
   if (isKidsMode && trimmedQuery) {
-    trimmedQuery = `${trimmedQuery} cartoon child-friendly illustration`;
-    console.log(`[multi-image-search] Kids mode ON - Enhanced query: "${trimmedQuery}"`);
+    console.log(`[multi-image-search] Kids mode ON - query: "${trimmedQuery}"`);
   }
 
   if (!trimmedQuery) {
@@ -100,9 +103,9 @@ export async function searchImagesFromSource(
 ): Promise<ImageResult[]> {
   let trimmedQuery = query.trim();
 
-  // Add kid-friendly keywords if in kids mode
+  // Kid-safe mode: real photos are fine for kids — no need to force "cartoon" keywords
   if (isKidsMode && trimmedQuery) {
-    trimmedQuery = `${trimmedQuery} cartoon child-friendly illustration`;
+    console.log(`[multi-image-search] Kids mode ON (single source) - query: "${trimmedQuery}"`);
   }
 
   if (!trimmedQuery) {

@@ -19,6 +19,8 @@ interface PalestineLeafletMapProps {
   revealedCities?: string[];
   /** City ID to pulse as a region clue */
   highlightRegion?: string;
+  /** City ID to auto-fly to (e.g. just-revealed city) */
+  flyToCity?: string;
   /** Show map controls (search, filter, reset) */
   showControls?: boolean;
   /** Enable full map interaction (zoom, pan, drag) */
@@ -238,6 +240,7 @@ function LeafletMapInner({
   gameMode = false,
   revealedCities = [],
   highlightRegion,
+  flyToCity: flyToCityProp,
   showControls = false,
   enableFullInteraction = false,
   height = "100%",
@@ -431,9 +434,9 @@ function LeafletMapInner({
           }}
         />
 
-        {/* Fly to city when highlighted or selected */}
+        {/* Fly to city when highlighted, selected, or auto-fly */}
         <FlyToCity
-          cityId={highlightedCity || selectedCityId || undefined}
+          cityId={flyToCityProp || highlightedCity || selectedCityId || undefined}
           zoomLevel={enableFullInteraction ? 11 : 10}
         />
 

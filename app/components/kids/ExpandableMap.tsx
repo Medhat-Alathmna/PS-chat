@@ -29,6 +29,8 @@ interface ExpandableMapProps {
   revealedCities?: string[];
   /** City ID to pulse as a region clue */
   highlightRegion?: string;
+  /** City ID to auto-fly to (e.g. just-revealed city) */
+  flyToCity?: string;
   /** Show map controls (search, filter, reset) */
   showControls?: boolean;
   /** Title to display in header */
@@ -54,6 +56,7 @@ export default function ExpandableMap({
   gameMode = false,
   revealedCities = [],
   highlightRegion,
+  flyToCity,
   showControls = false,
   title = "🗺️ خريطة فلسطين",
   subtitle,
@@ -120,6 +123,7 @@ export default function ExpandableMap({
               gameMode={gameMode}
               revealedCities={revealedCities}
               highlightRegion={highlightRegion}
+              flyToCity={flyToCity}
               showControls={true}
               enableFullInteraction={true}
               className="h-full"
@@ -176,6 +180,7 @@ export default function ExpandableMap({
               gameMode={gameMode}
               revealedCities={revealedCities}
               highlightRegion={highlightRegion}
+              flyToCity={flyToCity}
               showControls={showControls}
               enableFullInteraction={true}
               className="h-full"

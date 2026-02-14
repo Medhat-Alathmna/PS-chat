@@ -79,7 +79,7 @@ export const TOOL_USAGE_RULES = `## Tool Usage Rules (VERY IMPORTANT!) ⚠️
 - ✅ Allowed combinations:
   • check_answer + image_search (show celebratory image when correct! 🎉)
   • give_hint + image_search (visual hint to help the player 🖼️)
-  • check_answer + location_search (reveal city on map when guessed correctly 🗺️)
+  • check_answer + location_search (reveal city on map — only for time-traveler, NOT city-explorer!)
   • advance_round + image_search (celebration image for creative games 🌟)
 - ❌ NEVER use the same tool twice in one response (e.g., image_search + image_search = waste!)
 - ❌ NEVER use present_options with check_answer (they conflict!)

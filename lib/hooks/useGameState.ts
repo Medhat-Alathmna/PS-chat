@@ -65,28 +65,34 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
   }, [state.difficulty]);
 
   // Process a correct answer
-  const onCorrectAnswer = useCallback((basePoints: number) => {
+  // advanceRound=false for games that use advance_round tool (avoids double increment)
+  const onCorrectAnswer = useCallback((basePoints: number, advanceRound = true) => {
     setState((prev) => {
       const points = Math.round(basePoints * getMultiplier());
       return {
         ...prev,
         score: prev.score + points,
         correctAnswers: prev.correctAnswers + 1,
-        round: typeof prev.totalRounds === "number"
-          ? Math.min(prev.round + 1, prev.totalRounds + 1)
-          : prev.round + 1,
+        ...(advanceRound ? {
+          round: typeof prev.totalRounds === "number"
+            ? Math.min(prev.round + 1, prev.totalRounds + 1)
+            : prev.round + 1,
+        } : {}),
       };
     });
   }, [getMultiplier]);
 
   // Process a wrong answer
-  const onWrongAnswer = useCallback(() => {
+  // advanceRound=false for games that use advance_round tool (player retries same round)
+  const onWrongAnswer = useCallback((advanceRound = true) => {
     setState((prev) => ({
       ...prev,
       wrongAnswers: prev.wrongAnswers + 1,
-      round: typeof prev.totalRounds === "number"
-        ? Math.min(prev.round + 1, prev.totalRounds + 1)
-        : prev.round + 1,
+      ...(advanceRound ? {
+        round: typeof prev.totalRounds === "number"
+          ? Math.min(prev.round + 1, prev.totalRounds + 1)
+          : prev.round + 1,
+      } : {}),
     }));
   }, []);
 
@@ -155,15 +161,19 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
     }
   }, [gameId, difficulty, profileId]);
 
+  // Games where advance_round tool handles round progression
+  // (check_answer should NOT advance the round for these games)
+  const hasExplicitAdvanceRound = ["city-explorer", "time-traveler", "story-builder", "draw-describe", "would-you-rather", "recipe-chef"].includes(gameId);
+
   // Process tool call results from AI
   const processToolResult = useCallback((toolName: string, result: Record<string, unknown>) => {
     switch (toolName) {
       case "check_answer": {
         const config = getGameConfig(gameId);
         if (result.correct) {
-          onCorrectAnswer(result.pointsEarned as number || config.pointsPerCorrect);
+          onCorrectAnswer(result.pointsEarned as number || config.pointsPerCorrect, !hasExplicitAdvanceRound);
         } else {
-          onWrongAnswer();
+          onWrongAnswer(!hasExplicitAdvanceRound);
         }
         break;
       }
@@ -184,7 +194,7 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
         break;
       }
     }
-  }, [gameId, onCorrectAnswer, onWrongAnswer, onHintUsed, onRoundAdvance, onGameEnd, state.score, state.correctAnswers, state.round]);
+  }, [gameId, hasExplicitAdvanceRound, onCorrectAnswer, onWrongAnswer, onHintUsed, onRoundAdvance, onGameEnd, state.score, state.correctAnswers, state.round]);
 
   return {
     state,

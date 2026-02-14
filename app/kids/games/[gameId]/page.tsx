@@ -74,6 +74,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const isCityExplorer = gameId === "city-explorer";
   const [revealedCities, setRevealedCities] = useState<string[]>([]);
   const [highlightRegion, setHighlightRegion] = useState<string | null>(null);
+  const [flyToCity, setFlyToCity] = useState<string | null>(null);
   // Will be initialized from persisted data after discoveredCities loads (see useEffect below)
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -174,7 +175,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   gameId,
                   (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
                 );
-                // Map: reveal city on correct answer
+                // Map: reveal city on correct answer and auto-zoom to it
                 if (isCityExplorer && toolPart.output.explanation) {
                   const cityId = detectCityInText(toolPart.output.explanation as string);
                   if (cityId && !revealedCities.includes(cityId)) {
@@ -183,25 +184,15 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                     if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
                       setRevealedCities((prev) => [...prev, cityId]);
                       setHighlightRegion(null);
+                      setFlyToCity(cityId); // auto-zoom map to this city
                       discoveredCities.addCity(cityId); // persist across sessions
                     }
                   }
                 }
               } else {
                 playSound("wrong" as any);
-                // Map: also reveal on incorrect (answer was shown)
-                if (isCityExplorer && toolPart.output.explanation) {
-                  const cityId = detectCityInText(toolPart.output.explanation as string);
-                  if (cityId && !revealedCities.includes(cityId)) {
-                    // Verify city has valid coordinates
-                    const city = CITIES.find((c) => c.id === cityId);
-                    if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-                      setRevealedCities((prev) => [...prev, cityId]);
-                      setHighlightRegion(null);
-                      discoveredCities.addCity(cityId); // persist across sessions
-                    }
-                  }
-                }
+                // Map: on wrong answer, do NOT reveal the city — let them keep trying!
+                // Only reveal when answer is explicitly given up (handled by advance_round)
               }
             } else if (toolName === "give_hint") {
               playSound("hint" as any);
@@ -222,6 +213,19 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 gameId,
                 (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
               );
+              // Map: also reveal city when advancing round (covers give-up case)
+              if (isCityExplorer && toolPart.output.feedback) {
+                const cityId = detectCityInText(toolPart.output.feedback as string);
+                if (cityId && !revealedCities.includes(cityId)) {
+                  const city = CITIES.find((c) => c.id === cityId);
+                  if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+                    setRevealedCities((prev) => [...prev, cityId]);
+                    setHighlightRegion(null);
+                    setFlyToCity(cityId);
+                    discoveredCities.addCity(cityId);
+                  }
+                }
+              }
             } else if (toolName === "end_game") {
               playSound("gameOver" as any);
               if (gameState.summary) {
@@ -323,6 +327,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   // Find the active options data (from the last unanswered question)
   // Skips hint exchanges (user "تلميح" + assistant hint response) so options stay active after hints
+  // Also keeps options active after wrong answers (check_answer correct:false)
   const activeOptions = useMemo<{ messageId: string; data: OptionsData } | null>(() => {
     if (status === "streaming") return null;
     for (let i = displayMessages.length - 1; i >= 0; i--) {
@@ -331,11 +336,17 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         const text = msg.content.trim();
         const isHint = text === "تلميح" || text.toLowerCase() === "hint";
         if (isHint) continue; // skip hint requests
-        return null; // real answer — disable options
+        // Check if this answer was wrong — if so, keep options active for retry
+        const nextMsg = i + 1 < displayMessages.length ? displayMessages[i + 1] : null;
+        if (nextMsg?.role === "assistant" && nextMsg.answerResult && !nextMsg.answerResult.correct) {
+          continue; // wrong answer — keep looking back for options
+        }
+        return null; // correct answer or new question — disable options
       }
       if (msg.role === "assistant") {
         if (msg.optionsData) return { messageId: msg.id, data: msg.optionsData };
         if (msg.hintData && !msg.optionsData) continue; // skip hint responses
+        if (msg.answerResult && !msg.answerResult.correct) continue; // skip wrong answer responses
       }
     }
     return null;
@@ -444,6 +455,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           // Reset map state
           setRevealedCities([]);
           setHighlightRegion(null);
+          setFlyToCity(null);
           if (config.hasDifficulty) {
             setDifficulty(null);
           } else {
@@ -481,6 +493,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 gameMode
                 revealedCities={revealedCities}
                 highlightRegion={highlightRegion || undefined}
+                flyToCity={flyToCity || undefined}
                 size="sm"
                 collapsible
                 initialCollapsed={false}

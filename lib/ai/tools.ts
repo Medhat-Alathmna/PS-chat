@@ -16,12 +16,12 @@ export const imageSearchTool = tool({
   description:
     "ابحث عن صور متعلقة بفلسطين. استخدم هذه الأداة عندما يسأل المستخدم عن مكان أو موضوع ويحتاج صور توضيحية. " +
     "Search for images related to Palestine. Use this tool when the user asks about a place or topic and needs illustrative images. " +
-    "For games, images are automatically kid-friendly (cartoon style).",
+    "For games, use SPECIFIC place/landmark names in the query (e.g. 'المسجد الأقصى القدس' not 'مدينة فلسطينية'). Real photos of landmarks and food are naturally kid-friendly!",
   inputSchema: z.object({
     query: z
       .string()
       .describe(
-        "Search query for images (e.g., 'Al-Aqsa Mosque', 'Gaza beach', 'Palestinian embroidery')"
+        "Search query for images — use SPECIFIC landmark/place names with city name for best results (e.g., 'Al-Aqsa Mosque Jerusalem', 'Nablus knafeh', 'Jaffa port oranges')"
       ),
     limit: z
       .number()

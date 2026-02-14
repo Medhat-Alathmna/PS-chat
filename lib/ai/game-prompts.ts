@@ -20,7 +20,8 @@ import * as cityExplorer from "@/lib/ai/games/city-explorer";
 
 type GameModule = {
   RULES: string;
-  getData?: (excludeIds?: string[]) => string | null;
+  getData?: (excludeIds?: string[], roundSeed?: number) => string | null;
+  trimCompletedRounds?: boolean;
 };
 
 const GAME_MODULES: Partial<Record<GameId, GameModule>> = {
@@ -215,6 +216,13 @@ You give two fun Palestinian options and the player chooses!
 - With an educational fun fact after choosing`,
 };
 
+/**
+ * Check if a game opts in to server-side message trimming.
+ */
+export function shouldTrimMessages(gameId: GameId): boolean {
+  return GAME_MODULES[gameId]?.trimCompletedRounds === true;
+}
+
 // ── Orchestrator ───────────────────────────────────────────────────────
 
 /**
@@ -226,7 +234,8 @@ export function buildGameSystemPrompt(
   chatContext?: KidsChatContext,
   age?: number,
   playerName?: string,
-  usedDataIds?: string[]
+  usedDataIds?: string[],
+  roundSeed?: number
 ): string {
   const config = getGameConfig(gameId);
   const parts: string[] = [];
@@ -243,9 +252,9 @@ export function buildGameSystemPrompt(
     if (inlineRules) parts.push(inlineRules);
   }
 
-  // 3. Per-game data (e.g. one random city for city-explorer, excluding already-used ones)
+  // 3. Per-game data (e.g. one city for city-explorer, excluding already-used ones)
   if (mod?.getData) {
-    const data = mod.getData(usedDataIds);
+    const data = mod.getData(usedDataIds, roundSeed);
     if (data) parts.push(data);
   }
 
