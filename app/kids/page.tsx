@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useRewards } from "@/lib/hooks/useRewards";
@@ -18,12 +19,16 @@ export default function KidsHomePage() {
 
 function KidsHomeInner() {
   const router = useRouter();
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+
   const {
     profiles,
     activeProfile,
     isLoaded,
     createProfile,
     updateProfile,
+    switchProfile,
+    deleteProfile,
   } = useProfiles();
 
   const profileId = activeProfile?.id;
@@ -34,13 +39,15 @@ function KidsHomeInner() {
   if (!isLoaded) return null;
 
   // No profiles yet - show profile setup
-  if (profiles.length === 0) {
+  if (profiles.length === 0 || showProfileSetup) {
     return (
       <ProfileSetup
         onComplete={(data) => {
           createProfile(data);
+          setShowProfileSetup(false);
         }}
         existingProfiles={profiles}
+        onCancel={profiles.length > 0 ? () => setShowProfileSetup(false) : undefined}
       />
     );
   }
@@ -72,6 +79,12 @@ function KidsHomeInner() {
       isMusicPlaying={isMusicPlaying}
       isMusicLoaded={isMusicLoaded}
       onToggleMusic={toggleMusic}
+      profiles={profiles}
+      activeProfile={activeProfile}
+      onSwitchProfile={switchProfile}
+      onAddNewProfile={() => setShowProfileSetup(true)}
+      onEditProfile={() => setShowProfileSetup(true)}
+      onDeleteProfile={deleteProfile}
     />
   );
 }

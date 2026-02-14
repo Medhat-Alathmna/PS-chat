@@ -8,7 +8,6 @@ import AnimatedBackground from "../../components/kids/AnimatedBackground";
 import AnimatedMascot from "../../components/kids/AnimatedMascot";
 import GameCard from "../../components/kids/games/GameCard";
 import ProfileSetup from "../../components/kids/ProfileSetup";
-import ProfileSwitcher from "../../components/kids/ProfileSwitcher";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import RewardsBar from "../../components/kids/RewardsBar";
 import { useProfiles } from "@/lib/hooks/useProfiles";
@@ -84,20 +83,10 @@ function GamesHub() {
   return (
     <AnimatedBackground variant="sky" showClouds>
       <div className="relative flex h-screen flex-col overflow-hidden">
-        {/* Header - Consistent mobile style */}
-        <header className="shrink-0 px-3 py-2 sm:px-4 sm:py-3 z-10 w-full">
-          <div className="flex items-center gap-2 sm:gap-4 max-w-5xl mx-auto">
-            <div className="shrink-0">
-              <ProfileSwitcher
-                profiles={profiles}
-                activeProfile={activeProfile}
-                onSwitch={switchProfile}
-                onAddNew={() => setShowProfileSetup(true)}
-                onEdit={() => setShowProfileSetup(true)}
-                onDelete={deleteProfile}
-              />
-            </div>
-            <div className="flex-1 min-w-0 flex justify-end">
+        {/* Header - Responsive centered */}
+        <header className="shrink-0 px-2 py-2 sm:px-4 sm:py-3 z-10 w-full">
+          <div className="flex items-center justify-center">
+            <div className="w-full max-w-sm sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
               <RewardsBar
                 points={points}
                 level={level}

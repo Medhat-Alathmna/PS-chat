@@ -93,7 +93,7 @@ export default function RewardsBar({
           </div>
 
           {nextLevel && (
-            <span className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">
+            <span className="text-[9px] sm:text-xs text-gray-400 truncate">
               {nextLevel.minPoints - points} للمستوى التالي
             </span>
           )}

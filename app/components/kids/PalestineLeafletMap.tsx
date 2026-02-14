@@ -476,27 +476,7 @@ function LeafletMapInner({
               >
                 {showPopup && (
                   <Popup className="city-popup-custom">
-                    {showControls ? (
-                      <CityPopover city={city} onAskAboutCity={onAskAboutCity} />
-                    ) : (
-                      <div className="text-center" dir="rtl">
-                        <span className="text-2xl block">{city.emoji}</span>
-                        <p className="font-bold text-gray-700 text-sm">{city.nameAr}</p>
-                        <p className="text-xs text-gray-500">{city.name}</p>
-                        {!gameMode && city.facts && city.facts.length > 0 && (
-                          <p className="text-xs text-gray-400 mt-1">{city.facts[0]}</p>
-                        )}
-                        {onAskAboutCity && (
-                          <button
-                            onClick={() => onAskAboutCity(city)}
-                            className="mt-2 w-full py-1.5 px-3 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-lg font-bold text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5"
-                          >
-                            <span>🤖</span>
-                            <span>اسأل مدحت</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <CityPopover city={city} onAskAboutCity={onAskAboutCity} />
                   </Popup>
                 )}
               </Marker>

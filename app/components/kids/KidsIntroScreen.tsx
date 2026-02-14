@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import AnimatedMascot from "./AnimatedMascot";
 import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
+import ProfileSwitcher from "./ProfileSwitcher";
 import { RewardLevel } from "@/lib/types";
+import { Profile } from "@/lib/types/games";
 import { getRandomPrompts, KidsPrompt } from "@/lib/data/kids-prompts";
 
 interface KidsIntroScreenProps {
@@ -16,6 +18,12 @@ interface KidsIntroScreenProps {
   isMusicPlaying?: boolean;
   isMusicLoaded?: boolean;
   onToggleMusic?: () => void;
+  profiles?: Profile[];
+  activeProfile?: Profile;
+  onSwitchProfile?: (id: string) => void;
+  onAddNewProfile?: () => void;
+  onEditProfile?: () => void;
+  onDeleteProfile?: (id: string) => void;
 }
 
 /**
@@ -29,6 +37,12 @@ export default function KidsIntroScreen({
   isMusicPlaying = false,
   isMusicLoaded = false,
   onToggleMusic,
+  profiles = [],
+  activeProfile,
+  onSwitchProfile,
+  onAddNewProfile,
+  onEditProfile,
+  onDeleteProfile,
 }: KidsIntroScreenProps) {
   const router = useRouter();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -81,15 +95,32 @@ export default function KidsIntroScreen({
           </button>
         )}
 
-        {/* Level indicator (if exists) */}
-        {level && points > 0 && (
-          <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
-            <span className="text-2xl">{level.icon}</span>
-            <span className="font-bold text-[var(--kids-orange)]">
-              {points} ⭐
-            </span>
-          </div>
-        )}
+        {/* Top right section - Profile Switcher and Level */}
+        <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+          {/* Profile Switcher */}
+          {profiles.length > 0 && activeProfile && onSwitchProfile && onAddNewProfile && onEditProfile && onDeleteProfile && (
+            <div className="shrink-0">
+              <ProfileSwitcher
+                profiles={profiles}
+                activeProfile={activeProfile}
+                onSwitch={onSwitchProfile}
+                onAddNew={onAddNewProfile}
+                onEdit={onEditProfile}
+                onDelete={onDeleteProfile}
+              />
+            </div>
+          )}
+
+          {/* Level indicator (if exists) */}
+          {level && points > 0 && (
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
+              <span className="text-2xl">{level.icon}</span>
+              <span className="font-bold text-[var(--kids-orange)]">
+                {points} ⭐
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Main content */}
         <div className="text-center max-w-2xl mx-auto">
