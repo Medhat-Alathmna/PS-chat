@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getModel } from "@/lib/ai/config";
-import { buildSystemPrompt, tools, trimCompletedRounds } from "@/lib/ai/games/city-explorer";
+import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds } from "@/lib/ai/games/city-explorer";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
 import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { logError } from "@/lib/utils/error-handler";
@@ -152,6 +152,10 @@ export async function POST(req: NextRequest) {
     const roundNumber = countAdvanceRounds(messages);
     const roundSeed = (sessionSeed || 0) + roundNumber;
 
+    // Get the current city for this round (for tool validation)
+    const { city: currentCity } = getCityForRound(allUsedCityIds, roundSeed);
+    const tools = buildTools(currentCity.nameAr, currentCity.id);
+
     const systemPrompt = buildSystemPrompt(
       difficulty || "medium",
       kidsProfile?.age || 8,
@@ -161,6 +165,7 @@ export async function POST(req: NextRequest) {
       roundSeed
     );
 
+    console.log("[city-explorer] Round city:", currentCity.nameAr, "(" + currentCity.name + ")");
     console.log("[city-explorer] System prompt:\n", systemPrompt);
 
     // Trim old-round messages (saves 3k-10k+ tokens per request)

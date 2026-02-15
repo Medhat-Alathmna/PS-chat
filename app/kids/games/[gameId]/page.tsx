@@ -77,6 +77,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [highlightRegion, setHighlightRegion] = useState<string | null>(null);
   const [flyToCity, setFlyToCity] = useState<string | null>(null);
   const [mapExpandTrigger, setMapExpandTrigger] = useState(0);
+  const [mapUncollapseTrigger, setMapUncollapseTrigger] = useState(0);
 
   // Random seed so each session starts with a different city (not always Jerusalem)
   const [sessionSeed, setSessionSeed] = useState(() => Math.floor(Math.random() * 10000));
@@ -201,14 +202,27 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               }
             } else if (toolName === "give_hint") {
               playSound("hint" as any);
-              // Map: highlight region on hint
-              if (isCityExplorer && toolPart.output.hint) {
-                const cityId = detectCityInText(toolPart.output.hint as string);
-                if (cityId) {
-                  // Verify city has valid coordinates
-                  const city = CITIES.find((c) => c.id === cityId);
+              if (isCityExplorer) {
+                // Map: highlight region on hint
+                if (toolPart.output.hint) {
+                  const cityId = detectCityInText(toolPart.output.hint as string);
+                  if (cityId) {
+                    const city = CITIES.find((c) => c.id === cityId);
+                    if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+                      setHighlightRegion(cityId);
+                    }
+                  }
+                }
+                // On first hint: zoom map to target city
+                if (toolPart.output.hintNumber === 1 && toolPart.output.targetCityId) {
+                  const targetId = toolPart.output.targetCityId as string;
+                  const city = CITIES.find((c) => c.id === targetId);
                   if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-                    setHighlightRegion(cityId);
+                    // Mobile: uncollapse map (without fullscreen)
+                    setMapUncollapseTrigger((c) => c + 1);
+                    // Zoom to the target city (both desktop & mobile)
+                    setFlyToCity("");
+                    setTimeout(() => setFlyToCity(targetId), 150);
                   }
                 }
               }
@@ -565,6 +579,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 initialCollapsed={false}
                 subtitle={`${discoveredCities.discoveredCount}/${discoveredCities.totalCities} مدن مكتشفة 🌟`}
                 expandTrigger={mapExpandTrigger}
+                uncollapseTrigger={mapUncollapseTrigger}
               />
             </div>
           )}

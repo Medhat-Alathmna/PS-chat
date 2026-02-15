@@ -49,6 +49,8 @@ interface ExpandableMapProps {
   className?: string;
   /** Incrementing counter to trigger auto-expand from parent */
   expandTrigger?: number;
+  /** Incrementing counter to trigger uncollapse (without fullscreen) from parent */
+  uncollapseTrigger?: number;
 }
 
 function ExpandableMapBase({
@@ -68,6 +70,7 @@ function ExpandableMapBase({
   initialCollapsed = false,
   className = "",
   expandTrigger = 0,
+  uncollapseTrigger = 0,
 }: ExpandableMapProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
@@ -81,6 +84,15 @@ function ExpandableMapBase({
     }
     prevTrigger.current = expandTrigger;
   }, [expandTrigger]);
+
+  // Auto-uncollapse (without fullscreen) when parent increments uncollapseTrigger
+  const prevUncollapseTrigger = useRef(uncollapseTrigger);
+  useEffect(() => {
+    if (uncollapseTrigger > prevUncollapseTrigger.current) {
+      setIsCollapsed(false);
+    }
+    prevUncollapseTrigger.current = uncollapseTrigger;
+  }, [uncollapseTrigger]);
 
   // Size-based heights
   const sizeHeights = {
@@ -232,6 +244,7 @@ function arePropsEqual(prev: ExpandableMapProps, next: ExpandableMapProps): bool
     prev.onCityClick === next.onCityClick &&
     prev.onAskAboutCity === next.onAskAboutCity &&
     prev.expandTrigger === next.expandTrigger &&
+    prev.uncollapseTrigger === next.uncollapseTrigger &&
     arraysEqual(prev.revealedCities, next.revealedCities)
   );
 }

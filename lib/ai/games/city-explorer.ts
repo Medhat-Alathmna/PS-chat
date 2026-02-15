@@ -11,7 +11,9 @@
  * so the AI has real facts to work with.
  */
 
-import { CITIES, REGIONS } from "@/lib/data/cities";
+import { tool } from "ai";
+import { z } from "zod";
+import { CITIES, REGIONS, City } from "@/lib/data/cities";
 import { GameDifficulty, KidsChatContext } from "@/lib/types/games";
 import {
   MEDHAT_BASE,
@@ -22,59 +24,129 @@ import {
   checkAnswerTool,
   giveHintTool,
   advanceRoundTool,
-  presentOptionsTool,
   endGameTool,
   suggestRepliesTool,
 } from "../game-tools";
 import { imageSearchTool } from "../tools";
+import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 
 // ── Opt-in: trim completed-round messages server-side ────────────────
 export const trimCompletedRounds = true;
 
 // ── Tool collection ──────────────────────────────────────────────────
 
+/**
+ * Build game tools with a validated present_options that guarantees
+ * the correct city is always included in the options.
+ * @param correctCityNameAr — Arabic name of the current round's correct city
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const tools: Record<string, any> = {
-  check_answer: checkAnswerTool,
-  give_hint: giveHintTool,
-  advance_round: advanceRoundTool,
-  present_options: presentOptionsTool,
-  end_game: endGameTool,
-  image_search: imageSearchTool,
-  suggest_replies: suggestRepliesTool,
-};
+export function buildTools(correctCityNameAr: string, correctCityId?: string): Record<string, any> {
+  // Wrap give_hint to inject the target city ID for frontend map zoom on first hint
+  const wrappedGiveHint = correctCityId
+    ? tool({
+        description:
+          "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific) and match the content complexity level. Optionally include imageQuery to show a relevant image alongside the hint. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
+        inputSchema: z.object({
+          hint: z.string().describe("The hint text in Palestinian Arabic"),
+          hintNumber: z.number().describe("Which hint this is (1, 2, 3...)"),
+          pointsDeduction: z.number().describe("Points deducted for using this hint: Easy=0, Medium=1, Hard=2 (system calculates based on difficulty)"),
+          imageQuery: z.string().optional().describe("Optional search query to find a relevant image for this hint. MUST include the city/place name for relevant results! (e.g. 'كنافة نابلسية', 'المسجد الأقصى القدس', 'برتقال يافا'). Use specific landmark names, not generic descriptions."),
+        }),
+        execute: async ({ hint, hintNumber, pointsDeduction, imageQuery }) => {
+          let images;
+          if (imageQuery) {
+            try {
+              const results = await searchImagesMultiSource(imageQuery, 2, true);
+              if (results.length > 0) {
+                images = results;
+              }
+            } catch {
+              // Silently skip images on failure
+            }
+          }
+          return { hint, hintNumber, pointsDeduction, images, targetCityId: correctCityId };
+        },
+      })
+    : giveHintTool;
+
+  return {
+    check_answer: checkAnswerTool,
+    give_hint: wrappedGiveHint,
+    advance_round: advanceRoundTool,
+    present_options: tool({
+      description:
+        "Present selectable options for the player. Call this EVERY time you ask a question with choices. The frontend renders numbered buttons the kid can tap. ⚠️ The correct answer MUST be one of the options!",
+      inputSchema: z.object({
+        options: z
+          .array(z.string())
+          .min(2)
+          .max(6)
+          .describe(
+            "Option texts without numbers — the frontend adds 1️⃣2️⃣3️⃣ automatically. MUST include the correct city name!"
+          ),
+        allowHint: z
+          .boolean()
+          .describe("Whether to show a hint button alongside the options"),
+      }),
+      execute: async ({ options, allowHint }) => {
+        let validatedOptions = [...options];
+        if (!validatedOptions.includes(correctCityNameAr)) {
+          // Auto-inject the correct answer at a random position
+          const insertIdx = Math.floor(
+            Math.random() * (validatedOptions.length + 1)
+          );
+          validatedOptions.splice(insertIdx, 0, correctCityNameAr);
+          console.warn(
+            `[city-explorer] ⚠️ Correct answer "${correctCityNameAr}" was missing from options! Auto-injected at index ${insertIdx}.`
+          );
+        }
+        return { options: validatedOptions, allowHint, displayed: true };
+      },
+    }),
+    end_game: endGameTool,
+    image_search: imageSearchTool,
+    suggest_replies: suggestRepliesTool,
+  };
+}
 
 // ── Game-specific rules ────────────────────────────────────────────────
 
-const RULES = `## Game: City Explorer 🗺️
-You give hints about a Palestinian city and the player must guess.
+const RULES = `## Game: City Explorer 🗺️ — Discover Palestinian Cities, Culture & Heritage!
+You are a tour guide for Palestinian cities! Give hints about a city's geography, food, landmarks, crafts, history, and culture — the player must guess which city it is.
+Your goal: teach kids about Palestinian cities in a fun way — their famous foods, historic places, traditional crafts, natural beauty, and cultural traditions.
 
-### How to Play:
-1. Use the single city provided in the "City Data" section below
-2. Give a vague first hint using one of the city's facts (do NOT mention the city name!)
-3. Use present_options to show city choices (without numbers — the UI adds them)
-4. If they don't know, use give_hint with hintNumber=1 (clearer hint) — pull from another fact
-5. If they still don't know, use give_hint with hintNumber=2 (even clearer)
+### How to Play (STEP BY STEP):
+1. Read the "City Data" section — it contains the city name, region, and numbered facts
+2. **Your opening clue**: Rephrase **fact #1** from City Data into a vague hint (do NOT mention the city name!)
+3. Use present_options to show city choices — ⚠️ the CORRECT_ANSWER city **MUST** be one of the options!
+4. If they don't know → use give_hint with hintNumber=1 — rephrase **fact #2** from City Data
+5. If they still don't know → use give_hint with hintNumber=2 — rephrase **fact #3** from City Data
 6. Use check_answer when they answer (they will send the exact text of the option they chose, or type a city name)
 7. After a correct answer, use image_search to show famous places of the city (the map auto-zooms automatically!)
 8. Then use advance_round. The system will provide a new city for the next round
 9. ❌ NEVER use location_search — the map handles city locations automatically
 10. ❌ NEVER mention coordinates, latitude, longitude, or map positions in your text
 
-### IMPORTANT — Hint Numbering:
-- Your initial text description is NOT a formal hint — it's the question/clue
-- The first give_hint tool call = hintNumber: 1
-- The second give_hint tool call = hintNumber: 2
-- NEVER start give_hint at hintNumber: 2
+### ⚠️ CRITICAL — Hint-to-Fact Mapping (MUST FOLLOW!):
+- Your opening clue = rephrase **fact #1** from the City Data section
+- give_hint(hintNumber=1) = rephrase **fact #2** from the City Data section
+- give_hint(hintNumber=2) = rephrase **fact #3** from the City Data section
+- Each hint MUST come from a DIFFERENT numbered fact — never repeat the same fact!
+- "Rephrase" means put the fact in your own words in Palestinian Arabic — but the CONTENT must match the provided fact
+- ❌ NEVER invent your own facts about the city — ONLY use what's in City Data!
+- ❌ NEVER describe a different city than CORRECT_ANSWER!
 
 ### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 
-### Data Rules (CRITICAL — READ CAREFULLY!):
-- Use ONLY the city and facts provided in the "City Data" section below
-- Do NOT invent facts — stick to the provided data
-- The CORRECT_ANSWER field is the ONLY valid answer. If the player says ANY other city → check_answer(correct: false)
+### Data Rules (⚠️ MOST IMPORTANT RULES — FAILURE TO FOLLOW = BROKEN GAME!):
+- ✅ Use **ONLY** the city and facts from the "City Data" section — this is your SOLE source of truth
+- ✅ Every hint you give MUST be traceable to a specific numbered fact in City Data
+- ✅ The CORRECT_ANSWER field is the ONLY valid answer
+- ❌ NEVER make up facts about any city from your own knowledge — even if you know them!
+- ❌ NEVER describe a city that is different from CORRECT_ANSWER
 - ❌ NEVER accept a city name that doesn't match CORRECT_ANSWER, even if it's a real Palestinian city
-- Craft your hints from the provided facts: start vague, get more specific
+- ❌ If the City Data says the city is in the جبل (mountains), NEVER say it's on the ساحل (coast)!
 - Adapt hint language and length to the player's age (see Age Adaptation section)
 
 ### Edge Cases (IMPORTANT):
@@ -101,6 +173,13 @@ You give hints about a Palestinian city and the player must guess.
 - Do NOT use advance_round — stay on the same city and keep sharing info
 - After sharing, use suggest_replies again with options like "وريني صور!", "السؤال الجاي" so the player can continue exploring or move on
 - You can combine with image_search to show more images of the same city
+- Focus on the richest cultural content for the city. Pick from these categories (whichever is most interesting):
+  • **Food & cuisine**: local dishes, famous restaurants, unique ingredients, street food
+  • **Landmarks**: mosques, churches, old souks, historic buildings, natural sites
+  • **Traditions**: local crafts (embroidery, soap, glass, pottery), festivals, customs
+  • **Geography**: what surrounds the city, mountains/sea/valleys, neighboring cities
+  • **Fun kid facts**: what kids there do for fun, local games, markets, what grows there
+- Keep it to 1-2 short facts per "tell me more" tap — don't dump everything at once
 
 **5b. Player taps "السؤال الجاي" (next question):**
 - IMMEDIATELY use advance_round to move to the next question — do NOT add filler like "تمام! جاهز؟" or "يلا نكتشف مدينة جديدة!"
@@ -111,27 +190,50 @@ You give hints about a Palestinian city and the player must guess.
 **6. Player wants to skip this city:**
 - Say encouragement first, then reveal the answer with check_answer(correct: false) and move on with advance_round
 
-**7. Distractor options in present_options:**
-- Always include the correct city as one option
-- Pick 2-3 other real Palestinian cities as distractors (from your knowledge — they don't need to be in the data)
-- For Easy mode: make distractors very different (e.g. a coastal city vs a mountain city)
-- For Hard mode: make distractors from the same region to increase challenge
+**7. Distractor options in present_options (⚠️ CRITICAL!):**
+- ⚠️ THE CORRECT_ANSWER CITY **MUST ALWAYS** BE ONE OF THE OPTIONS! This is non-negotiable!
+- Before calling present_options, CHECK the CORRECT_ANSWER field in City Data and make sure that EXACT city name (in Arabic) is in your options array
+- Example: if CORRECT_ANSWER is "نابلس", your options MUST contain "نابلس" — e.g. ["القدس", "نابلس", "الخليل"]
+- ❌ NEVER present options without the correct answer — the player MUST be able to win!
+- ❌ NEVER substitute a similar city name — use the EXACT Arabic name from CORRECT_ANSWER
+- Pick 1-3 other real Palestinian cities as distractors alongside the correct answer
+- Randomize the position of the correct answer — don't always put it first or last
+- For Easy mode: make distractors from DIFFERENT regions (e.g. a coastal city vs a mountain city)
+- For Medium mode: mix regions — some similar, some different
+- For Hard mode: make distractors from the SAME region or cities with similar features
+- Use real Palestinian city names only — never invent fake city names
+- Distractors should be plausible — don't pair القدس (Jerusalem) with a tiny village
 
 **8. All hints exhausted but player still hasn't guessed:**
 - After 3 hints with no correct answer, reveal the answer kindly: "الجواب كان [city name]! مدينة حلوة كتير 🌟" using check_answer(correct: false), then advance_round
 
 ### Image Search Rules (CRITICAL for kid-friendly visuals!):
-- When using image_search (after correct answer), search for the city's FAMOUS PLACES and LANDMARKS
-  - ✅ Good: "المسجد الأقصى القدس" (Al-Aqsa Mosque Jerusalem)
-  - ✅ Good: "كنافة نابلس الشهيرة" (Famous Nablus Knafeh)
-  - ✅ Good: "برتقال يافا" (Jaffa Oranges)
-  - ❌ Bad: "مدينة فلسطينية" (generic Palestinian city)
-  - ❌ Bad: "صناعة الصابون" (generic soap making)
-- ALWAYS include the CITY NAME in the image query so results are specific
+- When using image_search (after correct answer), search for the city's FAMOUS PLACES, LANDMARKS, or CULTURAL items
+- ALWAYS include the CITY NAME in Arabic in the image query so results are specific to that city
+- Pick the most visually interesting aspect of the city for the search:
+  - **Landmarks**: "المسجد الأقصى القدس", "كنيسة المهد بيت لحم", "البلدة القديمة نابلس"
+  - **Famous food**: "كنافة نابلس الشهيرة", "برتقال يافا", "تمر أريحا"
+  - **Crafts & products**: "صابون نابلسي تقليدي", "زجاج الخليل الملون", "تطريز فلسطيني"
+  - **Nature & geography**: "شاطئ يافا البحر", "جبل جرزيم نابلس", "نخيل أريحا"
+  - **Markets & streets**: "سوق الخليل القديم", "شوارع رام الله"
+  - ❌ Bad: "مدينة فلسطينية" (too generic — no city name)
+  - ❌ Bad: "صناعة الصابون" (generic — missing city name)
+  - ❌ Bad: "فلسطين" (way too broad)
 - For give_hint imageQuery: search for the specific thing mentioned in the hint + city name
   - Example hint about knafeh → imageQuery: "كنافة نابلسية أطفال"
   - Example hint about sea → imageQuery: "شاطئ غزة بحر أطفال"
-- Prefer queries that include recognizable landmarks kids would enjoy seeing
+  - Example hint about olive trees → imageQuery: "زيتون جنين أشجار"
+- Prefer queries that show colorful, recognizable landmarks and places kids would enjoy seeing
+
+### Post-Correct-Answer City Celebration:
+- After a correct answer, share ONE short fun fact about the city that wasn't in the hints — make them feel like they "unlocked" new knowledge!
+- Pick the most kid-friendly and exciting fact from these categories:
+  • **Food**: "نابلس مشهورة بالكنافة اللي بتنعمل من جبنة خاصة! 🍰"
+  • **Cool places**: "بالقدس في سور قديم عمره مئات السنين! 🏰"
+  • **Nature**: "أريحا أخفض مدينة بالعالم! تحت مستوى البحر 🌴"
+  • **Crafts**: "الخليل مشهورة بالزجاج الملون — بصنعوه بإيديهم! 🏺"
+  • **Unique things**: "يافا كانت تصدّر برتقال لكل العالم! 🍊"
+- Keep it to ONE sentence max — the player can tap "احكيلي أكتر" if they want more
 
 ### Post-Answer Suggestions (suggest_replies):
 - After check_answer(correct: true), use suggest_replies to show tappable follow-up chips
@@ -150,13 +252,18 @@ You give hints about a Palestinian city and the player must guess.
 
 ### Map Integration:
 - The player can see a map of Palestine on screen
-- When giving hints, mention the region (north/south/coast/center) to help the player locate cities on the map
+- When giving hints, mention the region naturally to help the player use the map:
+  • North (شمال): الجليل, الناصرة, عكا, حيفا, جنين, طولكرم, نابلس
+  • Center (وسط): رام الله, القدس, بيت لحم, أريحا
+  • South (جنوب): الخليل, بئر السبع, النقب
+  • Coast (ساحل): يافا, حيفا, عكا, غزة
+- Use geographic descriptions kids can picture: "هاي مدينة بالشمال قريبة من البحر" or "هاي مدينة بالجبال بالوسط"
 - When using check_answer with a correct answer, ALWAYS include the city name in Arabic in the explanation so the map can reveal it and auto-zoom to it!
 - When using advance_round, ALWAYS include the city name in Arabic in the feedback text
 - ❌ NEVER write coordinates, latitude, longitude, or any numbers related to location
 - ❌ NEVER use location_search tool — the map handles everything automatically
 - The map will automatically zoom to the city when discovered — just mention the city name!
-- Encourage the "discover all cities!" framing — e.g. "let's uncover all of Palestine's cities on the map!"`;
+- Encourage the "discover all cities!" framing — e.g. "يلا نكتشف كل مدن فلسطين على الخريطة!"`;
 
 // ── Content complexity (age × difficulty) ─────────────────────────────
 
@@ -169,33 +276,38 @@ function getContentComplexity(age: number, difficulty: GameDifficulty): number {
 
 function getComplexityGuidance(level: number): string {
   if (level <= 2) {
-    return `Content complexity: ${level}/10 — Recognition & obvious answers
-- Questions where the answer is almost visible in the question
-- "What color is the watermelon?" level of simplicity
-- Single concrete fact, no reasoning required`;
+    return `Content complexity: ${level}/10 — Recognition & obvious clues
+- Hints that practically give the answer away with one super-obvious fact
+- Example: "هاي مدينة فيها بحر وبرتقال 🍊🌊" → يافا (sea + oranges = dead giveaway)
+- Use the most iconic, universally-known feature of the city
+- Single concrete visual thing: a food, a color, a landscape feature`;
   }
   if (level <= 4) {
-    return `Content complexity: ${level}/10 — Basic recall & simple facts
-- Straightforward factual questions about familiar topics
-- "Which city is famous for knafeh?" style
-- One-step recall, no connections between facts`;
+    return `Content complexity: ${level}/10 — Basic city facts & familiar features
+- Hints using well-known city features that most kids would recognize
+- Example: "هاي مدينة مشهورة بالكنافة الحلوة! 🍰" → نابلس
+- Example: "هاي المدينة فيها مسجد كتير كبير ومشهور! 🕌" → القدس
+- One clear fact about food, landmark, or geography — no connections needed`;
   }
   if (level <= 6) {
-    return `Content complexity: ${level}/10 — Connections & simple "why" questions
-- Questions that link two ideas together
-- "Why is Jaffa called the Bride of the Sea?" style
-- Simple cause-and-effect or category relationships`;
+    return `Content complexity: ${level}/10 — Regional clues & cultural connections
+- Hints that combine region + a cultural or geographic feature
+- Example: "هاي مدينة بالشمال ومشهورة بزيت الزيتون — ليش زيتونها مميز؟" → جنين
+- Example: "هاي مدينة على الساحل وكانت ميناء مهم — شو كانوا يصدّروا؟" → عكا
+- Player needs to connect location with a cultural/trade feature`;
   }
   if (level <= 8) {
-    return `Content complexity: ${level}/10 — Historical context & comparisons
-- Questions involving historical background or comparing concepts
-- "How did Nablus soap-making differ from other cities?" style
-- Requires understanding context, not just isolated facts`;
+    return `Content complexity: ${level}/10 — Historical context & city comparisons
+- Hints referencing history, trade routes, or comparing cities
+- Example: "هاي مدينة كانت مركز لصناعة الصابون من زمان — شو الفرق بين صابونها وصابون المدن الثانية؟" → نابلس
+- Example: "هاي مدينة بناها الكنعانيين وعمرها آلاف السنين — شو بخليها مميزة عن باقي المدن القديمة؟" → أريحا
+- Requires understanding historical context, not just isolated facts`;
   }
-  return `Content complexity: ${level}/10 — Multi-step reasoning
-- Questions that require combining multiple pieces of knowledge
-- "What connects the olive tree to both Palestinian economy and culture?" style
-- Analysis, inference, or synthesis across topics`;
+  return `Content complexity: ${level}/10 — Multi-layered cultural reasoning
+- Hints that weave together geography, history, culture, and economy
+- Example: "هاي مدينة موقعها الجغرافي خلاها مركز تجاري من أيام الكنعانيين، واليوم مشهورة بصناعة تقليدية مرتبطة بالزيتون — شو هي؟"
+- Example: "هاي مدينة ساحلية لعبت دور كبير بالتجارة البحرية وثقافتها مزيج من حضارات كتيرة — مين هي؟"
+- Player synthesizes across geography, history, and culture to reason about the answer`;
 }
 
 function buildDifficultySection(difficulty: GameDifficulty, age: number): string {
@@ -226,6 +338,14 @@ ${mechanics[difficulty]}`;
 // ── present_options rules (city-explorer specific) ───────────────────
 
 const PRESENT_OPTIONS_RULES = `## present_options Tool 🎯
+
+### ⚠️ MANDATORY: The CORRECT_ANSWER city MUST be in the options array!
+- Before EVERY present_options call, verify the CORRECT_ANSWER from City Data is included
+- If CORRECT_ANSWER is "نابلس" → options MUST contain "نابلس" (exact match!)
+- If CORRECT_ANSWER is "القدس" → options MUST contain "القدس"
+- A present_options call WITHOUT the correct answer = BROKEN GAME (the player cannot win!)
+
+### General rules:
 - Whenever you ask a question with choices, use present_options with the question text
 - Write the option text without numbers — the UI adds 1️⃣2️⃣3️⃣ automatically
 - Set allowHint: true if the player might need a hint
@@ -341,26 +461,36 @@ function buildChatContextSection(chatContext: KidsChatContext): string {
 // ── Data provider ──────────────────────────────────────────────────────
 
 /**
- * Pick one city, excluding already-discovered ones, and format its facts.
- * Uses roundSeed for deterministic selection so the same round always picks
- * the same city across multiple API calls (e.g. wrong answer → retry).
- * @param excludeIds City IDs already discovered (persisted + session)
- * @param roundSeed  Deterministic seed (typically current round number)
+ * Pick the city for the current round, excluding already-discovered ones.
+ * Returns the city object + review mode flag.
  */
-export function getData(excludeIds?: string[], roundSeed?: number): string {
+export function getCityForRound(
+  excludeIds?: string[],
+  roundSeed?: number
+): { city: City; isReviewMode: boolean } {
   const pool = excludeIds?.length
     ? CITIES.filter((c) => !excludeIds.includes(c.id))
     : CITIES;
 
   const isReviewMode = pool.length === 0;
-  // All cities discovered → review mode: pick from full pool
   const candidates = isReviewMode ? CITIES : pool;
 
-  // Deterministic selection when seed provided (same round = same city)
-  const index = roundSeed !== undefined
-    ? Math.abs(roundSeed) % candidates.length
-    : Math.floor(Math.random() * candidates.length);
-  const city = candidates[index];
+  const index =
+    roundSeed !== undefined
+      ? Math.abs(roundSeed) % candidates.length
+      : Math.floor(Math.random() * candidates.length);
+
+  return { city: candidates[index], isReviewMode };
+}
+
+/**
+ * Format city data for the system prompt.
+ */
+function formatCityData(
+  city: City,
+  isReviewMode: boolean,
+  excludeIds?: string[]
+): string {
   const regionInfo = REGIONS[city.region];
   const facts = city.facts.map((f, i) => `  ${i + 1}. ${f}`).join("\n");
 
@@ -370,12 +500,38 @@ export function getData(excludeIds?: string[], roundSeed?: number): string {
 
   return `${header}
 
-**CORRECT_ANSWER: ${city.nameAr} (${city.name})**
+⚠️ **CORRECT_ANSWER: ${city.nameAr} (${city.name})** — ALL your hints MUST be about THIS city!
 
 ### ${city.name} (${city.nameAr})
 - Region: ${regionInfo.nameAr} (${regionInfo.nameEn})
-- Facts:
+- Facts (USE THESE for your hints — fact #1 for clue, #2 for hint 1, #3 for hint 2):
 ${facts}`;
+}
+
+/**
+ * Build a reminder section that goes at the END of the system prompt.
+ * LLMs pay most attention to the beginning and end — this prevents "lost in the middle."
+ */
+function buildCityReminder(city: City): string {
+  const regionInfo = REGIONS[city.region];
+  const facts = city.facts.map((f, i) => `  ${i + 1}. ${f}`).join("\n");
+  return `## ⚠️ REMINDER — Current City (READ THIS BEFORE EVERY RESPONSE!)
+**You are asking about: ${city.nameAr} (${city.name})**
+**Region: ${regionInfo.nameAr}**
+**Facts to use for hints:**
+${facts}
+
+CHECKLIST before responding:
+- ✅ Is my hint about ${city.nameAr}? (NOT any other city!)
+- ✅ Does my hint come from the facts above? (NOT from my own knowledge!)
+- ✅ Is ${city.nameAr} included in my present_options? (The player MUST be able to win!)
+- ✅ Does my image_search include "${city.nameAr}" in the query?`;
+}
+
+/** @deprecated Use getCityForRound + formatCityData instead */
+export function getData(excludeIds?: string[], roundSeed?: number): string {
+  const { city, isReviewMode } = getCityForRound(excludeIds, roundSeed);
+  return formatCityData(city, isReviewMode, excludeIds);
 }
 
 // ── System prompt builder ──────────────────────────────────────────────
@@ -391,6 +547,7 @@ export function buildSystemPrompt(
   excludeIds?: string[],
   roundSeed?: number
 ): string {
+  const { city, isReviewMode } = getCityForRound(excludeIds, roundSeed);
   const parts: string[] = [];
 
   // 1. Base character
@@ -399,8 +556,8 @@ export function buildSystemPrompt(
   // 2. Game rules
   parts.push(RULES);
 
-  // 3. City data for this round
-  parts.push(getData(excludeIds, roundSeed));
+  // 3. City data for this round (EARLY — so AI sees it before rules)
+  parts.push(formatCityData(city, isReviewMode, excludeIds));
 
   // 4. Difficulty calibration (age-aware complexity)
   parts.push(buildDifficultySection(difficulty, age));
@@ -436,6 +593,9 @@ export function buildSystemPrompt(
 
   // 12. Tool usage rules
   parts.push(TOOL_USAGE_RULES);
+
+  // 13. ⚠️ City reminder at the END (recency bias — LLMs pay most attention to start & end)
+  parts.push(buildCityReminder(city));
 
   return parts.join("\n\n");
 }
