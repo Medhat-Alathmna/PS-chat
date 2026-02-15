@@ -2,20 +2,7 @@
 // GAME TYPE DEFINITIONS
 // ============================================
 
-export type GameId =
-  | "palestine-quiz"
-  | "city-explorer"
-  | "story-builder"
-  | "cultural-detective"
-  | "time-traveler"
-  | "word-chain"
-  | "twenty-questions"
-  | "riddles"
-  | "emoji-puzzle"
-  | "memory-match"
-  | "draw-describe"
-  | "recipe-chef"
-  | "would-you-rather";
+export type GameId = "city-explorer";
 
 export type GameCategory = "educational" | "classic" | "creative";
 

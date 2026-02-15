@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import ProfileSwitcher from "./ProfileSwitcher";
-import { Profile } from "@/lib/types/games";
+import { KidsProfile } from "@/lib/types/games";
 
 interface SettingsMenuProps {
-  profiles: Profile[];
-  activeProfile: Profile | null;
+  profiles: KidsProfile[];
+  activeProfile: KidsProfile | null;
   onSwitch: (id: string) => void;
   onAddNew: () => void;
   onEdit: (id: string) => void;
@@ -64,7 +64,7 @@ export default function SettingsMenu({
               <p className="text-xs font-semibold text-gray-600 mb-2">الملف الشخصي</p>
               <ProfileSwitcher
                 profiles={profiles}
-                activeProfile={activeProfile}
+                activeProfile={activeProfile!}
                 onSwitch={(id) => {
                   onSwitch(id);
                   setIsOpen(false);

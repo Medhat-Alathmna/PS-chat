@@ -7,7 +7,7 @@ import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
 import ProfileSwitcher from "./ProfileSwitcher";
 import { RewardLevel } from "@/lib/types";
-import { Profile } from "@/lib/types/games";
+import { KidsProfile } from "@/lib/types/games";
 import { getRandomPrompts, KidsPrompt } from "@/lib/data/kids-prompts";
 
 interface KidsIntroScreenProps {
@@ -18,8 +18,8 @@ interface KidsIntroScreenProps {
   isMusicPlaying?: boolean;
   isMusicLoaded?: boolean;
   onToggleMusic?: () => void;
-  profiles?: Profile[];
-  activeProfile?: Profile;
+  profiles?: KidsProfile[];
+  activeProfile?: KidsProfile;
   onSwitchProfile?: (id: string) => void;
   onAddNewProfile?: () => void;
   onEditProfile?: () => void;

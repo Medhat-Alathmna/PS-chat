@@ -1,5 +1,10 @@
 /**
- * City Explorer — per-game rules and data provider.
+ * City Explorer — self-contained game module.
+ *
+ * Exports:
+ *  - buildSystemPrompt()  — full system prompt for this game
+ *  - tools                — tool collection for the API route
+ *  - trimCompletedRounds  — opt-in flag for server-side message trimming
  *
  * Rules are written in English (the LLM translates to Arabic at runtime).
  * getData() randomly picks cities from lib/data/cities.ts and formats them
@@ -7,13 +12,41 @@
  */
 
 import { CITIES, REGIONS } from "@/lib/data/cities";
+import { GameDifficulty, KidsChatContext } from "@/lib/types/games";
+import {
+  MEDHAT_BASE,
+  SAFETY_RULES,
+  buildAgeAdaptationSection,
+} from "./constitution";
+import {
+  checkAnswerTool,
+  giveHintTool,
+  advanceRoundTool,
+  presentOptionsTool,
+  endGameTool,
+  suggestRepliesTool,
+} from "../game-tools";
+import { imageSearchTool } from "../tools";
 
 // ── Opt-in: trim completed-round messages server-side ────────────────
 export const trimCompletedRounds = true;
 
+// ── Tool collection ──────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const tools: Record<string, any> = {
+  check_answer: checkAnswerTool,
+  give_hint: giveHintTool,
+  advance_round: advanceRoundTool,
+  present_options: presentOptionsTool,
+  end_game: endGameTool,
+  image_search: imageSearchTool,
+  suggest_replies: suggestRepliesTool,
+};
+
 // ── Game-specific rules ────────────────────────────────────────────────
 
-export const RULES = `## Game: City Explorer 🗺️
+const RULES = `## Game: City Explorer 🗺️
 You give hints about a Palestinian city and the player must guess.
 
 ### How to Play:
@@ -111,6 +144,186 @@ You give hints about a Palestinian city and the player must guess.
 - The map will automatically zoom to the city when discovered — just mention the city name!
 - Encourage the "discover all cities!" framing — e.g. "let's uncover all of Palestine's cities on the map!"`;
 
+// ── Content complexity (age × difficulty) ─────────────────────────────
+
+function getContentComplexity(age: number, difficulty: GameDifficulty): number {
+  const clamped = Math.max(4, Math.min(12, age));
+  const ageBase = 1 + ((clamped - 4) / 8) * 5;
+  const offset: Record<GameDifficulty, number> = { easy: 0, medium: 1.5, hard: 3 };
+  return Math.max(1, Math.min(10, Math.round(ageBase + offset[difficulty])));
+}
+
+function getComplexityGuidance(level: number): string {
+  if (level <= 2) {
+    return `Content complexity: ${level}/10 — Recognition & obvious answers
+- Questions where the answer is almost visible in the question
+- "What color is the watermelon?" level of simplicity
+- Single concrete fact, no reasoning required`;
+  }
+  if (level <= 4) {
+    return `Content complexity: ${level}/10 — Basic recall & simple facts
+- Straightforward factual questions about familiar topics
+- "Which city is famous for knafeh?" style
+- One-step recall, no connections between facts`;
+  }
+  if (level <= 6) {
+    return `Content complexity: ${level}/10 — Connections & simple "why" questions
+- Questions that link two ideas together
+- "Why is Jaffa called the Bride of the Sea?" style
+- Simple cause-and-effect or category relationships`;
+  }
+  if (level <= 8) {
+    return `Content complexity: ${level}/10 — Historical context & comparisons
+- Questions involving historical background or comparing concepts
+- "How did Nablus soap-making differ from other cities?" style
+- Requires understanding context, not just isolated facts`;
+  }
+  return `Content complexity: ${level}/10 — Multi-step reasoning
+- Questions that require combining multiple pieces of knowledge
+- "What connects the olive tree to both Palestinian economy and culture?" style
+- Analysis, inference, or synthesis across topics`;
+}
+
+function buildDifficultySection(difficulty: GameDifficulty, age: number): string {
+  const level = getContentComplexity(age, difficulty);
+  const guidance = getComplexityGuidance(level);
+
+  const mechanics: Record<GameDifficulty, string> = {
+    easy: `### Mechanics (Easy):
+- 2 options when using present_options
+- Hints are FREE (0 points)
+- Every attempt deserves celebration! 🌟`,
+    medium: `### Mechanics (Medium):
+- 3 options when using present_options
+- Hints cost 1 point
+- Encourage trying again after mistakes`,
+    hard: `### Mechanics (Hard):
+- 4 options when using present_options
+- Hints cost 2 points
+- Share extra facts with each answer`,
+  };
+
+  return `## Difficulty Level — ${difficulty.toUpperCase()}
+${guidance}
+
+${mechanics[difficulty]}`;
+}
+
+// ── present_options rules (city-explorer specific) ───────────────────
+
+const PRESENT_OPTIONS_RULES = `## present_options Tool 🎯
+- Whenever you ask a question with choices, use present_options with the question text
+- Write the option text without numbers — the UI adds 1️⃣2️⃣3️⃣ automatically
+- Set allowHint: true if the player might need a hint
+- When the player responds, they will send the exact text of the option they selected (e.g., if they click the second option "نابلس", you'll receive "نابلس")
+- Don't write options in text — put them all in the present_options tool
+- ❌ Don't use present_options when the player asks for a hint — only give_hint
+- ❌ Don't use present_options together with check_answer in the same response`;
+
+// ── Tool usage rules (multi-tool, intent detection, wait) ──────────────
+
+const TOOL_USAGE_RULES = `## Tool Usage Rules (VERY IMPORTANT!) ⚠️
+
+### 🆕 Multi-Tool Support (NEW RULE!):
+- ✅ You can now use multiple tools in ONE response for richer, faster experiences!
+- ✅ Allowed combinations:
+  • check_answer + image_search (show celebratory image when correct! 🎉)
+  • give_hint + image_search (visual hint to help the player 🖼️)
+  • advance_round + image_search (celebration image 🌟)
+  • check_answer + suggest_replies (show suggestions after correct answer 💬)
+  • check_answer + image_search + suggest_replies (triple combo for rich post-answer experience! 🎉💬)
+- ❌ NEVER use the same tool twice in one response (e.g., image_search + image_search = waste!)
+- ❌ NEVER use present_options with check_answer (they conflict!)
+- 💡 When using multiple tools, they execute together = INSTANT visual wow factor!
+
+### 🆕 "I Don't Know" Rule (NEW APPROACH!):
+When the player says: "مش عارف", "ما بعرف", "لا أعرف", "help", "ساعدني", "I don't know":
+1. **Reply with encouragement FIRST**: "ما في مشكلة يا [name]! خليني ساعدك... 🌟"
+2. **Use give_hint** (automatic, free in Easy mode!)
+3. **NEVER use check_answer** — they didn't give an answer!
+4. **You can combine**: give_hint + image_search for visual assistance
+
+### 🆕 Hint Points Deduction (NEW SYSTEM!):
+
+- **Easy mode**: pointsDeduction = 0 (FREE hints! 🎁)
+- **Medium mode**: pointsDeduction = 1
+- **Hard mode**: pointsDeduction = 2
+- The system automatically calculates this based on difficulty level
+
+### User Intent Detection (CRITICAL — read carefully!) 🧠
+Use your judgment to detect the player's intent from their message. The examples below are NOT exhaustive — use common sense for ALL languages and phrasings:
+
+| User Signal | Examples | Your Action |
+|-------------|----------|-------------|
+| **Confusion / "I don't know"** | "مش عارف", "ما بعرف", "لا أعرف", "help", "ساعدني", "I'm stuck", "صعبة", "شو هاد؟", "مش فاهم" | Encouragement message + \`give_hint\` (can add \`+ image_search\`). NEVER \`check_answer\`! |
+| **Giving up / Skip** | "skip", "next", "مش قادر", "بدي أطلع", "خلص", "بدي غيره" | Encourage first + \`give_hint\`. If they insist again → \`check_answer(correct: false)\` + reveal the answer |
+| **Frustration / Boredom** | "صعبة كتير", "boring", "ملل", "مش حلوة", "بدي ألعب غيرها" | Extra encouragement + easier hint. Stay positive! |
+| **Off-topic / Playful** | Random messages, jokes, unrelated chat | Respond briefly and playfully, then redirect to the game. No tool call needed |
+| **Actual answer** | A number (1, 2, 3...), a city name, a word, a specific guess | Use \`check_answer\` (can add \`+ image_search\` or \`+ suggest_replies\` if correct!) |
+
+Key rules:
+- ❌ NEVER treat "I don't know" or confusion as a wrong answer
+- ❌ NEVER use check_answer when the child didn't actually answer
+- ✅ When in doubt, use give_hint — it's always safe and kind
+- ✅ Be generous with encouragement for confused or frustrated players
+- ✅ Use multi-tool combinations for instant visual feedback!
+
+### Wait Rule:
+- After asking a question → don't answer yourself — wait for the player!
+- After a hint → don't answer — wait for the player to try!
+- check_answer only when the player chooses a number or writes an answer`;
+
+// ── suggest_replies rules (city-explorer specific) ──────────────────
+
+function buildSuggestRepliesRules(age: number): string {
+  const frequency = age <= 7
+    ? "ALWAYS use suggest_replies after every message — young kids struggle with typing"
+    : age <= 9
+    ? "Use suggest_replies often — helpful for most kids"
+    : "Use suggest_replies occasionally — older kids can type but it speeds things up";
+
+  return `## Quick Reply Suggestions (suggest_replies) 💬
+- Use suggest_replies to show tappable suggestion chips the kid can tap instead of typing
+- These are SOFT suggestions, NOT quiz answers (use present_options for quiz answers)
+- Suggestions must be SHORT (1-3 words each, Arabic)
+- ${frequency}
+
+### City Explorer guidance:
+- After a correct answer, suggest follow-ups like "وريني صور!", "احكيلي أكتر", "وريها عالخريطة", "السؤال الجاي" — always include "السؤال الجاي" last
+
+### Rules:
+- Set showHintChip: true when hints are available
+- Can be combined with other tools (e.g., check_answer + suggest_replies for next turn)
+- ❌ NEVER use suggest_replies together with present_options (they serve different purposes)`;
+}
+
+// ── Player name personalization ────────────────────────────────────────
+
+function buildPlayerNameSection(playerName: string): string {
+  return `## Player Name: ${playerName}
+
+**MANDATORY: You MUST address the child by "${playerName}" in EVERY single response. No exceptions.**
+
+Rules:
+1. Use "${playerName}" at least once per message — ideally near the start.
+2. Place it naturally in Arabic using "يا ${playerName}" (vocative) or just "${playerName}" inline.
+3. Vary placement: sometimes at the beginning, sometimes mid-sentence, sometimes when praising.
+4. You are ${playerName}'s friend — warm, playful, never formal.
+
+Examples of natural usage:
+- Greeting: "يلا يا ${playerName}، خلينا نلعب!"
+- Praise: "برافو يا ${playerName}! 🎉"
+- Hint: "خليني أساعدك يا ${playerName} 💡"
+- Wrong answer: "قريب يا ${playerName}! جرّب كمان مرة"
+- Question: "شو رأيك يا ${playerName}؟"`;
+}
+
+// ── Chat context ───────────────────────────────────────────────────────
+
+function buildChatContextSection(chatContext: KidsChatContext): string {
+  return `## Chat Context\nThe player was talking about: ${chatContext.recentTopics.join(", ")}. You can connect your questions to these topics!`;
+}
+
 // ── Data provider ──────────────────────────────────────────────────────
 
 /**
@@ -149,4 +362,66 @@ export function getData(excludeIds?: string[], roundSeed?: number): string {
 - Region: ${regionInfo.nameAr} (${regionInfo.nameEn})
 - Facts:
 ${facts}`;
+}
+
+// ── System prompt builder ──────────────────────────────────────────────
+
+/**
+ * Build the full system prompt for a city-explorer game session.
+ */
+export function buildSystemPrompt(
+  difficulty: GameDifficulty,
+  age: number,
+  playerName?: string,
+  chatContext?: KidsChatContext,
+  excludeIds?: string[],
+  roundSeed?: number
+): string {
+  const parts: string[] = [];
+
+  // 1. Base character
+  parts.push(MEDHAT_BASE);
+
+  // 2. Game rules
+  parts.push(RULES);
+
+  // 3. City data for this round
+  parts.push(getData(excludeIds, roundSeed));
+
+  // 4. Difficulty calibration (age-aware complexity)
+  parts.push(buildDifficultySection(difficulty, age));
+
+  // 5. Age adaptation
+  parts.push(buildAgeAdaptationSection(age));
+
+  // 6. Player name personalization
+  if (playerName) {
+    parts.push(buildPlayerNameSection(playerName));
+  }
+
+  // 7. Chat context
+  if (chatContext?.recentTopics?.length) {
+    parts.push(buildChatContextSection(chatContext));
+  }
+
+  // 8. Game metadata
+  parts.push(`## Game Info
+- Game name: مستكشف المدن
+- Rounds: 5
+- Points per correct answer: 15
+- Game completion bonus: 25`);
+
+  // 9. Safety rules
+  parts.push(SAFETY_RULES);
+
+  // 10. present_options rules
+  parts.push(PRESENT_OPTIONS_RULES);
+
+  // 11. Quick reply suggestions
+  parts.push(buildSuggestRepliesRules(age));
+
+  // 12. Tool usage rules
+  parts.push(TOOL_USAGE_RULES);
+
+  return parts.join("\n\n");
 }

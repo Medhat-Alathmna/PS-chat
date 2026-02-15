@@ -1,7 +1,5 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { GameId } from "@/lib/types/games";
-import { imageSearchTool, locationSearchTool } from "./tools";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 
 /**
@@ -52,7 +50,7 @@ export const giveHintTool = tool({
 });
 
 /**
- * advance_round — Move to next round (creative games)
+ * advance_round — Move to next round
  */
 export const advanceRoundTool = tool({
   description:
@@ -130,101 +128,3 @@ export const endGameTool = tool({
     return { reason, finalMessage, totalScore, correctAnswers, totalRounds };
   },
 });
-
-// ============================================
-// TOOL COLLECTIONS PER GAME TYPE
-// ============================================
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ToolCollection = Record<string, any>;
-
-const quizTools: ToolCollection = {
-  check_answer: checkAnswerTool,
-  give_hint: giveHintTool,
-  present_options: presentOptionsTool,
-  end_game: endGameTool,
-};
-
-const explorerTools: ToolCollection = {
-  check_answer: checkAnswerTool,
-  give_hint: giveHintTool,
-  present_options: presentOptionsTool,
-  end_game: endGameTool,
-  image_search: imageSearchTool,
-  location_search: locationSearchTool,
-};
-
-/** City explorer — like explorer but NO location_search (map handles cities automatically) */
-const cityExplorerTools: ToolCollection = {
-  check_answer: checkAnswerTool,
-  give_hint: giveHintTool,
-  advance_round: advanceRoundTool,
-  present_options: presentOptionsTool,
-  end_game: endGameTool,
-  image_search: imageSearchTool,
-  suggest_replies: suggestRepliesTool,
-};
-
-/** Creative games WITH selectable options (would-you-rather, recipe-chef) */
-const creativeToolsWithOptions: ToolCollection = {
-  advance_round: advanceRoundTool,
-  present_options: presentOptionsTool,
-  suggest_replies: suggestRepliesTool,
-  end_game: endGameTool,
-};
-
-/** Creative games WITHOUT options (story-builder, draw-describe) */
-const creativeToolsNoOptions: ToolCollection = {
-  advance_round: advanceRoundTool,
-  suggest_replies: suggestRepliesTool,
-  end_game: endGameTool,
-};
-
-/** Word games — free-form text input, no selectable options */
-const wordGameTools: ToolCollection = {
-  check_answer: checkAnswerTool,
-  give_hint: giveHintTool,
-  suggest_replies: suggestRepliesTool,
-  end_game: endGameTool,
-};
-
-/**
- * Get the right set of tools for a given game
- */
-export function getToolsForGame(gameId: GameId): ToolCollection {
-  switch (gameId) {
-    // City explorer — no location_search (map auto-handles cities)
-    case "city-explorer":
-      return cityExplorerTools;
-
-    // Educational games with rich media + options
-    case "time-traveler":
-      return explorerTools;
-
-    // Quiz-style games with options
-    case "palestine-quiz":
-    case "cultural-detective":
-    case "riddles":
-    case "emoji-puzzle":
-    case "memory-match":
-      return quizTools;
-
-    // Free-form word games (no options)
-    case "word-chain":
-    case "twenty-questions":
-      return wordGameTools;
-
-    // Creative games WITH options
-    case "would-you-rather":
-    case "recipe-chef":
-      return creativeToolsWithOptions;
-
-    // Creative games WITHOUT options
-    case "story-builder":
-    case "draw-describe":
-      return creativeToolsNoOptions;
-
-    default:
-      return quizTools;
-  }
-}

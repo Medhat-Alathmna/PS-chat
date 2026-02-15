@@ -161,9 +161,9 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
     }
   }, [gameId, difficulty, profileId]);
 
-  // Games where advance_round tool handles round progression
-  // (check_answer should NOT advance the round for these games)
-  const hasExplicitAdvanceRound = ["city-explorer", "time-traveler", "story-builder", "draw-describe", "would-you-rather", "recipe-chef"].includes(gameId);
+  // city-explorer uses advance_round tool to handle round progression
+  // (check_answer should NOT advance the round)
+  const hasExplicitAdvanceRound = gameId === "city-explorer";
 
   // Process tool call results from AI
   const processToolResult = useCallback((toolName: string, result: Record<string, unknown>) => {

@@ -2,15 +2,13 @@ import { NextRequest } from "next/server";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getModel } from "@/lib/ai/config";
-import { getToolsForGame } from "@/lib/ai/game-tools";
-import { buildGameSystemPrompt, shouldTrimMessages } from "@/lib/ai/game-prompts";
+import { buildSystemPrompt, tools, trimCompletedRounds } from "@/lib/ai/games/city-explorer";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
-import { GameId, GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
+import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { logError } from "@/lib/utils/error-handler";
 
 type GameChatRequest = {
   messages: UIMessage[];
-  gameId: GameId;
   difficulty?: GameDifficulty;
   chatContext?: KidsChatContext;
   kidsProfile?: KidsProfile;
@@ -123,18 +121,11 @@ function trimCompletedRoundMessages(
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as GameChatRequest;
-    const { messages = [], gameId, difficulty, chatContext, kidsProfile, discoveredCityIds, sessionSeed } = body;
+    const { messages = [], difficulty, chatContext, kidsProfile, discoveredCityIds, sessionSeed } = body;
 
     if (!messages || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Message content is required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!gameId) {
-      return new Response(
-        JSON.stringify({ error: "gameId is required." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -161,25 +152,20 @@ export async function POST(req: NextRequest) {
     const roundNumber = countAdvanceRounds(messages);
     const roundSeed = (sessionSeed || 0) + roundNumber;
 
-    const systemPrompt = buildGameSystemPrompt(
-      gameId,
-      difficulty,
-      chatContext,
-      kidsProfile?.age,
+    const systemPrompt = buildSystemPrompt(
+      difficulty || "medium",
+      kidsProfile?.age || 8,
       kidsProfile?.name,
+      chatContext,
       allUsedCityIds,
       roundSeed
     );
 
-    if (gameId === "city-explorer") {
-      console.log("[city-explorer] System prompt:\n", systemPrompt);
-    }
+    console.log("[city-explorer] System prompt:\n", systemPrompt);
 
-    const tools = getToolsForGame(gameId);
-
-    // Trim old-round messages for games that opt in (saves 3k-10k+ tokens per request)
+    // Trim old-round messages (saves 3k-10k+ tokens per request)
     let aiMessages = messages;
-    if (shouldTrimMessages(gameId) && roundSeed > 0) {
+    if (trimCompletedRounds && roundSeed > 0) {
       const discoveredNames = allUsedCityIds
         .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
         .filter(Boolean) as string[];
@@ -196,10 +182,9 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: await convertToModelMessages(aiMessages),
       tools,
-      stopWhen: stepCountIs(7), // Increased from 5 to 7 for multi-tool support
+      stopWhen: stepCountIs(7),
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[game-chat] Stream finished", {
-          gameId,
           textLength: text.length,
           toolCallsCount: toolCalls?.length || 0,
           toolResultsCount: toolResults?.length || 0,
