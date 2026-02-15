@@ -37,7 +37,8 @@
       "Bash(node --version:*)",
       "Bash(node:*)",
       "Bash(exit 0)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

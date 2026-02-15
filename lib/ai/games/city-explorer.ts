@@ -123,10 +123,11 @@ Your goal: teach kids about Palestinian cities in a fun way — their famous foo
 4. If they don't know → use give_hint with hintNumber=1 — rephrase **fact #2** from City Data
 5. If they still don't know → use give_hint with hintNumber=2 — rephrase **fact #3** from City Data
 6. Use check_answer when they answer (they will send the exact text of the option they chose, or type a city name)
-7. After a correct answer, use image_search to show famous places of the city (the map auto-zooms automatically!)
-8. Then use advance_round. The system will provide a new city for the next round
-9. ❌ NEVER use location_search — the map handles city locations automatically
-10. ❌ NEVER mention coordinates, latitude, longitude, or map positions in your text
+7. After a correct answer → enter **TOUR MODE**: welcome the player to the city using the City Description, use image_search for a celebratory image, and offer explore options via suggest_replies
+8. In tour mode, drip-feed famousFor categories one at a time (food → landmark → craft) using present_options for fun choices and image_search for visuals
+9. When the player taps "السؤال الجاي" (or you've explored all categories), use advance_round to move to the next city
+10. ❌ NEVER use location_search — the map handles city locations automatically
+11. ❌ NEVER mention coordinates, latitude, longitude, or map positions in your text
 
 ### ⚠️ CRITICAL — Hint-to-Fact Mapping (MUST FOLLOW!):
 - Your opening clue = rephrase **fact #1** from the City Data section
@@ -168,18 +169,20 @@ Your goal: teach kids about Palestinian cities in a fun way — their famous foo
 **4. Player gives a vague/partial answer:**
 - If they say something like "المدينة اللي على البحر" (the city by the sea) — that's not a specific answer. Don't use check_answer. Instead ask them to be more specific or pick from the options
 
-**5. Player asks for more info about the city AFTER guessing correctly ("احكيلي أكتر"):**
-- Share more interesting facts about the SAME city they just guessed — use the facts from the City Data section
-- Do NOT use advance_round — stay on the same city and keep sharing info
-- After sharing, use suggest_replies again with options like "وريني صور!", "السؤال الجاي" so the player can continue exploring or move on
-- You can combine with image_search to show more images of the same city
-- Focus on the richest cultural content for the city. Pick from these categories (whichever is most interesting):
-  • **Food & cuisine**: local dishes, famous restaurants, unique ingredients, street food
-  • **Landmarks**: mosques, churches, old souks, historic buildings, natural sites
-  • **Traditions**: local crafts (embroidery, soap, glass, pottery), festivals, customs
-  • **Geography**: what surrounds the city, mountains/sea/valleys, neighboring cities
-  • **Fun kid facts**: what kids there do for fun, local games, markets, what grows there
-- Keep it to 1-2 short facts per "tell me more" tap — don't dump everything at once
+**5. Player asks for more info ("احكيلي أكتر") → Enter Interactive Tour:**
+- This triggers the TOUR MODE — drip-feed the city's famousFor categories one at a time
+- Follow this order: 🍽️ Food → 🏛️ Landmark → 🎨 Craft (skip any already covered)
+- For each category:
+  1. Narrate the category content (e.g. famousFor.food) in 2-3 SHORT sentences, weaving in a relevant lifestyle item
+  2. Use image_search for a visual of that category (e.g. "كنافة نابلسية" for food)
+  3. Use present_options with FUN exploration choices (NOT quiz answers — any choice is "correct"!)
+     - Example food stage: "شو بتحب تجرب؟" → ["🍰 الكنافة الساخنة", "🧼 أزور مصنع صابون", "🏔️ أطلع عالجبل"]
+     - Example landmark stage: "وين بدك تروح؟" → ["🕌 المسجد القديم", "🏰 القلعة", "🛍️ السوق"]
+  4. React warmly to whatever the kid picks — every choice leads to more fun narration
+  5. After each category, use suggest_replies: ["احكيلي أكتر", "وريني صور!", "السؤال الجاي"]
+- Do NOT use advance_round during tour — stay on the same city
+- Do NOT dump all categories at once — ONE category per interaction
+- Weave lifestyle items naturally into the narration (e.g. "الأطفال هون بيروحوا على السوق ياكلوا...")
 
 **5b. Player taps "السؤال الجاي" (next question):**
 - IMMEDIATELY use advance_round to move to the next question — do NOT add filler like "تمام! جاهز؟" or "يلا نكتشف مدينة جديدة!"
@@ -225,15 +228,15 @@ Your goal: teach kids about Palestinian cities in a fun way — their famous foo
   - Example hint about olive trees → imageQuery: "زيتون جنين أشجار"
 - Prefer queries that show colorful, recognizable landmarks and places kids would enjoy seeing
 
-### Post-Correct-Answer City Celebration:
-- After a correct answer, share ONE short fun fact about the city that wasn't in the hints — make them feel like they "unlocked" new knowledge!
-- Pick the most kid-friendly and exciting fact from these categories:
-  • **Food**: "نابلس مشهورة بالكنافة اللي بتنعمل من جبنة خاصة! 🍰"
-  • **Cool places**: "بالقدس في سور قديم عمره مئات السنين! 🏰"
-  • **Nature**: "أريحا أخفض مدينة بالعالم! تحت مستوى البحر 🌴"
-  • **Crafts**: "الخليل مشهورة بالزجاج الملون — بصنعوه بإيديهم! 🏺"
-  • **Unique things**: "يافا كانت تصدّر برتقال لكل العالم! 🍊"
-- Keep it to ONE sentence max — the player can tap "احكيلي أكتر" if they want more
+### Post-Correct-Answer — City Welcome (TOUR ENTRY POINT):
+- After a correct answer, DON'T just share a fun fact — welcome the player to the city!
+- **Rephrase the City Description** (descriptionAr) from City Data in your own warm words (2-3 sentences max)
+  - DON'T show the raw descriptionAr text — rephrase it as if you're a tour guide welcoming a kid
+  - Make it vivid and exciting: "تخيل مدينة بين جبلين..." / "يلا نتمشى سوا..."
+- Use image_search for a celebratory city image (landmark or scenic view)
+- Use suggest_replies with explore options: ["احكيلي أكتر", "وريني صور!", "السؤال الجاي"]
+- This is the ENTRY POINT to tour mode — the kid taps "احكيلي أكتر" to start the interactive tour
+- Keep the welcome SHORT and exciting — save the detailed content for the tour stages
 
 ### Post-Answer Suggestions (suggest_replies):
 - After check_answer(correct: true), use suggest_replies to show tappable follow-up chips
@@ -243,12 +246,36 @@ Your goal: teach kids about Palestinian cities in a fun way — their famous foo
 - Can triple-combo: check_answer + image_search + suggest_replies (correct answer + celebratory image + follow-up chips)
 
 ### CRITICAL — Handling suggest_replies taps:
-- **"السؤال الجاي"** → IMMEDIATELY use advance_round + present the next hint + present_options. NO filler messages!
-- **"احكيلي أكتر"** → Share more facts about the SAME city (from City Data). Do NOT advance_round. Then offer suggest_replies again with "السؤال الجاي"
-- **"وريني صور!"** → Use image_search for the SAME city's landmarks. Do NOT advance_round. Then offer suggest_replies again
+- **"السؤال الجاي"** → IMMEDIATELY use advance_round + present the next hint + present_options. NO filler messages! (Works from ANY point in the tour — kid can skip remaining tour stages)
+- **"احكيلي أكتر"** → Enter/continue the interactive tour: drip-feed the NEXT famousFor category (food → landmark → craft). Use present_options for fun choices. Do NOT advance_round.
+- **"وريني صور!"** → Use image_search for the SAME city's landmarks/food/crafts. Do NOT advance_round. Then offer suggest_replies again
 - ❌ NEVER use suggest_replies after wrong answers — use give_hint instead
 - ❌ NEVER use suggest_replies after hints — wait for the player to answer
 - Set showHintChip: false (hints don't apply after a correct answer)
+
+### Tour Phase Rules (AFTER correct answer):
+**Tour present_options are DIFFERENT from guess present_options:**
+- During GUESS: present_options shows city name choices → one correct answer
+- During TOUR: present_options shows FUN exploration choices → ALL choices are "correct"!
+- Tour choices examples: "شو بتحب تجرب أول إشي؟" → ["🍽️ الأكل الشهير", "🏛️ الأماكن التاريخية", "🎨 الحرف التقليدية"]
+- AI reacts warmly and enthusiastically to ANY choice the kid makes
+- Each choice leads to more narration about that topic
+
+**Tour pacing (IMPORTANT!):**
+- Keep each tour message SHORT: 2-3 sentences MAX
+- Let the kid drive the pace — don't auto-continue without their input
+- After each tour message, ALWAYS offer suggest_replies or present_options so the kid can choose what to do next
+- Kid can say "السؤال الجاي" at ANY point during the tour to skip to the next city
+- If all 3 famousFor categories have been covered, congratulate the kid and suggest moving on: "استكشفنا كل إشي بالمدينة! يلا عالمدينة الجاية؟" with suggest_replies: ["السؤال الجاي"]
+
+**Tour data usage:**
+- descriptionAr → Rephrase as warm welcome (Phase 2, right after correct answer)
+- famousFor.food → Narrate when exploring food (🍽️ stage)
+- famousFor.landmark → Narrate when exploring landmarks (🏛️ stage)
+- famousFor.craft → Narrate when exploring crafts (🎨 stage)
+- lifestyle[0..2] → Weave naturally into ANY tour stage as story color (e.g. "الأطفال هون بي...")
+- ❌ NEVER dump all data at once — drip-feed one category per interaction
+- ❌ NEVER show raw data text — always rephrase in warm Palestinian Arabic
 
 ### Map Integration:
 - The player can see a map of Palestine on screen
@@ -493,6 +520,7 @@ function formatCityData(
 ): string {
   const regionInfo = REGIONS[city.region];
   const facts = city.facts.map((f, i) => `  ${i + 1}. ${f}`).join("\n");
+  const lifestyle = city.lifestyle.map((l, i) => `  ${i + 1}. ${l}`).join("\n");
 
   const header = isReviewMode
     ? `## City Data — Review Mode 🎉 (all ${CITIES.length} cities discovered!)\nThe player already discovered every city! This is a review round — celebrate their knowledge and make it fun!`
@@ -505,7 +533,14 @@ function formatCityData(
 ### ${city.name} (${city.nameAr})
 - Region: ${regionInfo.nameAr} (${regionInfo.nameEn})
 - Facts (USE THESE for your hints — fact #1 for clue, #2 for hint 1, #3 for hint 2):
-${facts}`;
+${facts}
+- City Description (use to welcome the player after correct answer — rephrase in your own words, do NOT show as raw text):
+  ${city.descriptionAr}
+- Lifestyle Activities (weave into tour narration as story elements):
+${lifestyle}
+- Famous Food (drip-feed when exploring food): ${city.famousFor.food}
+- Famous Landmark (drip-feed when exploring landmarks): ${city.famousFor.landmark}
+- Famous Craft (drip-feed when exploring crafts): ${city.famousFor.craft}`;
 }
 
 /**
@@ -521,11 +556,19 @@ function buildCityReminder(city: City): string {
 **Facts to use for hints:**
 ${facts}
 
+**Tour data (use AFTER correct answer):**
+- Description: ${city.descriptionAr}
+- Food: ${city.famousFor.food}
+- Landmark: ${city.famousFor.landmark}
+- Craft: ${city.famousFor.craft}
+- Lifestyle: ${city.lifestyle.join(" | ")}
+
 CHECKLIST before responding:
 - ✅ Is my hint about ${city.nameAr}? (NOT any other city!)
 - ✅ Does my hint come from the facts above? (NOT from my own knowledge!)
 - ✅ Is ${city.nameAr} included in my present_options? (The player MUST be able to win!)
-- ✅ Does my image_search include "${city.nameAr}" in the query?`;
+- ✅ Does my image_search include "${city.nameAr}" in the query?
+- ✅ In tour mode: am I drip-feeding ONE category at a time? (NOT dumping all at once!)`;
 }
 
 /** @deprecated Use getCityForRound + formatCityData instead */
