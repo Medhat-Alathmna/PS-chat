@@ -158,9 +158,11 @@ const explorerTools: ToolCollection = {
 const cityExplorerTools: ToolCollection = {
   check_answer: checkAnswerTool,
   give_hint: giveHintTool,
+  advance_round: advanceRoundTool,
   present_options: presentOptionsTool,
   end_game: endGameTool,
   image_search: imageSearchTool,
+  suggest_replies: suggestRepliesTool,
 };
 
 /** Creative games WITH selectable options (would-you-rather, recipe-chef) */

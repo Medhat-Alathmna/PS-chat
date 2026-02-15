@@ -1,24 +1,21 @@
-"use server";
-
 import { NextRequest } from "next/server";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getModel } from "@/lib/ai/config";
 import { getToolsForGame } from "@/lib/ai/game-tools";
 import { buildGameSystemPrompt, shouldTrimMessages } from "@/lib/ai/game-prompts";
-import { CITIES } from "@/lib/data/cities";
-import { GameId, GameDifficulty, GameState, KidsChatContext, KidsProfile } from "@/lib/types/games";
+import { CITIES, detectCityInText } from "@/lib/data/cities";
+import { GameId, GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { logError } from "@/lib/utils/error-handler";
-import { detectCityInText } from "@/lib/data/cities";
 
 type GameChatRequest = {
   messages: UIMessage[];
   gameId: GameId;
   difficulty?: GameDifficulty;
-  gameState?: GameState;
   chatContext?: KidsChatContext;
   kidsProfile?: KidsProfile;
   discoveredCityIds?: string[];
+  sessionSeed?: number;
 };
 
 /**
@@ -83,8 +80,7 @@ function extractUsedCityIds(messages: UIMessage[]): string[] {
 function trimCompletedRoundMessages(
   messages: UIMessage[],
   currentRound: number,
-  discoveredCityNames: string[],
-  score: number
+  discoveredCityNames: string[]
 ): UIMessage[] {
   // Find the last advance_round tool invocation — everything before it is a completed round
   let lastAdvanceIdx = -1;
@@ -112,7 +108,6 @@ function trimCompletedRoundMessages(
   const summaryText = `[ملخص الجولات السابقة]
 الجولة الحالية: ${currentRound + 1}
 المدن المكتشفة: ${citiesList}
-النقاط: ${score}
 ---
 أكمل اللعبة من هنا!`;
 
@@ -128,7 +123,7 @@ function trimCompletedRoundMessages(
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as GameChatRequest;
-    const { messages = [], gameId, difficulty, chatContext, kidsProfile, discoveredCityIds } = body;
+    const { messages = [], gameId, difficulty, chatContext, kidsProfile, discoveredCityIds, sessionSeed } = body;
 
     if (!messages || messages.length === 0) {
       return new Response(
@@ -160,8 +155,11 @@ export async function POST(req: NextRequest) {
       new Set([...(discoveredCityIds || []), ...sessionCityIds])
     );
 
-    // Deterministic round seed so the same round always picks the same city
-    const roundSeed = countAdvanceRounds(messages);
+    // Combine session seed (random per game session) + round number for city selection.
+    // This ensures each session starts with a different city while staying
+    // deterministic within a session (same round = same city on retries).
+    const roundNumber = countAdvanceRounds(messages);
+    const roundSeed = (sessionSeed || 0) + roundNumber;
 
     const systemPrompt = buildGameSystemPrompt(
       gameId,
@@ -173,6 +171,10 @@ export async function POST(req: NextRequest) {
       roundSeed
     );
 
+    if (gameId === "city-explorer") {
+      console.log("[city-explorer] System prompt:\n", systemPrompt);
+    }
+
     const tools = getToolsForGame(gameId);
 
     // Trim old-round messages for games that opt in (saves 3k-10k+ tokens per request)
@@ -181,8 +183,7 @@ export async function POST(req: NextRequest) {
       const discoveredNames = allUsedCityIds
         .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
         .filter(Boolean) as string[];
-      const score = body.gameState?.score ?? 0;
-      aiMessages = trimCompletedRoundMessages(messages, roundSeed, discoveredNames, score);
+      aiMessages = trimCompletedRoundMessages(messages, roundSeed, discoveredNames);
       console.log("[game-chat] Trimmed messages", {
         original: messages.length,
         trimmed: aiMessages.length,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { City, CITIES, CityRegion } from "@/lib/data/cities";
 import { createCustomMarkerHTML, getMarkerSize, getMarkerAnchor, getPopupAnchor, MarkerState } from "@/app/components/map/CustomMarker";
 import CityPopover from "@/app/components/map/CityPopover";
@@ -214,7 +214,7 @@ const PALESTINE_OUTLINE: [number, number][] = [
   [33.089, 35.104], // العودة لرأس الناقورة - Back to Ras al-Naqoura
 ];
 
-export default function PalestineLeafletMap(props: PalestineLeafletMapProps) {
+function PalestineLeafletMapBase(props: PalestineLeafletMapProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -331,23 +331,28 @@ function LeafletMapInner({
 
       // Only fly to city if it exists and has valid coordinates
       if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-        try {
-          // Check if map container has valid dimensions (prevents NaN during animation)
-          const container = map.getContainer();
-          if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
-            return;
-          }
+        const lat = Number(city.lat);
+        const lng = Number(city.lng);
+        if (isNaN(lat) || isNaN(lng) || !isFinite(lat) || !isFinite(lng)) return;
 
-          // Double-check the values right before calling flyTo
-          const lat = Number(city.lat);
-          const lng = Number(city.lng);
-          if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng)) {
-            // Use setView instead of flyTo to avoid animation calculation issues on mobile
+        let retries = 0;
+        const tryFly = () => {
+          try {
+            const container = map.getContainer();
+            if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
+              // Container not laid out yet (e.g. expand animation) — retry up to 10 times
+              if (retries < 10) {
+                retries++;
+                requestAnimationFrame(tryFly);
+              }
+              return;
+            }
             map.setView([lat, lng], zoomLevel, { animate: false });
+          } catch (error) {
+            console.error("FlyToCity error:", error, { cityId, lat, lng });
           }
-        } catch (error) {
-          console.error("FlyToCity error:", error, { cityId, lat: city.lat, lng: city.lng });
-        }
+        };
+        tryFly();
       }
     }, [cityId, map, zoomLevel]);
     return null;
@@ -486,3 +491,31 @@ function LeafletMapInner({
     </div>
   );
 }
+
+function arraysEqual(a: string[] | undefined, b: string[] | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b) return a === b;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function arePropsEqual(prev: PalestineLeafletMapProps, next: PalestineLeafletMapProps): boolean {
+  return (
+    prev.highlightedCity === next.highlightedCity &&
+    prev.className === next.className &&
+    prev.gameMode === next.gameMode &&
+    prev.highlightRegion === next.highlightRegion &&
+    prev.flyToCity === next.flyToCity &&
+    prev.showControls === next.showControls &&
+    prev.enableFullInteraction === next.enableFullInteraction &&
+    prev.height === next.height &&
+    prev.onCityClick === next.onCityClick &&
+    prev.onAskAboutCity === next.onAskAboutCity &&
+    arraysEqual(prev.revealedCities, next.revealedCities)
+  );
+}
+
+export default memo(PalestineLeafletMapBase, arePropsEqual);

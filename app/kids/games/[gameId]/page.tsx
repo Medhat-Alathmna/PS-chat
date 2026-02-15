@@ -6,7 +6,7 @@ import { DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef, useMemo, FormEvent, KeyboardEvent, useCallback } from "react";
 import { GameId, GameDifficulty, GameConfig } from "@/lib/types/games";
 import { ImageResult } from "@/lib/types";
-import { getGameConfig, GAME_CONFIGS } from "@/lib/data/games";
+import { GAME_CONFIGS } from "@/lib/data/games";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useGameState } from "@/lib/hooks/useGameState";
 import { useGameRewards } from "@/lib/hooks/useGameRewards";
@@ -76,7 +76,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [revealedCities, setRevealedCities] = useState<string[]>([]);
   const [highlightRegion, setHighlightRegion] = useState<string | null>(null);
   const [flyToCity, setFlyToCity] = useState<string | null>(null);
-  // Will be initialized from persisted data after discoveredCities loads (see useEffect below)
+  const [mapExpandTrigger, setMapExpandTrigger] = useState(0);
+
+  // Random seed so each session starts with a different city (not always Jerusalem)
+  const [sessionSeed, setSessionSeed] = useState(() => Math.floor(Math.random() * 10000));
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -136,6 +139,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             chatContext: getContext(),
             kidsProfile: activeProfile,
             discoveredCityIds: isCityExplorer ? discoveredCities.discoveredIds : undefined,
+            sessionSeed,
           },
         }),
       [gameId, difficulty, activeProfile, getContext, isCityExplorer, discoveredCities.discoveredIds]
@@ -209,10 +213,20 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 }
               }
             } else if (toolName === "advance_round") {
-              playSound("correct" as any);
+              // Check if check_answer(correct) already fired in the same message (avoids double sound/points)
+              const hadCorrectAnswer = msg.parts.some((p) => {
+                if (!p.type.startsWith("tool-")) return false;
+                const tp = p as { type: string; output?: Record<string, unknown> };
+                return tp.type.replace("tool-", "") === "check_answer" && tp.output?.correct === true;
+              });
+
+              if (!hadCorrectAnswer) {
+                // Only play sound + award points if check_answer didn't already do it
+                playSound("correct" as any);
+              }
               gameRewards.onRoundComplete(
                 gameId,
-                (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
+                hadCorrectAnswer ? 0 : ((toolPart.output.pointsEarned as number) || config.pointsPerCorrect)
               );
               // Map: also reveal city when advancing round (covers give-up case)
               if (isCityExplorer && toolPart.output.feedback) {
@@ -271,6 +285,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       let hintData: { hint: string; hintNumber: number; images?: ImageResult[] } | null = null;
       let optionsData: OptionsData | null = null;
       let suggestRepliesData: QuickReplyData | null = null;
+      let imageResults: ImageResult[] | null = null;
 
       for (const part of msg.parts) {
         if (part.type === "text") {
@@ -304,6 +319,11 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 suggestions: toolPart.output.suggestions as string[],
                 showHintChip: toolPart.output.showHintChip as boolean,
               };
+            } else if (toolName === "image_search") {
+              const imgs = toolPart.output.images as ImageResult[] | undefined;
+              if (imgs && imgs.length > 0) {
+                imageResults = imgs;
+              }
             }
           }
         }
@@ -317,6 +337,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         hintData,
         optionsData,
         suggestRepliesData,
+        imageResults,
       };
     });
   }, [aiMessages]);
@@ -393,9 +414,23 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       if (isLoading) return;
       stopSpeaking();
       playSound("click");
+
+      // "Show on map" — pure client action: expand map + fly to last discovered city
+      if (isCityExplorer && text.includes("عالخريطة")) {
+        const lastCity = revealedCities[revealedCities.length - 1];
+        if (lastCity) {
+          // Clear then re-set flyToCity to force a state change even if same city
+          setFlyToCity("");
+          setMapExpandTrigger((c) => c + 1);
+          // Set after expansion so the new map container has dimensions
+          setTimeout(() => setFlyToCity(lastCity), 150);
+        }
+        return;
+      }
+
       sendMessage({ text });
     },
-    [isLoading, playSound, sendMessage, stopSpeaking]
+    [isLoading, playSound, sendMessage, stopSpeaking, isCityExplorer, revealedCities]
   );
 
   const playerAge = activeProfile?.age;
@@ -481,7 +516,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           setMessages([]); // Clear chat history so AI starts fresh
           gameState.resetGame(difficulty || undefined);
           setGameStarted(false);
-          // Reset map state
+          // Reset map state + new random seed for next session
+          setSessionSeed(Math.floor(Math.random() * 10000));
           setRevealedCities([]);
           setHighlightRegion(null);
           setFlyToCity(null);
@@ -528,6 +564,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 collapsible
                 initialCollapsed={false}
                 subtitle={`${discoveredCities.discoveredCount}/${discoveredCities.totalCities} مدن مكتشفة 🌟`}
+                expandTrigger={mapExpandTrigger}
               />
             </div>
           )}
@@ -553,6 +590,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                     isActiveOptions={false}
                     onOptionClick={handleOptionClick}
                     onHintClick={handleHintClick}
+                    imageResults={msg.imageResults}
                     isSpeaking={currentMessageId === msg.id}
                     onSpeak={() => speakMessage(msg)}
                     onStopSpeaking={stopSpeaking}
@@ -568,6 +606,16 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   />
                 )}
 
+                {/* Quick reply suggestions — below the last assistant message */}
+                {activeQuickReplies && !isLoading && (
+                  <QuickReplyChips
+                    data={activeQuickReplies}
+                    onChipClick={handleChipClick}
+                    onHintClick={handleHintClick}
+                    disabled={isLoading}
+                  />
+                )}
+
                 {isLoading &&
                   displayMessages[displayMessages.length - 1]?.role !== "assistant" && (
                     <GameTypingBubble />
@@ -578,16 +626,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             {/* Input area - Floating Capsule Design */}
             <div className="shrink-0 p-3 sm:p-4 z-20">
               <div className={`mx-auto flex flex-col gap-2 ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}>
-                {/* Quick reply chips */}
-                {activeQuickReplies && (
-                  <QuickReplyChips
-                    data={activeQuickReplies}
-                    onChipClick={handleChipClick}
-                    onHintClick={handleHintClick}
-                    disabled={isLoading}
-                  />
-                )}
-
                 <form onSubmit={(event) => void handleSubmit(event)}>
                   <div className={`flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/90 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white ${hasActiveOptions ? "opacity-90 grayscale-[0.5]" : ""}`}>
 
@@ -665,6 +703,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               subtitle={`${discoveredCities.discoveredCount}/${discoveredCities.totalCities} مدن مكتشفة 🌟`}
               className="h-full flex flex-col"
               collapsedHeight="h-full"
+              expandTrigger={mapExpandTrigger}
             />
           </div>
         )}

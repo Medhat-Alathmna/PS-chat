@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef, memo } from "react";
 import dynamic from "next/dynamic";
 import type { City } from "@/lib/data/cities";
 
@@ -47,9 +47,11 @@ interface ExpandableMapProps {
   initialCollapsed?: boolean;
   /** Custom class for container */
   className?: string;
+  /** Incrementing counter to trigger auto-expand from parent */
+  expandTrigger?: number;
 }
 
-export default function ExpandableMap({
+function ExpandableMapBase({
   onCityClick,
   onAskAboutCity,
   highlightedCity,
@@ -65,9 +67,20 @@ export default function ExpandableMap({
   collapsible = false,
   initialCollapsed = false,
   className = "",
+  expandTrigger = 0,
 }: ExpandableMapProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+
+  // Auto-expand when parent increments expandTrigger
+  const prevTrigger = useRef(expandTrigger);
+  useEffect(() => {
+    if (expandTrigger > prevTrigger.current) {
+      setIsExpanded(true);
+      setIsCollapsed(false);
+    }
+    prevTrigger.current = expandTrigger;
+  }, [expandTrigger]);
 
   // Size-based heights
   const sizeHeights = {
@@ -191,3 +204,36 @@ export default function ExpandableMap({
     </div>
   );
 }
+
+function arraysEqual(a: string[] | undefined, b: string[] | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b) return a === b;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function arePropsEqual(prev: ExpandableMapProps, next: ExpandableMapProps): boolean {
+  return (
+    prev.highlightedCity === next.highlightedCity &&
+    prev.gameMode === next.gameMode &&
+    prev.highlightRegion === next.highlightRegion &&
+    prev.flyToCity === next.flyToCity &&
+    prev.showControls === next.showControls &&
+    prev.title === next.title &&
+    prev.subtitle === next.subtitle &&
+    prev.collapsedHeight === next.collapsedHeight &&
+    prev.size === next.size &&
+    prev.collapsible === next.collapsible &&
+    prev.initialCollapsed === next.initialCollapsed &&
+    prev.className === next.className &&
+    prev.onCityClick === next.onCityClick &&
+    prev.onAskAboutCity === next.onAskAboutCity &&
+    prev.expandTrigger === next.expandTrigger &&
+    arraysEqual(prev.revealedCities, next.revealedCities)
+  );
+}
+
+export default memo(ExpandableMapBase, arePropsEqual);

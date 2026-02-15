@@ -20,6 +20,7 @@ interface GameChatBubbleProps {
   isActiveOptions?: boolean;
   onOptionClick?: (optionText: string) => void;
   onHintClick?: () => void;
+  imageResults?: ImageResult[] | null;
   isSpeaking?: boolean;
   onSpeak?: () => void;
   onStopSpeaking?: () => void;
@@ -41,6 +42,7 @@ export default function GameChatBubble({
   isActiveOptions = false,
   onOptionClick,
   onHintClick,
+  imageResults,
   isSpeaking = false,
   onSpeak,
   onStopSpeaking,
@@ -139,6 +141,27 @@ export default function GameChatBubble({
           </div>
         )}
 
+
+        {/* Standalone image results (from image_search tool) */}
+        {imageResults && imageResults.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 animate-pop-in">
+            {imageResults.slice(0, 4).map((img, i) => (
+              <div
+                key={i}
+                className="relative rounded-xl overflow-hidden border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform shadow-sm"
+                onClick={() => setExpandedImage(img.imageUrl || img.thumbnailUrl)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.thumbnailUrl || img.imageUrl}
+                  alt={img.title}
+                  className="w-full h-28 sm:h-32 object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Speaking indicator */}
         {!isStreaming && onSpeak && (
