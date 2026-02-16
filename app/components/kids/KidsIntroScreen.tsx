@@ -95,7 +95,7 @@ export default function KidsIntroScreen({
           </button>
         )}
 
-        {/* Top right section - Profile Switcher and Level */}
+        {/* Top right section - Profile Switcher, Map Settings, and Level */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
           {/* Profile Switcher */}
           {profiles.length > 0 && activeProfile && onSwitchProfile && onAddNewProfile && onEditProfile && onDeleteProfile && (
@@ -110,6 +110,16 @@ export default function KidsIntroScreen({
               />
             </div>
           )}
+
+          {/* Map settings button */}
+          <button
+            onClick={() => router.push("/kids/map-settings")}
+            className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+            aria-label="إعدادات الخريطة"
+            title="إعدادات الخريطة"
+          >
+            <span className="text-2xl sm:text-3xl">{"\u2699\uFE0F"}</span>
+          </button>
 
           {/* Level indicator (if exists) */}
           {level && points > 0 && (
