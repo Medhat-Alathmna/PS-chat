@@ -15,6 +15,7 @@ import { useRewards } from "@/lib/hooks/useRewards";
 import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
 import ExpandableMap from "../../components/kids/ExpandableMap";
+import { useMapSettings } from "@/lib/hooks/useMapSettings";
 
 const CATEGORIES: { id: GameCategory; label: string; emoji: string; color: string }[] = [
   { id: "educational", label: "تعليمي", emoji: "📚", color: "#6C5CE7" },
@@ -49,6 +50,7 @@ function GamesHub() {
   const profileId = activeProfile?.id;
   const { points, level, unlockedStickers, progressToNextLevel } = useRewards(profileId);
   const { totalCount } = useStickers(unlockedStickers, () => { });
+  const { settings: mapSettings } = useMapSettings(profileId);
 
   if (!isLoaded) return null;
 
@@ -122,6 +124,7 @@ function GamesHub() {
                 initialCollapsed
                 title="🗺️ خريطة فلسطين"
                 subtitle="اكتشف المدن"
+                mapSettings={mapSettings}
               />
             </div>
 
@@ -187,6 +190,7 @@ function GamesHub() {
             subtitle="اكتشف المدن"
             className="h-full flex flex-col"
             collapsedHeight="h-full"
+            mapSettings={mapSettings}
           />
         </div>
 

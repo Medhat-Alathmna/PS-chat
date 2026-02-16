@@ -230,3 +230,6 @@ export type SoundType = "pop" | "ding" | "coin" | "success" | "fanfare" | "click
 
 // Re-export game types for convenience
 export type { GameId, GameCategory, GameDifficulty, GameStatus, GameConfig, GameState, GameSessionSummary, KidsProfile, KidsChatContext, ProfileAvatar, ProfileColor, ProfilesState } from "./types/games";
+
+// Re-export map settings types
+export type { InfoDisplayMode, MarkerStyle, MapTheme, AnimationLevel, MapSettings } from "./types/map-settings";

@@ -4,8 +4,29 @@ import { useEffect, useState, useMemo, memo } from "react";
 import { City, CITIES, CityRegion } from "@/lib/data/cities";
 import { createCustomMarkerHTML, getMarkerSize, getMarkerAnchor, getPopupAnchor, MarkerState } from "@/app/components/map/CustomMarker";
 import CityPopover from "@/app/components/map/CityPopover";
+import { SidePanelOverlay, FlipCardOverlay, FloatingBubble } from "@/app/components/map/InfoDisplayVariants";
 import MapControls from "@/app/components/map/MapControls";
 import "@/app/components/map/map-styles.css";
+import type { MapSettings, MapTheme } from "@/lib/types/map-settings";
+
+const TILE_URLS: Record<MapTheme, { url: string; attribution: string }> = {
+  light: {
+    url: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+  },
+  dark: {
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+  },
+  watercolor: {
+    url: "https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg",
+    attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
+  },
+};
 
 interface PalestineLeafletMapProps {
   onCityClick?: (city: City) => void;
@@ -27,6 +48,8 @@ interface PalestineLeafletMapProps {
   enableFullInteraction?: boolean;
   /** Custom height (default: "100%") */
   height?: string;
+  /** Map settings (theme, marker style, info display, etc.) */
+  mapSettings?: MapSettings;
 }
 
 // Detailed Palestine historical borders (1948 British Mandate borders)
@@ -244,6 +267,7 @@ function LeafletMapInner({
   showControls = false,
   enableFullInteraction = false,
   height = "100%",
+  mapSettings,
 }: PalestineLeafletMapProps) {
   const [mapModules, setMapModules] = useState<any>(null);
   const [leafletLib, setLeafletLib] = useState<any>(null);
@@ -310,14 +334,23 @@ function LeafletMapInner({
   const { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } = mapModules;
   const L = leafletLib;
 
+  const markerStyle = mapSettings?.markerStyle ?? "pin";
+  const showCityLabels = mapSettings?.showCityLabels ?? true;
+  const infoDisplayMode = mapSettings?.infoDisplayMode ?? "popup";
+  const mapTheme = mapSettings?.mapTheme ?? "light";
+  const showRegionBorders = mapSettings?.showRegionBorders ?? true;
+  const animationLevel = mapSettings?.animationLevel ?? "full";
+  const tile = TILE_URLS[mapTheme];
+  const animationClass = animationLevel === "none" ? "no-animation" : animationLevel === "reduced" ? "reduced-animation" : "";
+
   function createCityIcon(city: City, state: MarkerState, isHighlighted: boolean) {
     const markerState = isHighlighted ? "highlighted" : state;
     return L.divIcon({
-      className: "custom-marker",
-      html: createCustomMarkerHTML(city, markerState),
-      iconSize: getMarkerSize(markerState),
-      iconAnchor: getMarkerAnchor(markerState),
-      popupAnchor: getPopupAnchor(markerState),
+      className: `custom-marker ${animationClass}`,
+      html: createCustomMarkerHTML(city, markerState, markerStyle, showCityLabels),
+      iconSize: getMarkerSize(markerState, markerStyle),
+      iconAnchor: getMarkerAnchor(markerState, markerStyle),
+      popupAnchor: getPopupAnchor(markerState, markerStyle),
     });
   }
 
@@ -409,35 +442,41 @@ function LeafletMapInner({
         zoomControl={enableFullInteraction}
         attributionControl={false}
       >
-        {/* Very clean, minimal tile layer — labels only for context */}
+        {/* Tile layer — dynamic based on map theme setting */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          key={mapTheme}
+          url={tile.url}
+          attribution={tile.attribution}
         />
 
-        {/* Palestine border shadow (3D effect) */}
-        <Polygon
-          positions={PALESTINE_OUTLINE}
-          pathOptions={{
-            color: "#000000",
-            weight: 5,
-            opacity: 0.15,
-            fill: false,
-          }}
-        />
+        {/* Palestine borders — conditionally rendered based on settings */}
+        {showRegionBorders && (
+          <>
+            {/* Border shadow (3D effect) */}
+            <Polygon
+              positions={PALESTINE_OUTLINE}
+              pathOptions={{
+                color: "#000000",
+                weight: 5,
+                opacity: 0.15,
+                fill: false,
+              }}
+            />
 
-        {/* Palestine country outline - solid green border */}
-        <Polygon
-          positions={PALESTINE_OUTLINE}
-          pathOptions={{
-            color: "#009639", // Palestinian flag green
-            weight: 3,
-            fillColor: "#009639",
-            fillOpacity: 0.08,
-            lineCap: "round",
-            lineJoin: "round",
-          }}
-        />
+            {/* Country outline - solid green border */}
+            <Polygon
+              positions={PALESTINE_OUTLINE}
+              pathOptions={{
+                color: "#009639",
+                weight: 3,
+                fillColor: "#009639",
+                fillOpacity: 0.08,
+                lineCap: "round",
+                lineJoin: "round",
+              }}
+            />
+          </>
+        )}
 
         {/* Fly to city when highlighted, selected, or auto-fly */}
         <FlyToCity
@@ -479,7 +518,7 @@ function LeafletMapInner({
                   },
                 }}
               >
-                {showPopup && (
+                {showPopup && infoDisplayMode === "popup" && (
                   <Popup className="city-popup-custom">
                     <CityPopover city={city} onAskAboutCity={onAskAboutCity} />
                   </Popup>
@@ -488,6 +527,27 @@ function LeafletMapInner({
             );
           })}
       </MapContainer>
+
+      {/* Info display overlays for non-popup modes */}
+      {selectedCityId && infoDisplayMode !== "popup" && (() => {
+        const city = CITIES.find((c) => c.id === selectedCityId);
+        if (!city) return null;
+        // In game mode, only show info for revealed/normal cities
+        if (gameMode && !revealedCities.includes(city.id)) return null;
+
+        const closeOverlay = () => setSelectedCityId(null);
+
+        if (infoDisplayMode === "side-panel") {
+          return <SidePanelOverlay city={city} onClose={closeOverlay} onAskAboutCity={onAskAboutCity} />;
+        }
+        if (infoDisplayMode === "flip-card") {
+          return <FlipCardOverlay city={city} onClose={closeOverlay} onAskAboutCity={onAskAboutCity} />;
+        }
+        if (infoDisplayMode === "floating-bubble") {
+          return <FloatingBubble city={city} onClose={closeOverlay} onAskAboutCity={onAskAboutCity} />;
+        }
+        return null;
+      })()}
     </div>
   );
 }
@@ -502,6 +562,19 @@ function arraysEqual(a: string[] | undefined, b: string[] | undefined): boolean 
   return true;
 }
 
+function mapSettingsEqual(a?: MapSettings, b?: MapSettings): boolean {
+  if (a === b) return true;
+  if (!a || !b) return a === b;
+  return (
+    a.infoDisplayMode === b.infoDisplayMode &&
+    a.markerStyle === b.markerStyle &&
+    a.mapTheme === b.mapTheme &&
+    a.showCityLabels === b.showCityLabels &&
+    a.showRegionBorders === b.showRegionBorders &&
+    a.animationLevel === b.animationLevel
+  );
+}
+
 function arePropsEqual(prev: PalestineLeafletMapProps, next: PalestineLeafletMapProps): boolean {
   return (
     prev.highlightedCity === next.highlightedCity &&
@@ -514,7 +587,8 @@ function arePropsEqual(prev: PalestineLeafletMapProps, next: PalestineLeafletMap
     prev.height === next.height &&
     prev.onCityClick === next.onCityClick &&
     prev.onAskAboutCity === next.onAskAboutCity &&
-    arraysEqual(prev.revealedCities, next.revealedCities)
+    arraysEqual(prev.revealedCities, next.revealedCities) &&
+    mapSettingsEqual(prev.mapSettings, next.mapSettings)
   );
 }
 

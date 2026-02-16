@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, memo } from "react";
 import dynamic from "next/dynamic";
 import type { City } from "@/lib/data/cities";
+import type { MapSettings } from "@/lib/types/map-settings";
 
 const PalestineLeafletMap = dynamic(
   () => import("./PalestineLeafletMap"),
@@ -51,6 +52,8 @@ interface ExpandableMapProps {
   expandTrigger?: number;
   /** Incrementing counter to trigger uncollapse (without fullscreen) from parent */
   uncollapseTrigger?: number;
+  /** Map settings (theme, marker style, info display, etc.) */
+  mapSettings?: MapSettings;
 }
 
 function ExpandableMapBase({
@@ -71,6 +74,7 @@ function ExpandableMapBase({
   className = "",
   expandTrigger = 0,
   uncollapseTrigger = 0,
+  mapSettings,
 }: ExpandableMapProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
@@ -152,6 +156,7 @@ function ExpandableMapBase({
               showControls={true}
               enableFullInteraction={true}
               className="h-full"
+              mapSettings={mapSettings}
             />
           </div>
 
@@ -209,6 +214,7 @@ function ExpandableMapBase({
               showControls={showControls}
               enableFullInteraction={true}
               className="h-full"
+              mapSettings={mapSettings}
             />
           </div>
         </div>
@@ -245,7 +251,8 @@ function arePropsEqual(prev: ExpandableMapProps, next: ExpandableMapProps): bool
     prev.onAskAboutCity === next.onAskAboutCity &&
     prev.expandTrigger === next.expandTrigger &&
     prev.uncollapseTrigger === next.uncollapseTrigger &&
-    arraysEqual(prev.revealedCities, next.revealedCities)
+    arraysEqual(prev.revealedCities, next.revealedCities) &&
+    prev.mapSettings === next.mapSettings
   );
 }
 

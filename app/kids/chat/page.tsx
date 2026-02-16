@@ -63,6 +63,7 @@ import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
 import { useChatContext } from "@/lib/hooks/useChatContext";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
+import { useMapSettings } from "@/lib/hooks/useMapSettings";
 import { useBackgroundMusicContext } from "../layout";
 
 export default function KidsChatPage() {
@@ -140,6 +141,9 @@ function KidsChatPageInner() {
 
   // Chat context for game integration
   const { addTopic } = useChatContext(profileId);
+
+  // Map settings
+  const { settings: mapSettings } = useMapSettings(profileId);
 
   // System prompt with name
   const systemPrompt = useMemo(
@@ -596,6 +600,15 @@ function KidsChatPageInner() {
             </div>
 
             <button
+              onClick={() => router.push("/kids/map-settings")}
+              className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              aria-label="إعدادات الخريطة"
+              title="إعدادات الخريطة"
+            >
+              <span className="text-xl sm:text-2xl">{"\u2699\uFE0F"}</span>
+            </button>
+
+            <button
               onClick={() => router.push("/kids/games")}
               className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-2xl font-bold text-sm sm:text-base hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
             >
@@ -616,6 +629,7 @@ function KidsChatPageInner() {
               highlightedCity={highlightedCityId || undefined}
               size="lg"
               className="h-full"
+              mapSettings={mapSettings}
             />
           </aside>
 
@@ -654,6 +668,7 @@ function KidsChatPageInner() {
                     showControls={true}
                     enableFullInteraction={true}
                     className="h-full"
+                    mapSettings={mapSettings}
                   />
                 </div>
 
