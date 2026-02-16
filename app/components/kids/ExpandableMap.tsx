@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, memo } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { City } from "@/lib/data/cities";
 import type { MapSettings } from "@/lib/types/map-settings";
@@ -76,6 +77,7 @@ function ExpandableMapBase({
   uncollapseTrigger = 0,
   mapSettings,
 }: ExpandableMapProps) {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
 
@@ -134,13 +136,23 @@ function ExpandableMapBase({
               <span className="text-xl">🗺️</span>
               <span className="font-bold text-lg">خريطة فلسطين التفاعلية</span>
             </div>
-            <button
-              onClick={toggleExpand}
-              className="flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-105 active:scale-95"
-              aria-label="إغلاق"
-            >
-              <span className="text-2xl">✕</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push("/kids/map-settings")}
+                className="flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-105 active:scale-95"
+                aria-label="إعدادات الخريطة"
+                title="إعدادات الخريطة"
+              >
+                <span className="text-xl">{"\u2699\uFE0F"}</span>
+              </button>
+              <button
+                onClick={toggleExpand}
+                className="flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-105 active:scale-95"
+                aria-label="إغلاق"
+              >
+                <span className="text-2xl">✕</span>
+              </button>
+            </div>
           </div>
 
           {/* Map */}

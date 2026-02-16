@@ -181,11 +181,13 @@ function MapSettingsInner() {
         <header className="shrink-0 px-4 py-3 z-10">
           <div className="flex items-center gap-3 max-w-2xl mx-auto">
             <button
-              onClick={() => router.push("/kids/chat")}
+              onClick={() => router.push("/kids")}
               className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg"
               aria-label="رجوع"
             >
-              <span className="text-xl">{"\u2192"}</span>
+              <svg className="w-5 h-5 text-[var(--kids-purple)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
             <div className="flex-1">
               <h1 className="text-xl sm:text-2xl font-black text-[var(--kids-purple)] drop-shadow-sm">
