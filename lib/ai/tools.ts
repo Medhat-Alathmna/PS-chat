@@ -6,6 +6,7 @@ import { searchYouTubeVideos } from "@/lib/services/video/youtube";
 import { fetchPalestinianNews } from "@/lib/services/news/rss-parser";
 import { searchTimelineByKeyword, getTimelineEvents } from "@/lib/data/palestinian-history";
 import { ImageResult, Coordinates, VideoResult, NewsItem, TimelineEvent } from "@/lib/types";
+import { suggestRepliesTool } from "./game-tools";
 
 /**
  * Image Search Tool
@@ -462,4 +463,5 @@ export const allTools = {
 export const kidsTools = {
   image_search: imageSearchTool,
   location_search: locationSearchTool,
+  suggest_replies: suggestRepliesTool,
 };

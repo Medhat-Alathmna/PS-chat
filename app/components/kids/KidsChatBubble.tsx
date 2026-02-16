@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ChatMessage } from "@/lib/types";
-import { MiniMascot, ThinkingMascot } from "./AnimatedMascot";
+import { MiniMascot } from "./AnimatedMascot";
 import SpeakingIndicator from "./SpeakingIndicator";
 
 interface KidsChatBubbleProps {
@@ -15,13 +15,8 @@ interface KidsChatBubbleProps {
   onStopSpeaking?: () => void;
 }
 
-// Fun colors for assistant bubbles
-const BUBBLE_COLORS = [
-  { bg: "bg-[var(--kids-blue)]/10", border: "border-[var(--kids-blue)]" },
-  { bg: "bg-[var(--kids-green)]/10", border: "border-[var(--kids-green)]" },
-  { bg: "bg-[var(--kids-purple)]/10", border: "border-[var(--kids-purple)]" },
-  { bg: "bg-[var(--kids-orange)]/10", border: "border-[var(--kids-orange)]" },
-];
+// Dynamic hex colors for assistant bubbles (matching GameChatBubble)
+const ASSISTANT_COLORS = ["#6C5CE7", "#0984E3", "#00B894", "#E17055", "#FDCB6E"];
 
 /**
  * Chat bubble designed for kids
@@ -41,12 +36,12 @@ export default function KidsChatBubble({
   const isUser = message.role === "user";
 
   // Random color for assistant bubbles (consistent per message)
-  const bubbleColor = useMemo(() => {
+  const bgColor = useMemo(() => {
     if (isUser) return null;
     const index =
       message.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
-      BUBBLE_COLORS.length;
-    return BUBBLE_COLORS[index];
+      ASSISTANT_COLORS.length;
+    return ASSISTANT_COLORS[index];
   }, [message.id, isUser]);
 
   // Determine mascot state based on message content
@@ -79,15 +74,6 @@ export default function KidsChatBubble({
     return "happy";
   }, [message.content, isStreaming]);
 
-  // Show thinking indicator for empty streaming
-  if (isStreaming && !message.content) {
-    return (
-      <div className="flex justify-start">
-        <ThinkingMascot className="animate-fade-in" />
-      </div>
-    );
-  }
-
   return (
     <div
       className={`
@@ -112,13 +98,14 @@ export default function KidsChatBubble({
       <div
         className={`
           relative max-w-[80%] sm:max-w-[70%]
-          rounded-3xl px-4 py-3 sm:px-5 sm:py-4
-          transition-all duration-300
+          px-4 py-3 sm:px-5 sm:py-4
+          transition-all duration-300 shadow-lg
           ${isUser
-            ? "bg-gradient-to-br from-[var(--kids-green)] to-[#3DBDB2] text-white shadow-lg shadow-[var(--kids-green)]/30"
-            : `${bubbleColor?.bg} ${bubbleColor?.border} border-3 shadow-lg`
+            ? "rounded-2xl rounded-tr-sm bg-gradient-to-br from-[var(--kids-green)] to-[#3DBDB2] text-white shadow-[var(--kids-green)]/30"
+            : "rounded-2xl rounded-tl-sm"
           }
         `}
+        style={!isUser && bgColor ? { backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` } : undefined}
       >
         {/* User-uploaded images */}
         {isUser && message.userImages && message.userImages.length > 0 && (
@@ -150,6 +137,9 @@ export default function KidsChatBubble({
           dir="auto"
         >
           {formatKidsMessageWithIcons(message.content)}
+          {isStreaming && (
+            <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
+          )}
         </div>
 
         {/* Images */}

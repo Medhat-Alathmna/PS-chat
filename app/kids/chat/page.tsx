@@ -6,6 +6,7 @@ import {
   ChangeEvent,
   FormEvent,
   KeyboardEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -45,6 +46,8 @@ import ProfileSetup from "../../components/kids/ProfileSetup";
 import ProfileSwitcher from "../../components/kids/ProfileSwitcher";
 import SettingsMenu from "../../components/kids/SettingsMenu";
 import SpeechInput from "../../components/kids/SpeechInput";
+import QuickReplyChips from "../../components/kids/games/QuickReplyChips";
+import type { QuickReplyData } from "../../components/kids/games/QuickReplyChips";
 
 // Expandable map component
 import ExpandableMap from "../../components/kids/ExpandableMap";
@@ -200,6 +203,7 @@ function KidsChatPageInner() {
       let video: VideoResult | undefined;
       let news: NewsItem[] | undefined;
       let timeline: TimelineEvent[] | undefined;
+      let suggestRepliesData: { suggestions: string[]; showHintChip: boolean } | undefined;
       let textContent = "";
       const toolCalls: ToolCallInfo[] = [];
       const userImageParts: { url: string; mediaType: string }[] = [];
@@ -312,6 +316,20 @@ function KidsChatPageInner() {
             if (result?.success && result?.events?.length > 0) {
               timeline = result.events;
             }
+          } else if (
+            toolName === "suggest_replies" &&
+            toolPart.state === "output-available"
+          ) {
+            const result = toolPart.output as {
+              suggestions: string[];
+              showHintChip: boolean;
+            };
+            if (result?.suggestions) {
+              suggestRepliesData = {
+                suggestions: result.suggestions,
+                showHintChip: result.showHintChip,
+              };
+            }
           }
         }
       }
@@ -329,11 +347,33 @@ function KidsChatPageInner() {
         video,
         news,
         timeline,
+        suggestRepliesData,
       };
     });
   }, [aiMessages]);
 
   const canSend = (input.trim().length > 0 || !!imagePreview) && !isLoading;
+
+  // Active quick reply chips from last assistant message
+  const activeQuickReplies = useMemo<QuickReplyData | null>(() => {
+    if (status === "streaming") return null;
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== "assistant") return null;
+    return lastMsg.suggestRepliesData ?? null;
+  }, [messages, status]);
+
+  const hasActiveChips = !!activeQuickReplies && !isLoading;
+
+  // Handle chip click — send chip text as user message
+  const handleChipClick = useCallback(
+    (text: string) => {
+      if (isLoading) return;
+      stopSpeaking();
+      playPop();
+      sendMessage({ text });
+    },
+    [isLoading, playPop, sendMessage, stopSpeaking]
+  );
 
   // Auto-scroll
   useEffect(() => {
@@ -526,7 +566,7 @@ function KidsChatPageInner() {
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
       <div className="relative flex h-screen flex-col overflow-hidden" key={activeProfile.id}>
         {/* Header with rewards - Optimized for mobile */}
-        <header className="shrink-0 px-3 py-2 sm:px-4 sm:py-3 z-10">
+        <header className="shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 z-10">
           <div className="flex items-center gap-2 sm:gap-4 max-w-6xl mx-auto">
             {/* Profile switcher - hidden on mobile */}
             <div className="hidden md:block">
@@ -546,11 +586,11 @@ function KidsChatPageInner() {
             {/* Map button - mobile only */}
             <button
               onClick={() => setShowMobileMap(true)}
-              className="md:hidden flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              className="md:hidden flex items-center justify-center w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
               aria-label="فتح الخريطة"
               title="الخريطة"
             >
-              <span className="text-xl">🗺️</span>
+              <span className="text-lg">🗺️</span>
             </button>
 
             <div className="flex-1 min-w-0">
@@ -575,11 +615,11 @@ function KidsChatPageInner() {
             <button
               onClick={toggleMusic}
               disabled={!isMusicLoaded}
-              className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+              className="shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
               aria-label={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
               title={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
             >
-              <span className="text-xl sm:text-2xl">
+              <span className="text-lg sm:text-xl">
                 {isMusicPlaying ? "🎵" : "🔇"}
               </span>
             </button>
@@ -601,16 +641,16 @@ function KidsChatPageInner() {
 
             <button
               onClick={() => router.push("/kids/map-settings")}
-              className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              className="shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
               aria-label="إعدادات الخريطة"
               title="إعدادات الخريطة"
             >
-              <span className="text-xl sm:text-2xl">{"\u2699\uFE0F"}</span>
+              <span className="text-lg sm:text-xl">{"\u2699\uFE0F"}</span>
             </button>
 
             <button
               onClick={() => router.push("/kids/games")}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-2xl font-bold text-sm sm:text-base hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
+              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-2xl font-bold text-sm sm:text-base hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
             >
               <span className="text-lg">🎮</span>
               <span className="hidden sm:inline">ألعاب</span>
@@ -700,6 +740,16 @@ function KidsChatPageInner() {
                   />
                 ))}
 
+                {/* Quick reply chips */}
+                {activeQuickReplies && !isLoading && (
+                  <QuickReplyChips
+                    data={activeQuickReplies}
+                    onChipClick={handleChipClick}
+                    onHintClick={() => {}}
+                    disabled={isLoading}
+                  />
+                )}
+
                 {/* Typing indicator */}
                 {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                   <TypingBubble />
@@ -743,7 +793,7 @@ function KidsChatPageInner() {
                   onChange={handleImageSelect}
                 />
 
-                <div className="flex items-end gap-3 sm:gap-4 rounded-[2rem] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] transition-all focus-within:shadow-[0_12px_48px_rgba(108,92,231,0.25)] focus-within:ring-4 focus-within:ring-[var(--kids-purple)]/20 border-2 border-white p-3 sm:p-4">
+                <div className={`flex items-end gap-3 sm:gap-4 rounded-[2rem] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] transition-all focus-within:shadow-[0_12px_48px_rgba(108,92,231,0.25)] focus-within:ring-4 focus-within:ring-[var(--kids-purple)]/20 border-2 border-white p-3 sm:p-4 ${hasActiveChips ? "opacity-90 grayscale-[0.5]" : ""}`}>
 
                   {/* Camera button */}
                   <button

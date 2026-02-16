@@ -38,6 +38,7 @@ export type ChatMessage = {
   video?: VideoResult;
   news?: NewsItem[];
   timeline?: TimelineEvent[];
+  suggestRepliesData?: { suggestions: string[]; showHintChip: boolean };
   debug?: DebugInfo;
 };
 
