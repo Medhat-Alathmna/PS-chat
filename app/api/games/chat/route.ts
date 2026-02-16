@@ -140,20 +140,25 @@ export async function POST(req: NextRequest) {
 
     const openai = createOpenAI({ apiKey });
 
-    // Merge persisted discovered cities + session cities from messages
-    const sessionCityIds = extractUsedCityIds(messages);
-    const allUsedCityIds = Array.from(
-      new Set([...(discoveredCityIds || []), ...sessionCityIds])
-    );
-
     // Combine session seed (random per game session) + round number for city selection.
     // This ensures each session starts with a different city while staying
     // deterministic within a session (same round = same city on retries).
     const roundNumber = countAdvanceRounds(messages);
-    const roundSeed = (sessionSeed || 0) + roundNumber;
+    const sessionSeedVal = sessionSeed || 0;
+    const roundSeed = sessionSeedVal + roundNumber;
+
+    // Compute exclude list deterministically from previous rounds only.
+    // We must NOT include the current round's city in the exclude list,
+    // otherwise the pool shrinks and roundSeed % smallerPool picks a
+    // DIFFERENT city — this caused "tell me more" to show a new city.
+    const previousRoundExcludeIds: string[] = [];
+    for (let r = 0; r < roundNumber; r++) {
+      const { city } = getCityForRound(previousRoundExcludeIds, sessionSeedVal + r);
+      previousRoundExcludeIds.push(city.id);
+    }
 
     // Get the current city for this round (for tool validation)
-    const { city: currentCity } = getCityForRound(allUsedCityIds, roundSeed);
+    const { city: currentCity } = getCityForRound(previousRoundExcludeIds, roundSeed);
     const tools = buildTools(currentCity.nameAr, currentCity.id);
 
     const systemPrompt = buildSystemPrompt(
@@ -161,8 +166,14 @@ export async function POST(req: NextRequest) {
       kidsProfile?.age || 8,
       kidsProfile?.name,
       chatContext,
-      allUsedCityIds,
+      previousRoundExcludeIds,
       roundSeed
+    );
+
+    // For display/trimming: include all discovered cities (current + previous)
+    const sessionCityIds = extractUsedCityIds(messages);
+    const allUsedCityIds = Array.from(
+      new Set([...(discoveredCityIds || []), ...sessionCityIds])
     );
 
     console.log("[city-explorer] Round city:", currentCity.nameAr, "(" + currentCity.name + ")");
