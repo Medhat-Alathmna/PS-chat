@@ -114,8 +114,8 @@ function GamesHub() {
               <p className="text-gray-600 text-sm sm:text-base font-medium mt-1">اختار لعبة ممتعة!</p>
             </div>
 
-            {/* Palestine Map - Collapsible */}
-            <div className="mb-4">
+            {/* Palestine Map - Mobile only (collapsible) */}
+            <div className="mb-4 md:hidden">
               <ExpandableMap
                 size="sm"
                 collapsible
@@ -176,6 +176,19 @@ function GamesHub() {
             </div>
           </div>
         </main>
+
+        {/* Desktop map panel — absolutely positioned on the right, same as game session */}
+        <div className="hidden md:block absolute top-[60px] right-3 w-[25%] min-w-[200px] max-w-[350px] h-[70%] z-10" style={{ marginBlockStart: '5rem' }}>
+          <ExpandableMap
+            size="lg"
+            collapsible
+            initialCollapsed={false}
+            title="🗺️ خريطة فلسطين"
+            subtitle="اكتشف المدن"
+            className="h-full flex flex-col"
+            collapsedHeight="h-full"
+          />
+        </div>
 
         {/* Floating Back button */}
         <div className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none">
