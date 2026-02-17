@@ -24,6 +24,7 @@ import {
   NewsItem,
   TimelineEvent,
   Sticker,
+  SuggestionChip,
 } from "@/lib/types";
 import { buildKidsSystemPrompt } from "@/lib/ai/config";
 import { detectCityInText, CITIES } from "@/lib/data/cities";
@@ -46,8 +47,8 @@ import ProfileSetup from "../../components/kids/ProfileSetup";
 import ProfileSwitcher from "../../components/kids/ProfileSwitcher";
 import SettingsMenu from "../../components/kids/SettingsMenu";
 import SpeechInput from "../../components/kids/SpeechInput";
-import QuickReplyChips from "../../components/kids/games/QuickReplyChips";
-import type { QuickReplyData } from "../../components/kids/games/QuickReplyChips";
+import QuickReplyChips, { normalizeSuggestions } from "../../components/kids/games/QuickReplyChips";
+import type { QuickReplyData, SuggestionChip as ChipType } from "../../components/kids/games/QuickReplyChips";
 
 // Expandable map component
 import ExpandableMap from "../../components/kids/ExpandableMap";
@@ -87,6 +88,10 @@ function KidsChatPageInner() {
   // Map state
   const [highlightedCityId, setHighlightedCityId] = useState<string | null>(null);
   const [showMobileMap, setShowMobileMap] = useState(false);
+
+  // Direct images from photo chip (no AI round-trip)
+  const [directImages, setDirectImages] = useState<ImageResult[]>([]);
+  const [directImagesLoading, setDirectImagesLoading] = useState(false);
 
   // Background music - Use context from layout to avoid duplicate music
   const { isPlaying: isMusicPlaying, toggle: toggleMusic, isLoaded: isMusicLoaded } = useBackgroundMusicContext();
@@ -203,7 +208,7 @@ function KidsChatPageInner() {
       let video: VideoResult | undefined;
       let news: NewsItem[] | undefined;
       let timeline: TimelineEvent[] | undefined;
-      let suggestRepliesData: { suggestions: string[]; showHintChip: boolean } | undefined;
+      let suggestRepliesData: { suggestions: SuggestionChip[]; showHintChip: boolean } | undefined;
       let textContent = "";
       const toolCalls: ToolCallInfo[] = [];
       const userImageParts: { url: string; mediaType: string }[] = [];
@@ -321,12 +326,12 @@ function KidsChatPageInner() {
             toolPart.state === "output-available"
           ) {
             const result = toolPart.output as {
-              suggestions: string[];
+              suggestions: unknown[];
               showHintChip: boolean;
             };
             if (result?.suggestions) {
               suggestRepliesData = {
-                suggestions: result.suggestions,
+                suggestions: normalizeSuggestions(result.suggestions),
                 showHintChip: result.showHintChip,
               };
             }
@@ -364,13 +369,48 @@ function KidsChatPageInner() {
 
   const hasActiveChips = !!activeQuickReplies && !isLoading;
 
-  // Handle chip click — send chip text as user message
+  // Handle chip click — branch on chip type for direct actions
   const handleChipClick = useCallback(
-    (text: string) => {
+    (chip: ChipType) => {
       if (isLoading) return;
       stopSpeaking();
       playPop();
-      sendMessage({ text });
+
+      if (chip.type === "photo" && chip.actionQuery) {
+        // Direct image search — no AI round-trip
+        setDirectImagesLoading(true);
+        setDirectImages([]);
+        fetch("/api/kids/images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: chip.actionQuery }),
+        })
+          .then((res) => res.json())
+          .then((data: { success: boolean; images?: ImageResult[] }) => {
+            if (data.success && data.images) {
+              setDirectImages(data.images);
+            }
+          })
+          .catch(() => {})
+          .finally(() => setDirectImagesLoading(false));
+        return;
+      }
+
+      if (chip.type === "map" && chip.actionQuery) {
+        // Direct map action — highlight city + open mobile map
+        const cityId = detectCityInText(chip.actionQuery);
+        if (cityId) {
+          const city = CITIES.find((c) => c.id === cityId);
+          if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+            setHighlightedCityId(cityId);
+            setShowMobileMap(true);
+          }
+        }
+        return;
+      }
+
+      // curiosity / activity — send as message (current behavior)
+      sendMessage({ text: chip.text });
     },
     [isLoading, playPop, sendMessage, stopSpeaking]
   );
@@ -505,6 +545,8 @@ function KidsChatPageInner() {
     const currentImage = imagePreview;
     setInput("");
     setImagePreview(null);
+    setDirectImages([]); // Clear direct images on new message
+    setDirectImagesLoading(false);
     playPop();
     recordMessage(); // Add points for sending message
 
@@ -739,6 +781,31 @@ function KidsChatPageInner() {
                     onStopSpeaking={stopSpeaking}
                   />
                 ))}
+
+                {/* Direct images from photo chip */}
+                {directImagesLoading && (
+                  <div className="flex justify-center py-4 animate-fade-in">
+                    <div className="flex items-center gap-2 text-blue-500 font-bold">
+                      <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
+                      <span>جاري تحميل الصور...</span>
+                    </div>
+                  </div>
+                )}
+                {directImages.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 animate-fade-in">
+                    {directImages.map((img) => (
+                      <div key={img.id} className="rounded-2xl overflow-hidden shadow-md border-2 border-blue-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.thumbnailUrl || img.imageUrl}
+                          alt={img.title}
+                          className="w-full h-32 sm:h-40 object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Quick reply chips */}
                 {activeQuickReplies && !isLoading && (

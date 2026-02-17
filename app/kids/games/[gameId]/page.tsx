@@ -23,7 +23,8 @@ import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../componen
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
-import QuickReplyChips, { QuickReplyData } from "../../../components/kids/games/QuickReplyChips";
+import QuickReplyChips, { QuickReplyData, normalizeSuggestions } from "../../../components/kids/games/QuickReplyChips";
+import type { SuggestionChip } from "../../../components/kids/games/QuickReplyChips";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
 import ExpandableMap from "../../../components/kids/ExpandableMap";
 
@@ -330,7 +331,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               };
             } else if (toolName === "suggest_replies") {
               suggestRepliesData = {
-                suggestions: toolPart.output.suggestions as string[],
+                suggestions: normalizeSuggestions(toolPart.output.suggestions as unknown[]),
                 showHintChip: toolPart.output.showHintChip as boolean,
               };
             } else if (toolName === "image_search") {
@@ -424,25 +425,39 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   }, [isLoading, playSound, sendMessage, stopSpeaking]);
 
   const handleChipClick = useCallback(
-    (text: string) => {
+    (chip: SuggestionChip) => {
       if (isLoading) return;
       stopSpeaking();
       playSound("click");
 
-      // "Show on map" — pure client action: expand map + fly to last discovered city
-      if (isCityExplorer && text.includes("عالخريطة")) {
-        const lastCity = revealedCities[revealedCities.length - 1];
-        if (lastCity) {
-          // Clear then re-set flyToCity to force a state change even if same city
-          setFlyToCity("");
-          setMapExpandTrigger((c) => c + 1);
-          // Set after expansion so the new map container has dimensions
-          setTimeout(() => setFlyToCity(lastCity), 150);
+      // Map chip — expand map + fly to city
+      if (chip.type === "map") {
+        if (chip.actionQuery) {
+          const cityId = detectCityInText(chip.actionQuery);
+          if (cityId) {
+            const city = CITIES.find((c) => c.id === cityId);
+            if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+              setFlyToCity("");
+              setMapExpandTrigger((c) => c + 1);
+              setTimeout(() => setFlyToCity(cityId), 150);
+              return;
+            }
+          }
+        }
+        // Fallback for map with no valid actionQuery — fly to last discovered city
+        if (isCityExplorer) {
+          const lastCity = revealedCities[revealedCities.length - 1];
+          if (lastCity) {
+            setFlyToCity("");
+            setMapExpandTrigger((c) => c + 1);
+            setTimeout(() => setFlyToCity(lastCity), 150);
+          }
         }
         return;
       }
 
-      sendMessage({ text });
+      // Photo/curiosity/activity — send as message in game context
+      sendMessage({ text: chip.text });
     },
     [isLoading, playSound, sendMessage, stopSpeaking, isCityExplorer, revealedCities]
   );

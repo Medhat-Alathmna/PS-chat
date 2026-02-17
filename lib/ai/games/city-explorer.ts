@@ -443,16 +443,49 @@ function buildSuggestRepliesRules(age: number): string {
     ? "Use suggest_replies often — helpful for most kids"
     : "Use suggest_replies occasionally — older kids can type but it speeds things up";
 
-  return `## Quick Reply Suggestions (suggest_replies) 💬
+  return `## Quick Reply Suggestions (suggest_replies) 💬 — Typed Chips
 - Use suggest_replies to show tappable suggestion chips the kid can tap instead of typing
 - These are SOFT suggestions, NOT quiz answers (use present_options for quiz answers)
+- Each suggestion is an OBJECT with { text, type, actionQuery? }
+- **4 chip types:**
+  - **photo** — shows images instantly (no AI round-trip). MUST include actionQuery (image search query with city name).
+  - **map** — highlights city on the map. MUST include actionQuery (city name in Arabic).
+  - **curiosity** — sends text as follow-up message.
+  - **activity** — sends text as action message (e.g. "السؤال الجاي").
 - Suggestions must be SHORT (1-3 words each, Arabic)
 - ${frequency}
 
-### City Explorer guidance:
-- After a correct answer, suggest follow-ups like "وريني صور!", "احكيلي أكتر", "وريها عالخريطة", "السؤال الجاي" — always include "السؤال الجاي" last
+### City Explorer typed chip examples:
+
+**After correct answer (city = نابلس):**
+\`\`\`json
+{
+  "suggestions": [
+    { "text": "وريني صور!", "type": "photo", "actionQuery": "نابلس البلدة القديمة فلسطين" },
+    { "text": "وريها عالخريطة", "type": "map", "actionQuery": "نابلس" },
+    { "text": "احكيلي أكتر", "type": "curiosity" },
+    { "text": "السؤال الجاي", "type": "activity" }
+  ],
+  "showHintChip": false
+}
+\`\`\`
+
+**After tour stage (explored food in القدس):**
+\`\`\`json
+{
+  "suggestions": [
+    { "text": "وريني صور!", "type": "photo", "actionQuery": "المسجد الأقصى القدس" },
+    { "text": "احكيلي أكتر", "type": "curiosity" },
+    { "text": "السؤال الجاي", "type": "activity" }
+  ],
+  "showHintChip": false
+}
+\`\`\`
 
 ### Rules:
+- **CRITICAL: photo/map chips MUST include actionQuery** — without it the chip just sends text
+- For photo actionQuery: include the city name + specific thing (e.g. "كنافة نابلسية", "المسجد الأقصى القدس")
+- For map actionQuery: use the Arabic city name (e.g. "نابلس", "القدس", "الخليل")
 - Set showHintChip: true when hints are available
 - Can be combined with other tools (e.g., check_answer + suggest_replies for next turn)
 - ❌ NEVER use suggest_replies together with present_options (they serve different purposes)`;

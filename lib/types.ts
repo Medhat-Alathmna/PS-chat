@@ -1,4 +1,16 @@
 // ============================================
+// SUGGESTION CHIP TYPES
+// ============================================
+
+export type SuggestionChipType = "photo" | "map" | "curiosity" | "activity";
+
+export type SuggestionChip = {
+  text: string;
+  type: SuggestionChipType;
+  actionQuery?: string;
+};
+
+// ============================================
 // CHAT TYPES
 // ============================================
 
@@ -38,7 +50,7 @@ export type ChatMessage = {
   video?: VideoResult;
   news?: NewsItem[];
   timeline?: TimelineEvent[];
-  suggestRepliesData?: { suggestions: string[]; showHintChip: boolean };
+  suggestRepliesData?: { suggestions: SuggestionChip[]; showHintChip: boolean };
   debug?: DebugInfo;
 };
 

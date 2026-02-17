@@ -91,13 +91,23 @@ export const presentOptionsTool = tool({
  */
 export const suggestRepliesTool = tool({
   description:
-    "Suggest quick reply options the player can tap instead of typing. Use for free-form games to help kids who struggle with typing. These are soft suggestions, NOT quiz answers — use present_options for quiz answers.",
+    "Suggest quick reply options the player can tap instead of typing. Use for free-form games to help kids who struggle with typing. These are soft suggestions, NOT quiz answers — use present_options for quiz answers. Each suggestion has a type (photo, map, curiosity, activity) and photo/map types MUST include actionQuery.",
   inputSchema: z.object({
     suggestions: z
-      .array(z.string())
+      .array(
+        z.object({
+          text: z.string().describe("Short Arabic label the kid sees on the chip (2-4 words)"),
+          type: z.enum(["photo", "map", "curiosity", "activity"]).describe(
+            "Chip type: photo = show images, map = highlight location, curiosity = ask more, activity = change topic/action"
+          ),
+          actionQuery: z.string().optional().describe(
+            "REQUIRED for photo/map types. For photo: the image search query (e.g. 'الدبكة رقصة فلسطينية'). For map: the city/place name (e.g. 'نابلس')."
+          ),
+        })
+      )
       .min(2)
       .max(5)
-      .describe("2-5 short Arabic suggestions the kid can tap"),
+      .describe("2-5 typed suggestion chips"),
     showHintChip: z
       .boolean()
       .describe("Whether to include a hint chip alongside suggestions"),
