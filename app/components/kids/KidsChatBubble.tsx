@@ -113,14 +113,14 @@ export default function KidsChatBubble({
             {message.userImages.map((img, i) => (
               <div
                 key={i}
-                className="relative rounded-2xl overflow-hidden border-2 border-white/40 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform"
+                className="relative rounded-xl overflow-hidden border-2 border-white/40 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform"
                 onClick={() => setExpandedImage(img.url)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={img.url}
                   alt="صورة من المستخدم"
-                  className="w-full h-36 object-cover"
+                  className="w-full aspect-[4/3] object-cover"
                   loading="lazy"
                 />
               </div>
@@ -144,26 +144,20 @@ export default function KidsChatBubble({
 
         {/* Images */}
         {message.images && message.images.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-2 animate-pop-in">
             {message.images.slice(0, 4).map((img, i) => (
               <div
                 key={i}
-                className="relative rounded-2xl overflow-hidden shadow-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer border-3 border-[var(--kids-yellow)]/50"
+                className="relative rounded-xl overflow-hidden border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform shadow-sm"
                 onClick={() => setExpandedImage(img.imageUrl || img.thumbnailUrl)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={img.thumbnailUrl || img.imageUrl}
                   alt={img.title}
-                  className="w-full h-36 object-cover"
+                  className="w-full aspect-[4/3] object-cover"
                   loading="lazy"
                 />
-                {/* Optional: Image title badge */}
-                {img.title && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center backdrop-blur-sm">
-                    {img.title.slice(0, 30)}
-                  </div>
-                )}
               </div>
             ))}
           </div>

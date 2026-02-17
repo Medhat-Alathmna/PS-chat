@@ -703,18 +703,6 @@ function KidsChatPageInner() {
         {/* Two-column layout: Map beside Chat */}
         <div className="flex-1 flex flex-row overflow-hidden gap-2 sm:gap-3 lg:gap-4 pl-1 pr-2 sm:pl-2 sm:pr-3 lg:pl-3 lg:pr-4 py-2">
 
-          {/* === Map Sidebar (hidden on mobile, visible on md+) === */}
-          <aside className="hidden md:flex w-[130px] lg:w-[170px] flex-col flex-shrink-0 z-10">
-            <ExpandableMap
-              onCityClick={handleCityClick}
-              onAskAboutCity={handleAskAboutCity}
-              highlightedCity={highlightedCityId || undefined}
-              size="lg"
-              className="h-full"
-              mapSettings={mapSettings}
-            />
-          </aside>
-
           {/* === Mobile Fullscreen Map Overlay === */}
           {showMobileMap && (
             <div className="md:hidden fixed inset-0 z-50 animate-fade-in">
@@ -766,7 +754,7 @@ function KidsChatPageInner() {
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Chat Messages */}
             <main className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 py-3 scroll-smooth" ref={chatContainerRef}>
-              <div className="mx-auto w-full max-w-none flex flex-col gap-4 pb-4">
+              <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
                 {messages.map((message, index) => (
                   <KidsChatBubble
                     key={message.id}
@@ -792,14 +780,14 @@ function KidsChatPageInner() {
                   </div>
                 )}
                 {directImages.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-2 animate-pop-in">
                     {directImages.map((img) => (
-                      <div key={img.id} className="rounded-2xl overflow-hidden shadow-md border-2 border-blue-200">
+                      <div key={img.id} className="rounded-xl overflow-hidden shadow-sm border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={img.thumbnailUrl || img.imageUrl}
                           alt={img.title}
-                          className="w-full h-32 sm:h-40 object-cover"
+                          className="w-full aspect-[4/3] object-cover"
                           loading="lazy"
                         />
                       </div>
@@ -828,7 +816,7 @@ function KidsChatPageInner() {
             <div className="shrink-0 p-2 sm:p-3 z-20">
               {/* Image preview */}
               {imagePreview && (
-                <div className="mx-auto w-full max-w-none mb-3 animate-fade-in-up">
+                <div className="mx-auto max-w-2xl mb-3 animate-fade-in-up">
                   <div className="relative inline-block group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -849,7 +837,7 @@ function KidsChatPageInner() {
 
               <form
                 onSubmit={(event) => void handleSubmit(event)}
-                className="mx-auto w-full max-w-none"
+                className="mx-auto max-w-2xl"
               >
                 {/* Hidden file input */}
                 <input
