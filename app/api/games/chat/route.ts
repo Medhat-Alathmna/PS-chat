@@ -17,6 +17,28 @@ type GameChatRequest = {
 };
 
 /**
+ * Detect if the user's last message signals "move to next question".
+ * When true, the system prompt is pre-built for round N+1 so the AI can
+ * present the next city's hint immediately after calling advance_round.
+ */
+function isNextRoundSignal(messages: UIMessage[]): boolean {
+  if (messages.length === 0) return false;
+  const lastMsg = messages[messages.length - 1];
+  if (lastMsg.role !== "user") return false;
+  const text = lastMsg.parts
+    .filter((p) => p.type === "text")
+    .map((p) => (p as { type: "text"; text: string }).text)
+    .join(" ");
+  return (
+    text.includes("السؤال الجاي") ||
+    text.includes("السؤال التالي") ||
+    text.includes("مدينة جديدة") ||
+    text.includes("next question") ||
+    text.includes("next city")
+  );
+}
+
+/**
  * Count advance_round tool calls to determine the current round number.
  * Used as a deterministic seed for city selection (same round = same city).
  */
@@ -145,19 +167,22 @@ export async function POST(req: NextRequest) {
     // deterministic within a session (same round = same city on retries).
     const roundNumber = countAdvanceRounds(messages);
     const sessionSeedVal = sessionSeed || 0;
-    const roundSeed = sessionSeedVal + roundNumber;
 
-    // Compute exclude list deterministically from previous rounds only.
-    // We must NOT include the current round's city in the exclude list,
-    // otherwise the pool shrinks and roundSeed % smallerPool picks a
-    // DIFFERENT city — this caused "tell me more" to show a new city.
+    // If the user is asking for the next question, pre-load round N+1 into the
+    // system prompt so the AI can present the new city immediately after
+    // calling advance_round (without needing an extra round-trip).
+    const advanceSignal = isNextRoundSignal(messages);
+    const promptRound = advanceSignal ? roundNumber + 1 : roundNumber;
+    const roundSeed = sessionSeedVal + promptRound;
+
+    // Compute exclude list for the prompt round (excludes all cities before it).
     const previousRoundExcludeIds: string[] = [];
-    for (let r = 0; r < roundNumber; r++) {
+    for (let r = 0; r < promptRound; r++) {
       const { city } = getCityForRound(previousRoundExcludeIds, sessionSeedVal + r);
       previousRoundExcludeIds.push(city.id);
     }
 
-    // Get the current city for this round (for tool validation)
+    // Get the city for the prompt round (for tool validation + system prompt)
     const { city: currentCity } = getCityForRound(previousRoundExcludeIds, roundSeed);
     const tools = buildTools(currentCity.nameAr, currentCity.id);
 
@@ -181,7 +206,7 @@ export async function POST(req: NextRequest) {
 
     // Trim old-round messages (saves 3k-10k+ tokens per request)
     let aiMessages = messages;
-    if (trimCompletedRounds && roundSeed > 0) {
+    if (trimCompletedRounds && roundNumber > 0) {
       const discoveredNames = allUsedCityIds
         .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
         .filter(Boolean) as string[];
