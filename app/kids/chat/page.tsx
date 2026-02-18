@@ -11,6 +11,7 @@ import {
   useMemo,
   useRef,
   useState,
+  Suspense,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -74,7 +75,9 @@ import { useBackgroundMusicContext } from "../layout";
 export default function KidsChatPage() {
   return (
     <ErrorBoundary>
-      <KidsChatPageInner />
+      <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[var(--kids-bg)]"><div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--kids-primary)] border-t-transparent"></div></div>}>
+        <KidsChatPageInner />
+      </Suspense>
     </ErrorBoundary>
   );
 }
@@ -396,7 +399,7 @@ function KidsChatPageInner() {
               setDirectImages(data.images);
             }
           })
-          .catch(() => {})
+          .catch(() => { })
           .finally(() => setDirectImagesLoading(false));
         return;
       }
@@ -806,7 +809,7 @@ function KidsChatPageInner() {
                   <QuickReplyChips
                     data={activeQuickReplies}
                     onChipClick={handleChipClick}
-                    onHintClick={() => {}}
+                    onHintClick={() => { }}
                     disabled={isLoading}
                   />
                 )}
