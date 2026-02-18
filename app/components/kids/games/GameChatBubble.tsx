@@ -24,6 +24,7 @@ interface GameChatBubbleProps {
   isSpeaking?: boolean;
   onSpeak?: () => void;
   onStopSpeaking?: () => void;
+  textStyle?: { fontFamily: string; fontSize: string };
 }
 
 const ASSISTANT_COLORS = [
@@ -46,6 +47,7 @@ export default function GameChatBubble({
   isSpeaking = false,
   onSpeak,
   onStopSpeaking,
+  textStyle,
 }: GameChatBubbleProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const bgColor = useMemo(
@@ -57,7 +59,7 @@ export default function GameChatBubble({
     return (
       <div className="flex justify-end animate-fade-in-up">
         <div className="max-w-[80%] bg-gradient-to-br from-[var(--kids-green)] to-emerald-500 text-white px-4 py-3 rounded-2xl rounded-tr-sm shadow-md">
-          <p className="text-sm leading-relaxed" dir="auto">{content}</p>
+          <p className="leading-relaxed" dir="auto" style={textStyle}>{content}</p>
         </div>
       </div>
     );
@@ -76,7 +78,7 @@ export default function GameChatBubble({
           className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-md"
           style={{ backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` }}
         >
-          <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap" dir="auto">
+          <p className="leading-relaxed text-gray-700 whitespace-pre-wrap" dir="auto" style={textStyle}>
             {content}
             {isStreaming && (
               <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />

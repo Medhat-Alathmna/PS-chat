@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Arabic, Cairo, Tajawal, Changa } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,6 +14,24 @@ const geistMono = Geist_Mono({
 
 const notoArabic = Noto_Sans_Arabic({
   variable: "--font-arabic",
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const tajawal = Tajawal({
+  variable: "--font-tajawal",
+  subsets: ["arabic"],
+  weight: ["400", "500", "700"],
+});
+
+const changa = Changa({
+  variable: "--font-changa",
   subsets: ["arabic"],
   weight: ["400", "500", "600", "700"],
 });
@@ -124,7 +142,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} antialiased font-[family-name:var(--font-arabic)]`}
+        className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} ${cairo.variable} ${tajawal.variable} ${changa.variable} antialiased font-[family-name:var(--font-arabic)]`}
       >
         {children}
       </body>

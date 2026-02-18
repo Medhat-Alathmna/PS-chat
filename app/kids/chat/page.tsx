@@ -68,6 +68,7 @@ import { useSounds } from "@/lib/hooks/useSounds";
 import { useChatContext } from "@/lib/hooks/useChatContext";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import { useMapSettings } from "@/lib/hooks/useMapSettings";
+import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
 import { useBackgroundMusicContext } from "../layout";
 
 export default function KidsChatPage() {
@@ -152,6 +153,10 @@ function KidsChatPageInner() {
 
   // Map settings
   const { settings: mapSettings } = useMapSettings(profileId);
+
+  // Text settings
+  const { settings: textSettings } = useTextSettings(profileId);
+  const textStyle = getTextStyleValues(textSettings);
 
   // System prompt with name
   const systemPrompt = useMemo(
@@ -767,6 +772,7 @@ function KidsChatPageInner() {
                     isSpeaking={currentMessageId === message.id}
                     onSpeak={() => speakMessage(message)}
                     onStopSpeaking={stopSpeaking}
+                    textStyle={textStyle}
                   />
                 ))}
 

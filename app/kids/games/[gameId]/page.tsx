@@ -14,6 +14,7 @@ import { useChatContext } from "@/lib/hooks/useChatContext";
 import { useSounds } from "@/lib/hooks/useSounds";
 import { useDiscoveredCities } from "@/lib/hooks/useDiscoveredCities";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
+import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import ProfileSetup from "../../../components/kids/ProfileSetup";
@@ -110,6 +111,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     speakMessage,
   } = useVoiceSynthesis({ soundEnabled });
   const { getContext } = useChatContext(profileId);
+  const { settings: textSettings } = useTextSettings(profileId);
+  const textStyle = getTextStyleValues(textSettings);
   const gameState = useGameState(gameId, difficulty || undefined, profileId);
   const gameRewards = useGameRewards(profileId);
   const discoveredCities = useDiscoveredCities(profileId);
@@ -624,6 +627,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                     isSpeaking={currentMessageId === msg.id}
                     onSpeak={() => speakMessage(msg)}
                     onStopSpeaking={stopSpeaking}
+                    textStyle={textStyle}
                   />
                 ))}
 

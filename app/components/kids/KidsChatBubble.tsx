@@ -13,6 +13,7 @@ interface KidsChatBubbleProps {
   isSpeaking?: boolean;
   onSpeak?: () => void;
   onStopSpeaking?: () => void;
+  textStyle?: { fontFamily: string; fontSize: string };
 }
 
 // Dynamic hex colors for assistant bubbles (matching GameChatBubble)
@@ -30,6 +31,7 @@ export default function KidsChatBubble({
   isSpeaking = false,
   onSpeak,
   onStopSpeaking,
+  textStyle,
 }: KidsChatBubbleProps) {
   const [showReactions, setShowReactions] = useState(false);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -130,11 +132,9 @@ export default function KidsChatBubble({
 
         {/* Message content */}
         <div
-          className={`
-            text-base sm:text-lg leading-relaxed whitespace-pre-wrap
-            ${isUser ? "" : "text-gray-800"}
-          `}
+          className={`leading-relaxed whitespace-pre-wrap ${isUser ? "" : "text-gray-800"}`}
           dir="auto"
+          style={textStyle}
         >
           {formatKidsMessageWithIcons(message.content)}
           {isStreaming && (

@@ -138,7 +138,7 @@ function ExpandableMapBase({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => router.push("/kids/map-settings")}
+                onClick={() => router.push("/kids/settings?tab=map")}
                 className="flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full transition-all hover:scale-105 active:scale-95"
                 aria-label="إعدادات الخريطة"
                 title="إعدادات الخريطة"
