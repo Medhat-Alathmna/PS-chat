@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const CACHE_NAME = "falastin-audio-cache-v1";
+const MUSIC_PREF_KEY = "falastin_music_playing";
 
 /**
  * Cache audio file for faster loading
@@ -119,13 +120,17 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
     };
   }, [audioPath]);
 
-  // Auto-play ALWAYS on load
+  // Auto-play on load — only if user hasn't turned it off (default: on)
   useEffect(() => {
     if (typeof window === "undefined" || !isLoaded || !audioRef.current) {
       return;
     }
 
-    // ALWAYS try to play
+    const savedPref = localStorage.getItem(MUSIC_PREF_KEY);
+    const shouldPlay = savedPref === null ? true : savedPref === "true";
+
+    if (!shouldPlay) return;
+
     audioRef.current.play()
       .then(() => {
         setIsPlaying(true);
@@ -134,7 +139,6 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
         // Auto-play blocked by browser, start on first user interaction
         setIsPlaying(false);
 
-        // Don't log NotAllowedError as it's expected behavior
         if (error.name !== "NotAllowedError") {
           console.warn("Autoplay failed:", error);
         }
@@ -166,6 +170,7 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
       }
     });
     setIsPlaying(true);
+    localStorage.setItem(MUSIC_PREF_KEY, "true");
   };
 
   const pause = () => {
@@ -173,6 +178,7 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
 
     audioRef.current.pause();
     setIsPlaying(false);
+    localStorage.setItem(MUSIC_PREF_KEY, "false");
   };
 
   const toggle = () => {

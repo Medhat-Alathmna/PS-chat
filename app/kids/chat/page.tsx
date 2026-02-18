@@ -617,31 +617,52 @@ function KidsChatPageInner() {
       <div className="relative flex h-screen flex-col overflow-hidden" key={activeProfile.id}>
         {/* Header with rewards - Optimized for mobile */}
         <header className="shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 z-10">
-          <div className="flex items-center gap-2 sm:gap-4 max-w-6xl mx-auto">
-            {/* Profile switcher - hidden on mobile */}
-            <div className="hidden md:block">
-              <ProfileSwitcher
-                profiles={profiles}
-                activeProfile={activeProfile}
-                onSwitch={switchProfile}
-                onAddNew={() => setShowProfileSetup(true)}
-                onEdit={(id) => {
-                  setEditingProfileId(id);
-                  setShowProfileSetup(true);
-                }}
-                onDelete={deleteProfile}
-              />
-            </div>
+          {/* ── Mobile: 2-row layout ── */}
+          <div className="flex flex-col gap-1.5 md:hidden max-w-6xl mx-auto">
 
-            {/* Map button - mobile only */}
-            <button
-              onClick={() => setShowMobileMap(true)}
-              className="md:hidden flex items-center justify-center w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
-              aria-label="فتح الخريطة"
-              title="الخريطة"
-            >
-              <span className="text-lg">🗺️</span>
-            </button>
+            {/* Row 2: map button + progress bar */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowMobileMap(true)}
+                className="shrink-0 flex items-center justify-center w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg"
+                aria-label="فتح الخريطة"
+                title="الخريطة"
+              >
+                <span className="text-lg">🗺️</span>
+              </button>
+              <div className="flex-1 min-w-0">
+                <RewardsBar
+                  points={points}
+                  level={level}
+                  progress={progressToNextLevel()}
+                  unlockedStickersCount={unlockedStickers.length}
+                  totalStickersCount={totalCount}
+                  pointsEarned={pointsEarned}
+                  onOpenStickers={() => setShowCollection(true)}
+                  soundEnabled={soundEnabled}
+                  onToggleSound={toggleSound}
+                  voiceEnabled={voiceEnabled}
+                  onToggleVoice={toggleVoice}
+                  isSpeaking={isSpeaking}
+                  voiceSupported={voiceSupported}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Desktop: single row ── */}
+          <div className="hidden md:flex items-center gap-4 max-w-6xl mx-auto">
+            <ProfileSwitcher
+              profiles={profiles}
+              activeProfile={activeProfile}
+              onSwitch={switchProfile}
+              onAddNew={() => setShowProfileSetup(true)}
+              onEdit={(id) => {
+                setEditingProfileId(id);
+                setShowProfileSetup(true);
+              }}
+              onDelete={deleteProfile}
+            />
 
             <div className="flex-1 min-w-0">
               <RewardsBar
@@ -661,49 +682,29 @@ function KidsChatPageInner() {
               />
             </div>
 
-            {/* Background music toggle */}
             <button
               onClick={toggleMusic}
               disabled={!isMusicLoaded}
-              className="shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+              className="shrink-0 flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
               aria-label={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
-              title={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
             >
-              <span className="text-lg sm:text-xl">
-                {isMusicPlaying ? "🎵" : "🔇"}
-              </span>
+              <span className="text-xl">{isMusicPlaying ? "🎵" : "🔇"}</span>
             </button>
 
-            {/* Settings menu - mobile only */}
-            <div className="md:hidden">
-              <SettingsMenu
-                profiles={profiles}
-                activeProfile={activeProfile}
-                onSwitch={switchProfile}
-                onAddNew={() => setShowProfileSetup(true)}
-                onEdit={(id) => {
-                  setEditingProfileId(id);
-                  setShowProfileSetup(true);
-                }}
-                onDelete={deleteProfile}
-              />
-            </div>
-
             <button
-              onClick={() => router.push("/kids/map-settings")}
-              className="shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
-              aria-label="إعدادات الخريطة"
-              title="إعدادات الخريطة"
+              onClick={() => router.push("/kids/settings")}
+              className="shrink-0 flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              aria-label="الإعدادات"
             >
-              <span className="text-lg sm:text-xl">{"\u2699\uFE0F"}</span>
+              <span className="text-xl">{"\u2699\uFE0F"}</span>
             </button>
 
             <button
               onClick={() => router.push("/kids/games")}
-              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-2xl font-bold text-sm sm:text-base hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-2xl font-bold text-base hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
             >
               <span className="text-lg">🎮</span>
-              <span className="hidden sm:inline">ألعاب</span>
+              <span>ألعاب</span>
             </button>
           </div>
         </header>
