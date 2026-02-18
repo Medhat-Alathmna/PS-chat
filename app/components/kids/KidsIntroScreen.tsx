@@ -201,7 +201,7 @@ export default function KidsIntroScreen({
       {/* علم فلسطين - سارية في الأسفل */}
       {showLottie && (
         <div
-          className="fixed bottom-4 sm:bottom-6 left-4 sm:left-8 z-30 flex flex-col items-center animate-gentle-sway"
+          className="hidden sm:flex fixed bottom-4 sm:bottom-6 left-4 sm:left-8 z-30 flex-col items-center animate-gentle-sway"
           role="img"
           aria-label="علم فلسطين - رمز الحرية والكرامة"
         >
