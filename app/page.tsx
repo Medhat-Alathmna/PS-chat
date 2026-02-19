@@ -24,7 +24,7 @@ import {
   NewsItem,
   TimelineEvent,
 } from "@/lib/types";
-import { DEFAULT_SYSTEM_PROMPT } from "@/lib/ai/config";
+import { DEFAULT_SYSTEM_PROMPT } from "@/lib/ai/main";
 
 type Mode = "promptId" | "localPrompt";
 

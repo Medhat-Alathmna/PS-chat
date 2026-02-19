@@ -3,7 +3,8 @@
 import { NextRequest } from "next/server";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { buildKidsSystemPrompt, getModel } from "@/lib/ai/config";
+import { buildKidsSystemPrompt } from "@/lib/ai/kids";
+import { getModel } from "@/lib/ai/config";
 import { kidsTools } from "@/lib/ai/tools";
 import { logError } from "@/lib/utils/error-handler";
 

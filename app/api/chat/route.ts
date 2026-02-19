@@ -3,7 +3,8 @@
 import { NextRequest } from "next/server";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { DEFAULT_SYSTEM_PROMPT, getModel } from "@/lib/ai/config";
+import { DEFAULT_SYSTEM_PROMPT } from "@/lib/ai/main";
+import { getModel } from "@/lib/ai/config";
 import { allTools } from "@/lib/ai/tools";
 import { logError } from "@/lib/utils/error-handler";
 

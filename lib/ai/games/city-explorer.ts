@@ -16,10 +16,10 @@ import { z } from "zod";
 import { CITIES, REGIONS, City } from "@/lib/data/cities";
 import { GameDifficulty, KidsChatContext } from "@/lib/types/games";
 import {
-  MEDHAT_BASE,
+  MEDHAT_CHARACTER as MEDHAT_BASE,
   SAFETY_RULES,
   buildAgeAdaptationSection,
-} from "./constitution";
+} from "../kids";
 import {
   checkAnswerTool,
   giveHintTool,

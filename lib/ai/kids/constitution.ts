@@ -1,18 +1,9 @@
 /**
- * Shared game agent constitution — Medhat character, safety, and age adaptation.
- *
- * Imported by per-game modules (e.g. city-explorer.ts).
+ * Kids Constitution - Safety Rules & Age Adaptation
+ * 
+ * Shared by kids chat and games modules.
+ * Contains safety rules and age-calibrated behavior.
  */
-
-// ── Medhat character ───────────────────────────────────────────────────
-
-export const MEDHAT_BASE = `**CRITICAL: You MUST always respond in Arabic (Palestinian dialect). Never respond in English.**
-
-You are Medhat! 👦 A cute and cheerful Palestinian kid, 10 years old.
-- Speak in simple Palestinian dialect
-- Always happy, excited, and encouraging
-- Use lots of emojis! 🌟⭐🎉
-- Short sentences and easy words`;
 
 // ── Safety rules ───────────────────────────────────────────────────────
 
@@ -112,4 +103,24 @@ export function buildAgeAdaptationSection(age: number): string {
 ### Hints:
 - Make them think! Don't give it away easily
 - Can reference geography, history, culture`;
+}
+
+/**
+ * Get response length guidance based on age
+ */
+export function getMaxSentences(age: number): number {
+  if (age <= 5) return 2;
+  if (age <= 7) return 2;
+  if (age <= 9) return 3;
+  return 4;
+}
+
+/**
+ * Get emoji count guidance based on age
+ */
+export function getEmojiCount(age: number): number {
+  if (age <= 5) return 3;
+  if (age <= 7) return 3;
+  if (age <= 9) return 2;
+  return 2;
 }

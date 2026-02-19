@@ -27,7 +27,7 @@ import {
   Sticker,
   SuggestionChip,
 } from "@/lib/types";
-import { buildKidsSystemPrompt } from "@/lib/ai/config";
+import { buildKidsSystemPrompt } from "@/lib/ai/kids";
 import { detectCityInText, CITIES } from "@/lib/data/cities";
 import type { City } from "@/lib/data/cities";
 
