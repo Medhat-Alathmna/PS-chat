@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function MapSettingsRedirect() {
   const router = useRouter();
   useEffect(() => {
-    router.replace("/kids/settings?tab=map");
+    router.replace("/settings?tab=map");
   }, [router]);
   return null;
 }

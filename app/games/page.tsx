@@ -198,7 +198,7 @@ function GamesHub() {
         <div className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none">
           <div className="mx-auto max-w-sm pointer-events-auto">
             <button
-              onClick={() => router.push("/kids")}
+              onClick={() => router.push("/")}
               className="w-full py-3.5 bg-[var(--kids-purple)] text-white border-2 border-[var(--kids-purple)] rounded-2xl font-black text-base shadow-[0_8px_20px_rgba(108,92,231,0.3)] hover:scale-[1.02] active:scale-95 transition-all hover:bg-[var(--kids-purple)]/90 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">

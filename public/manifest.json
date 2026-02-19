@@ -2,7 +2,7 @@
   "name": "فلسطين Chat | Falastin Assistant",
   "short_name": "Falastin",
   "description": "مساعدك الذكي للتعرف على فلسطين",
-  "start_url": "/kids",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#87CEEB",
   "theme_color": "#009736",
