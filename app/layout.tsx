@@ -1,6 +1,9 @@
-import type { Metadata, Viewport } from "next";
+"use client";
+
+import { createContext, useContext } from "react";
 import { Geist, Geist_Mono, Noto_Sans_Arabic, Cairo, Tajawal, Changa } from "next/font/google";
 import "./globals.css";
+import { useBackgroundMusic } from "@/lib/hooks/useBackgroundMusic";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,115 +39,44 @@ const changa = Changa({
   weight: ["400", "500", "600", "700"],
 });
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#009736" },
-    { media: "(prefers-color-scheme: dark)", color: "#0A0A0A" },
-  ],
-};
+interface BackgroundMusicContextType {
+  isPlaying: boolean;
+  isLoaded: boolean;
+  toggle: () => void;
+  play: () => void;
+  pause: () => void;
+}
 
-export const metadata: Metadata = {
-  title: "فلسطين Chat | Falastin Assistant - مساعدك الذكي للتعرف على فلسطين",
-  description:
-    "تحدث مع مساعد ذكي متخصص في فلسطين. اكتشف التاريخ العريق، الثقافة الغنية، المدن التاريخية، والتراث الفلسطيني. Chat with an AI assistant specialized in Palestinian history, culture, and heritage.",
-  keywords: [
-    "فلسطين",
-    "Palestine",
-    "تاريخ فلسطين",
-    "Palestinian history",
-    "القدس",
-    "Jerusalem",
-    "الثقافة الفلسطينية",
-    "Palestinian culture",
-    "المسجد الأقصى",
-    "Al-Aqsa Mosque",
-    "التراث الفلسطيني",
-    "Palestinian heritage",
-    "نكبة",
-    "Nakba",
-    "chatbot",
-    "AI assistant",
-  ],
-  authors: [{ name: "Falastin Assistant" }],
-  creator: "Falastin Assistant",
-  publisher: "Falastin Assistant",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  openGraph: {
-    type: "website",
-    locale: "ar_PS",
-    alternateLocale: "en_US",
-    title: "فلسطين Chat | Falastin Assistant",
-    description:
-      "مساعدك الذكي للتعرف على فلسطين - تاريخها، ثقافتها، جغرافيتها، وشعبها",
-    siteName: "Falastin Assistant",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Falastin Assistant - فلسطين Chat",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "فلسطين Chat | Falastin Assistant",
-    description:
-      "مساعدك الذكي للتعرف على فلسطين - تاريخها، ثقافتها، جغرافيتها، وشعبها",
-    images: ["/og-image.png"],
-  },
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
-  manifest: "/manifest.json",
-};
+const BackgroundMusicContext = createContext<BackgroundMusicContextType | null>(null);
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export function useBackgroundMusicContext() {
+  const context = useContext(BackgroundMusicContext);
+  if (!context) {
+    throw new Error("useBackgroundMusicContext must be used within RootLayout");
+  }
+  return context;
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Initialize background music for entire app
+  const music = useBackgroundMusic();
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme');
-                  var isDark = theme === 'dark' ||
-                    ((!theme || theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                  if (isDark) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                    document.documentElement.classList.add('light');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="theme-color" content="#6C5CE7" />
+        <title>PS-Kids | تعلم مع مدحت - Learn with Medhat</title>
+        <meta name="description" content="تطبيق تعليمي ممتع للأطفال عن فلسطين - An engaging educational app for kids about Palestine" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} ${cairo.variable} ${tajawal.variable} ${changa.variable} antialiased font-[family-name:var(--font-arabic)]`}
       >
-        {children}
+        <BackgroundMusicContext.Provider value={music}>
+          <div className="min-h-screen bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
+            {children}
+          </div>
+        </BackgroundMusicContext.Provider>
       </body>
     </html>
   );

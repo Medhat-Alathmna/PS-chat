@@ -32,32 +32,32 @@ import { detectCityInText, CITIES } from "@/lib/data/cities";
 import type { City } from "@/lib/data/cities";
 
 // Kids components
-import KidsChatBubble, { TypingBubble } from "../../components/kids/KidsChatBubble";
-import AnimatedMascot from "../../components/kids/AnimatedMascot";
-import AnimatedBackground from "../../components/kids/AnimatedBackground";
+import KidsChatBubble, { TypingBubble } from "@/app/components/kids/KidsChatBubble";
+import AnimatedMascot from "@/app/components/kids/AnimatedMascot";
+import AnimatedBackground from "@/app/components/kids/AnimatedBackground";
 import RewardsBar, {
   PointsPopup,
   LevelUpCelebration,
-} from "../../components/kids/RewardsBar";
+} from "@/app/components/kids/RewardsBar";
 import StickerCollection, {
   StickerUnlockedPopup,
-} from "../../components/kids/StickerCollection";
-import Confetti from "../../components/kids/Confetti";
-import ErrorBoundary from "../../components/ErrorBoundary";
-import ProfileSetup from "../../components/kids/ProfileSetup";
-import ProfileSwitcher from "../../components/kids/ProfileSwitcher";
-import SettingsMenu from "../../components/kids/SettingsMenu";
-import SpeechInput from "../../components/kids/SpeechInput";
-import QuickReplyChips, { normalizeSuggestions } from "../../components/kids/games/QuickReplyChips";
-import type { QuickReplyData, SuggestionChip as ChipType } from "../../components/kids/games/QuickReplyChips";
+} from "@/app/components/kids/StickerCollection";
+import Confetti from "@/app/components/kids/Confetti";
+import ErrorBoundary from "@/app/components/ErrorBoundary";
+import ProfileSetup from "@/app/components/kids/ProfileSetup";
+import ProfileSwitcher from "@/app/components/kids/ProfileSwitcher";
+import SettingsMenu from "@/app/components/kids/SettingsMenu";
+import SpeechInput from "@/app/components/kids/SpeechInput";
+import QuickReplyChips, { normalizeSuggestions } from "@/app/components/kids/games/QuickReplyChips";
+import type { QuickReplyData, SuggestionChip as ChipType } from "@/app/components/kids/games/QuickReplyChips";
 
 // Expandable map component
-import ExpandableMap from "../../components/kids/ExpandableMap";
+import ExpandableMap from "@/app/components/kids/ExpandableMap";
 import dynamic from "next/dynamic";
 
 // Direct map import for mobile fullscreen overlay
 const PalestineLeafletMap = dynamic(
-  () => import("../../components/kids/PalestineLeafletMap"),
+  () => import("@/app/components/kids/PalestineLeafletMap"),
   { ssr: false }
 );
 
@@ -184,7 +184,7 @@ function KidsChatPageInner() {
   const chatTransport = useMemo(
     () =>
       new DefaultChatTransport({
-        api: "/api/kids/chat",
+api: "/api/chat",
         body: {
           config: {
             mode: "localPrompt",
@@ -388,7 +388,7 @@ function KidsChatPageInner() {
         // Direct image search — no AI round-trip
         setDirectImagesLoading(true);
         setDirectImages([]);
-        fetch("/api/kids/images", {
+        fetch("/api/images", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: chip.actionQuery }),
@@ -692,7 +692,7 @@ function KidsChatPageInner() {
             </button>
 
             <button
-              onClick={() => router.push("/kids/settings")}
+              onClick={() => router.push("/settings")}
               className="shrink-0 flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
               aria-label="الإعدادات"
             >

@@ -2,9 +2,9 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import AnimatedBackground from "../../components/kids/AnimatedBackground";
-import ProfileSetup from "../../components/kids/ProfileSetup";
-import ErrorBoundary from "../../components/ErrorBoundary";
+import AnimatedBackground from "@/app/components/kids/AnimatedBackground";
+import ProfileSetup from "@/app/components/kids/ProfileSetup";
+import ErrorBoundary from "@/app/components/ErrorBoundary";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import TextSettingsContent from "@/app/components/kids/settings/TextSettingsContent";
 import MapSettingsContent from "@/app/components/kids/settings/MapSettingsContent";
@@ -86,7 +86,7 @@ function SettingsInner() {
         <div className="shrink-0 px-4 pb-3 z-10">
           <div className="flex gap-2 bg-white/80 rounded-2xl p-1.5 border border-gray-100 max-w-2xl mx-auto">
             <button
-              onClick={() => router.replace("/kids/settings")}
+              onClick={() => router.replace("/settings")}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 activeTab === "text"
                   ? "bg-[var(--kids-purple)] text-white shadow-md"
@@ -97,7 +97,7 @@ function SettingsInner() {
               <span>إعدادات النص</span>
             </button>
             <button
-              onClick={() => router.replace("/kids/settings?tab=map")}
+              onClick={() => router.replace("/settings?tab=map")}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 activeTab === "map"
                   ? "bg-[var(--kids-purple)] text-white shadow-md"
