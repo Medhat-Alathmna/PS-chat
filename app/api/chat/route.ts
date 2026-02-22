@@ -3,10 +3,15 @@
 import { NextRequest } from "next/server";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { buildKidsSystemPrompt } from "@/lib/ai/kids";
+import { buildMainSystemPrompt } from "@/lib/ai/main";
 import { getModel } from "@/lib/ai/config";
-import { kidsTools } from "@/lib/ai/tools";
+import { kidsTools, timelineSearchTool } from "@/lib/ai/tools";
 import { logError } from "@/lib/utils/error-handler";
+
+const mainTools = {
+  ...kidsTools,
+  timeline_search: timelineSearchTool,
+};
 
 type KidsChatRequest = {
   messages: UIMessage[];
@@ -18,8 +23,8 @@ type KidsChatRequest = {
 };
 
 /**
- * POST /api/kids/chat - Handle kids chat requests with limited tools
- * Uses only image_search and location_search with conversational behavior
+ * POST /api/chat - Main chat agent (Medhat)
+ * Tools: image_search, location_search, suggest_replies, timeline_search
  */
 export async function POST(req: NextRequest) {
   try {
@@ -43,20 +48,19 @@ export async function POST(req: NextRequest) {
 
     const openai = createOpenAI({ apiKey });
 
-    // Use kids-specific system prompt (conversational tool usage)
     const systemPrompt =
       config?.mode === "localPrompt" && config.systemPrompt?.trim()
         ? config.systemPrompt
-        : buildKidsSystemPrompt(playerName);
+        : buildMainSystemPrompt(playerName);
 
     const result = streamText({
       model: openai(getModel()),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
-      tools: kidsTools, // Only image_search + location_search
+      tools: mainTools,
       stopWhen: stepCountIs(5), // Allow more steps for tool calls + complete response
       onFinish: async ({ text, toolCalls, toolResults }) => {
-        console.log("[kids-chat] Stream finished", {
+        console.log("[main-chat] Stream finished", {
           textLength: text.length,
           toolCallsCount: toolCalls?.length || 0,
         });
