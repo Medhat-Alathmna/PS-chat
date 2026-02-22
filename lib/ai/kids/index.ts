@@ -13,7 +13,7 @@ import {
   MEDHAT_TOOL_CONFIRMATIONS,
   MEDHAT_DISPLAY_RULES,
 } from "./character";
-import { SAFETY_RULES, buildAgeAdaptationSection } from "./constitution";
+import { SAFETY_RULES } from "./constitution";
 
 // Re-export character and constitution
 export {
@@ -25,7 +25,7 @@ export {
   MEDHAT_DISPLAY_RULES,
 };
 
-export { SAFETY_RULES, buildAgeAdaptationSection };
+export { SAFETY_RULES };
 
 /**
  * Kids tool usage guide

@@ -18,16 +18,16 @@ import { GameDifficulty, KidsChatContext } from "@/lib/types/games";
 import {
   MEDHAT_CHARACTER as MEDHAT_BASE,
   SAFETY_RULES,
-  buildAgeAdaptationSection,
-} from "../kids";
+} from "../../kids";
+import { buildAgeAdaptationSection } from "./age";
 import {
   checkAnswerTool,
   giveHintTool,
   advanceRoundTool,
   endGameTool,
   suggestRepliesTool,
-} from "../game-tools";
-import { imageSearchTool } from "../tools";
+} from "../../game-tools";
+import { imageSearchTool } from "../../tools";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 
 // ── Opt-in: trim completed-round messages server-side ────────────────
