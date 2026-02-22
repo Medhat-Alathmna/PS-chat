@@ -1,94 +1,95 @@
 /**
- * Age adaptation — scoped to City Explorer.
- *
- * Controls response length, vocabulary level, and emoji density
- * based on the player's age. Lives here so the kids constitution
- * stays a pure, shared root (SAFETY_RULES only).
+ * Age adaptation — Optimized for City Explorer
+ * 
+ * Controls: response length, vocabulary, emojis, options count, hint style
+ * Integrated with difficulty for comprehensive adaptation
  */
 
-export function buildAgeAdaptationSection(age: number): string {
+export interface AgeSettings {
+  maxSentences: number;
+  maxWords: number;
+  maxOptions: number;
+  hintStyle: "obvious" | "moderate" | "subtle";
+  imageStyle: "cartoon" | "colorful" | "photo";
+  vocabulary: "simple" | "moderate" | "rich";
+  emojiDensity: "high" | "medium" | "low";
+}
+
+/**
+ * Get age-based settings
+ */
+export function getAgeSettings(age: number): AgeSettings {
   if (age <= 5) {
-    return `## Age Adaptation — ${age} years old (VERY YOUNG!) 👶
-
-### Response Length (STRICT!):
-- **Maximum 1-2 SHORT sentences per message** (10-15 words max)
-- ❌ NEVER write paragraphs — the child CANNOT read long text
-- ✅ Example: "هاي مدينة على البحر! 🌊 مين هي؟"
-- ❌ Bad: "هاي المدينة مشهورة كتير وبتقع على ساحل البحر المتوسط وعندها تاريخ طويل..."
-
-### Vocabulary:
-- Use the SIMPLEST words possible — like talking to a kindergartener
-- No abstract concepts (تاريخ، تراث، حضارة) — use concrete things (بحر، أكل، شجرة)
-- Replace hard words: "مشهورة بصناعة الزجاج" → "فيها زجاج ملون حلو! 🏺"
-
-### Emojis & Fun:
-- Use 2-3 emojis per message — they can't read well but they LOVE emojis
-- Make sounds: "واااو!", "يييي!", "بووم! 💥"
-- Celebrate EVERYTHING — even wrong answers: "أحسنت إنك جربت! 🌟"
-
-### Hints:
-- Hints should be obvious and visual: colors, shapes, food, animals
-- Give the answer away gently if they struggle — don't let them get frustrated`;
+    return {
+      maxSentences: 2,
+      maxWords: 15,
+      maxOptions: 2,
+      hintStyle: "obvious",
+      imageStyle: "cartoon",
+      vocabulary: "simple",
+      emojiDensity: "high",
+    };
   }
-
   if (age <= 7) {
-    return `## Age Adaptation — ${age} years old (YOUNG CHILD) 🧒
-
-### Response Length:
-- **Maximum 2 short sentences per message**
-- Keep it very snappy — attention span is still short
-- ✅ Example: "هاي مدينة بالجبل ومشهورة بالكنافة! 🍰 شو اسمها؟"
-- ❌ No long explanations
-
-### Vocabulary:
-- Simple everyday words — avoid formal Arabic (فصحى)
-- Keep everything concrete: food, colors, animals, places they might visit
-- Replace hard words: "عمرها كتير قديمة!" not "تأسست في العصر الكنعاني"
-
-### Emojis & Fun:
-- Use 2-3 emojis per message
-- Keep the energy high — lots of excitement and celebration
-
-### Hints:
-- Hints should be obvious: colors, shapes, food, animals
-- Second hint can be more specific but still simple`;
+    return {
+      maxSentences: 2,
+      maxWords: 20,
+      maxOptions: 2,
+      hintStyle: "obvious",
+      imageStyle: "colorful",
+      vocabulary: "simple",
+      emojiDensity: "high",
+    };
   }
-
   if (age <= 9) {
-    return `## Age Adaptation — ${age} years old (CHILD) 🧒
-
-### Response Length:
-- **Maximum 2-3 short sentences per message**
-- Keep it snappy — kids this age lose interest fast
-- ✅ Example: "هاي مدينة بالجبل ومشهورة بالكنافة! 🍰 شو اسمها؟"
-- ❌ No long explanations or multiple facts at once
-
-### Vocabulary:
-- Simple everyday words — avoid formal Arabic (فصحى)
-- Can mention simple history but keep it concrete: "عمرها كتير قديمة!" not "تأسست في العصر الكنعاني"
-- Use food, sports, animals as reference points — things they know
-
-### Emojis:
-- 1-2 emojis per message — fun but not overwhelming
-
-### Hints:
-- First hint: general category (بحر/جبل/صحرا)
-- Second hint: something specific they might know (أكلة مشهورة، مكان مشهور)`;
+    return {
+      maxSentences: 3,
+      maxWords: 30,
+      maxOptions: 3,
+      hintStyle: "moderate",
+      imageStyle: "colorful",
+      vocabulary: "moderate",
+      emojiDensity: "medium",
+    };
   }
+  return {
+    maxSentences: 4,
+    maxWords: 50,
+    maxOptions: 4,
+    hintStyle: "subtle",
+    imageStyle: "photo",
+    vocabulary: "rich",
+    emojiDensity: "low",
+  };
+}
 
-  return `## Age Adaptation — ${age} years old (OLDER KID) 🧑
+/**
+ * Build compact age adaptation section
+ */
+export function buildAgeAdaptationSection(age: number, difficulty?: string): string {
+  const settings = getAgeSettings(age);
+  
+  // Age group label
+  const group = age <= 5 ? "Preschool 👶" : age <= 7 ? "Young 🧒" : age <= 9 ? "Child 🧒" : "Pre-teen 🧑";
+  
+  // Vocabulary guidance
+  const vocabGuide = {
+    simple: "Simple words only (بحر، أكل، شجرة). No abstract concepts.",
+    moderate: "Everyday words. Can mention simple history.",
+    rich: "Rich vocabulary. Can use historical context.",
+  };
+  
+  // Hint guidance
+  const hintGuide = {
+    obvious: "Hints: OBVIOUS (colors, shapes, food, animals). Give away gently.",
+    moderate: "Hints: Start general, then specific (region → landmark → food).",
+    subtle: "Hints: Make them think! Reference geography, history, culture.",
+  };
 
-### Response Length:
-- **Maximum 3-4 sentences per message**
-- Can include a fun fact after correct answers (1 sentence)
-- Still concise — don't write essays
-
-### Vocabulary:
-- Can use richer vocabulary and simple historical context
-- Still Palestinian dialect, not formal Arabic
-- Can mention dates, historical figures, geographic terms
-
-### Hints:
-- Make them think! Don't give it away easily
-- Can reference geography, history, culture`;
+  return `## Age: ${age}y (${group})
+- Max ${settings.maxSentences} sentences (${settings.maxWords} words)
+- ${vocabGuide[settings.vocabulary]}
+- ${hintGuide[settings.hintStyle]}
+- Emojis: ${settings.emojiDensity === "high" ? "2-3 per message" : settings.emojiDensity === "medium" ? "1-2 per message" : "1 per message"}
+- Options: ${settings.maxOptions} max${difficulty ? ` (${difficulty}: ${difficulty === "easy" ? settings.maxOptions - 1 : difficulty === "hard" ? settings.maxOptions : settings.maxOptions})` : ""}`;
 }

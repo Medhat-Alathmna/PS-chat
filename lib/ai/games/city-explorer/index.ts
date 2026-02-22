@@ -17,7 +17,7 @@ import {
   MEDHAT_CHARACTER as MEDHAT_BASE,
   SAFETY_RULES,
 } from "../../kids";
-import { buildAgeAdaptationSection } from "./age";
+import { buildAgeAdaptationSection, getAgeSettings } from "./age";
 import {
   checkAnswerTool,
   giveHintTool,
@@ -177,15 +177,17 @@ function getCityFameTier(cityId: string): "famous" | "known" | "lessKnown" {
 
 /**
  * Smart city selection with:
- * 1. Progressive difficulty (famous cities first)
- * 2. Regional diversity (different regions each round)
- * 3. Deterministic seed for consistent sessions
+ * 1. Age-aware difficulty (younger kids = famous cities)
+ * 2. Progressive difficulty (famous cities first)
+ * 3. Regional diversity (different regions each round)
+ * 4. Deterministic seed for consistent sessions
  */
 export function getCityForRound(
   excludeIds?: string[],
   roundNumber: number = 1,
   difficulty: GameDifficulty = "medium",
-  sessionSeed?: number
+  sessionSeed?: number,
+  age: number = 8
 ): { city: City; isReviewMode: boolean } {
   // Get available cities
   const pool = excludeIds?.length
@@ -201,14 +203,21 @@ export function getCityForRound(
     return { city: CITIES[index], isReviewMode };
   }
 
-  // Determine fame tier based on round number and difficulty
+  // Determine fame tier based on age, round number, and difficulty
   let fameTier: "famous" | "known" | "lessKnown";
   
-  if (difficulty === "easy") {
-    // Easy: always famous cities
+  // Age-based adjustments
+  const isYoungChild = age <= 6;
+  const isOlderChild = age >= 10;
+  
+  if (difficulty === "easy" || isYoungChild) {
+    // Easy or young child: always famous cities
     fameTier = "famous";
+  } else if (difficulty === "hard" && isOlderChild) {
+    // Hard + older child: can start with less known
+    fameTier = roundNumber <= 2 ? "lessKnown" : "known";
   } else if (difficulty === "hard") {
-    // Hard: start with less known, progress to known
+    // Hard (normal age): less known then known
     fameTier = roundNumber <= 2 ? "lessKnown" : "known";
   } else {
     // Medium: famous first, then known
@@ -318,7 +327,7 @@ ${facts}
 
 /** @deprecated Use getCityForRound + formatCityData */
 export function getData(excludeIds?: string[], roundSeed?: number): string {
-  const { city, isReviewMode } = getCityForRound(excludeIds, 1, "medium", roundSeed);
+  const { city, isReviewMode } = getCityForRound(excludeIds, 1, "medium", roundSeed, 8);
   return formatCityData(city, isReviewMode);
 }
 
@@ -333,7 +342,7 @@ export function buildSystemPrompt(
   roundNumber: number = 1,
   sessionSeed?: number
 ): string {
-  const { city, isReviewMode } = getCityForRound(excludeIds, roundNumber, difficulty, sessionSeed);
+  const { city, isReviewMode } = getCityForRound(excludeIds, roundNumber, difficulty, sessionSeed, age);
   const regionInfo = REGIONS[city.region];
   
   const parts: string[] = [

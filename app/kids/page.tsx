@@ -71,7 +71,7 @@ function KidsHomeInner() {
     <KidsIntroScreen
       onSelect={(text) => {
         // Navigate to chat with the selected question
-        router.push(`/kids/chat?q=${encodeURIComponent(text)}`);
+        router.push(`/chat?q=${encodeURIComponent(text)}`);
       }}
       points={points}
       level={level}
