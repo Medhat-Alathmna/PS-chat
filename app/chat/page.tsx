@@ -367,6 +367,9 @@ api: "/api/chat",
     });
   }, [aiMessages]);
 
+  const messagesRef = useRef(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+
   const canSend = (input.trim().length > 0 || !!imagePreview) && !isLoading;
 
   // Active quick reply chips from last assistant message
@@ -496,17 +499,17 @@ api: "/api/chat",
     }
   }, [isLoading, messages, playDing, addTopic]);
 
-  // When directImages load, pin them to the last assistant message so they
-  // survive the next user send (which clears directImages)
+  // When directImages load, pin them to the last assistant message.
+  // Uses a ref for messages so new messages arriving later don't re-trigger this.
   useEffect(() => {
     if (directImages.length === 0) return;
-    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    const lastAssistant = [...messagesRef.current].reverse().find((m) => m.role === "assistant");
     if (!lastAssistant) return;
     setPersistedImages((prev) => ({
       ...prev,
       [lastAssistant.id]: directImages,
     }));
-  }, [directImages, messages]);
+  }, [directImages]);
 
   // Auto-highlight cities when AI mentions them
   useEffect(() => {
