@@ -81,6 +81,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [mapExpandTrigger, setMapExpandTrigger] = useState(0);
   const [mapUncollapseTrigger, setMapUncollapseTrigger] = useState(0);
 
+  // Pending hint state - hint is pre-generated with options but hidden until requested
+  const [pendingHint, setPendingHint] = useState<{ hint: string; images?: ImageResult[]; targetCityId?: string } | null>(null);
+  const [showPendingHint, setShowPendingHint] = useState(false);
+
   // Random seed so each session starts with a different city (not always Jerusalem)
   const [sessionSeed, setSessionSeed] = useState(() => Math.floor(Math.random() * 10000));
 
@@ -296,11 +300,13 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   }, [input]);
 
   // Convert messages for display
+  // NOTE: give_hint data is extracted but NOT displayed in the message
+  // Instead, it's stored as pendingHint and shown when the player taps the hint button
   const displayMessages = useMemo(() => {
     return aiMessages.map((msg) => {
       let textContent = "";
       let answerResult: { correct: boolean; explanation: string } | null = null;
-      let hintData: { hint: string; hintNumber: number; images?: ImageResult[] } | null = null;
+      let hiddenHintData: { hint: string; images?: ImageResult[]; targetCityId?: string } | null = null;
       let optionsData: OptionsData | null = null;
       let suggestRepliesData: QuickReplyData | null = null;
       let imageResults: ImageResult[] | null = null;
@@ -322,10 +328,11 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 explanation: toolPart.output.explanation as string,
               };
             } else if (toolName === "give_hint") {
-              hintData = {
+              // Store hint data but don't display it - will be shown on button click
+              hiddenHintData = {
                 hint: toolPart.output.hint as string,
-                hintNumber: toolPart.output.hintNumber as number,
                 images: toolPart.output.images as ImageResult[] | undefined,
+                targetCityId: toolPart.output.targetCityId as string | undefined,
               };
             } else if (toolName === "present_options") {
               optionsData = {
@@ -352,13 +359,41 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         role: msg.role as "user" | "assistant",
         content: textContent,
         answerResult,
-        hintData,
+        hiddenHintData, // Not passed to GameChatBubble
         optionsData,
         suggestRepliesData,
         imageResults,
       };
     });
   }, [aiMessages]);
+
+  // Extract pending hint from the last assistant message with options
+  // The hint is pre-generated with give_hint but hidden until the player requests it
+  useEffect(() => {
+    if (status === "streaming") {
+      // Clear pending hint when streaming new content
+      setPendingHint(null);
+      setShowPendingHint(false);
+      return;
+    }
+
+    // Find the last assistant message with optionsData
+    for (let i = displayMessages.length - 1; i >= 0; i--) {
+      const msg = displayMessages[i];
+      if (msg.role === "assistant" && msg.optionsData) {
+        // Check if this message also has hidden hint data
+        const hintMsg = msg as typeof msg & { hiddenHintData?: { hint: string; images?: ImageResult[]; targetCityId?: string } | null };
+        if (hintMsg.hiddenHintData) {
+          setPendingHint(hintMsg.hiddenHintData);
+          return;
+        }
+      }
+    }
+
+    // No pending hint found
+    setPendingHint(null);
+    setShowPendingHint(false);
+  }, [displayMessages, status]);
 
   // Auto-read assistant messages when streaming completes
   const prevMsgCountRef = useRef(0);
@@ -373,16 +408,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   }, [isLoading, displayMessages, autoReadMessage]);
 
   // Find the active options data (from the last unanswered question)
-  // Skips hint exchanges (user "تلميح" + assistant hint response) so options stay active after hints
   // Also keeps options active after wrong answers (check_answer correct:false)
-  const activeOptions = useMemo<{ messageId: string; data: OptionsData } | null>(() => {
+  const activeOptions = useMemo<{ messageId: string; data: OptionsData; hasHint: boolean } | null>(() => {
     if (status === "streaming") return null;
     for (let i = displayMessages.length - 1; i >= 0; i--) {
       const msg = displayMessages[i];
       if (msg.role === "user") {
-        const text = msg.content.trim();
-        const isHint = text === "تلميح" || text.toLowerCase() === "hint";
-        if (isHint) continue; // skip hint requests
         // Check if this answer was wrong — if so, keep options active for retry
         const nextMsg = i + 1 < displayMessages.length ? displayMessages[i + 1] : null;
         if (nextMsg?.role === "assistant" && nextMsg.answerResult && !nextMsg.answerResult.correct) {
@@ -391,8 +422,14 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         return null; // correct answer or new question — disable options
       }
       if (msg.role === "assistant") {
-        if (msg.optionsData) return { messageId: msg.id, data: msg.optionsData };
-        if (msg.hintData && !msg.optionsData) continue; // skip hint responses
+        if (msg.optionsData) {
+          const hintMsg = msg as typeof msg & { hiddenHintData?: { hint: string; images?: ImageResult[]; targetCityId?: string } | null };
+          return {
+            messageId: msg.id,
+            data: msg.optionsData,
+            hasHint: !!hintMsg.hiddenHintData
+          };
+        }
         if (msg.answerResult && !msg.answerResult.correct) continue; // skip wrong answer responses
       }
     }
@@ -423,9 +460,26 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const handleHintClick = useCallback(() => {
     if (isLoading) return;
     stopSpeaking();
-    playSound("click");
-    sendMessage({ text: "تلميح" });
-  }, [isLoading, playSound, sendMessage, stopSpeaking]);
+    playSound("hint" as any);
+
+    // If we have a pending hint, show it directly without sending a message
+    if (pendingHint) {
+      setShowPendingHint(true);
+
+      // Map: zoom to target city if available
+      if (isCityExplorer && pendingHint.targetCityId) {
+        const city = CITIES.find((c) => c.id === pendingHint.targetCityId);
+        if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+          setMapUncollapseTrigger((c) => c + 1);
+          setFlyToCity("");
+          setTimeout(() => setFlyToCity(pendingHint.targetCityId!), 150);
+        }
+      }
+    } else {
+      // Fallback: send message if no pending hint (shouldn't happen in normal flow)
+      sendMessage({ text: "تلميح" });
+    }
+  }, [isLoading, playSound, sendMessage, stopSpeaking, pendingHint, isCityExplorer]);
 
   const handleChipClick = useCallback(
     (chip: SuggestionChip) => {
@@ -618,7 +672,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                       msg.role === "assistant"
                     }
                     answerResult={msg.answerResult}
-                    hintData={msg.hintData}
+                    hintData={null}
                     optionsData={msg.optionsData}
                     isActiveOptions={false}
                     onOptionClick={handleOptionClick}
@@ -631,13 +685,45 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   />
                 ))}
 
-                {/* Active options — render prominently at bottom */}
-                {activeOptions && (
+                {/* Active options — render prominently at bottom (hidden when hint is shown) */}
+                {activeOptions && !showPendingHint && (
                   <ActiveOptionsBlock
                     optionsData={activeOptions.data}
                     onOptionClick={handleOptionClick}
                     onHintClick={handleHintClick}
                   />
+                )}
+
+                {/* Pending hint bubble — shown when player taps hint button */}
+                {showPendingHint && pendingHint && (
+                  <div className="px-4 py-3 rounded-2xl shadow-md bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-300 animate-pop-in">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">💡</span>
+                      <span className="font-bold text-sm text-yellow-700">
+                        تلميح مساعد
+                      </span>
+                    </div>
+                    <p className="text-base text-gray-700 leading-relaxed" dir="auto">
+                      {pendingHint.hint}
+                    </p>
+                    {pendingHint.images && pendingHint.images.length > 0 && (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        {pendingHint.images.slice(0, 2).map((img, i) => (
+                          <div
+                            key={i}
+                            className="relative rounded-xl overflow-hidden border-2 border-yellow-200"
+                          >
+                            <img
+                              src={img.thumbnailUrl || img.imageUrl}
+                              alt={img.title}
+                              className="w-full h-24 object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Quick reply suggestions — below the last assistant message */}

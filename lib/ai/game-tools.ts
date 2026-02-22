@@ -20,19 +20,19 @@ export const checkAnswerTool = tool({
 });
 
 /**
- * give_hint — AI provides a progressive hint, optionally with images
- * NEW: Points deduction based on difficulty (Easy=0, Medium=1, Hard=2)
+ * give_hint — AI provides a single hint, optionally with images
+ * Points deduction based on difficulty (Easy=0, Medium=1, Hard=2)
+ * IMPORTANT: Always call this tool with present_options in the same response!
  */
 export const giveHintTool = tool({
   description:
-    "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific) and match the content complexity level. Optionally include imageQuery to show a relevant image alongside the hint. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
+    "Use this tool to provide a hint for the current question. ALWAYS call this together with present_options in the SAME response. The hint will be hidden until the player requests it. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
   inputSchema: z.object({
-    hint: z.string().describe("The hint text in Palestinian Arabic"),
-    hintNumber: z.number().describe("Which hint this is (1, 2, 3...)"),
+    hint: z.string().describe("The hint text in Palestinian Arabic - should help without giving away the answer directly"),
     pointsDeduction: z.number().describe("Points deducted for using this hint: Easy=0, Medium=1, Hard=2 (system calculates based on difficulty)"),
     imageQuery: z.string().optional().describe("Optional search query to find a relevant image for this hint. MUST include the city/place name for relevant results! (e.g. 'كنافة نابلسية', 'المسجد الأقصى القدس', 'برتقال يافا'). Use specific landmark names, not generic descriptions."),
   }),
-  execute: async ({ hint, hintNumber, pointsDeduction, imageQuery }) => {
+  execute: async ({ hint, pointsDeduction, imageQuery }) => {
     let images;
     if (imageQuery) {
       try {
@@ -45,7 +45,7 @@ export const giveHintTool = tool({
         // Silently skip images on failure
       }
     }
-    return { hint, hintNumber, pointsDeduction, images };
+    return { hint, pointsDeduction, images };
   },
 });
 

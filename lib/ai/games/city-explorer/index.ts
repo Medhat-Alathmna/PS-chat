@@ -42,18 +42,17 @@ export const trimCompletedRounds = true;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildTools(correctCityNameAr: string, correctCityId?: string): Record<string, any> {
-  // Wrap give_hint to inject the target city ID for frontend map zoom on first hint
+  // Wrap give_hint to inject the target city ID for frontend map zoom
   const wrappedGiveHint = correctCityId
     ? tool({
         description:
-          "Use this tool to give the player a hint. Hints should be progressive (first hint is vague, second more specific) and match the content complexity level. Optionally include imageQuery to show a relevant image alongside the hint. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
+          "Use this tool to provide a hint for the current question. ALWAYS call this together with present_options in the SAME response. The hint will be hidden until the player requests it. Points deduction: Easy=0 (free!), Medium=1, Hard=2.",
         inputSchema: z.object({
-          hint: z.string().describe("The hint text in Palestinian Arabic"),
-          hintNumber: z.number().describe("Which hint this is (1, 2, 3...)"),
+          hint: z.string().describe("The hint text in Palestinian Arabic - should help without giving away the answer directly"),
           pointsDeduction: z.number().describe("Points deducted for using this hint: Easy=0, Medium=1, Hard=2 (system calculates based on difficulty)"),
           imageQuery: z.string().optional().describe("Optional search query to find a relevant image for this hint. MUST include the city/place name for relevant results! (e.g. 'كنافة نابلسية', 'المسجد الأقصى القدس', 'برتقال يافا'). Use specific landmark names, not generic descriptions."),
         }),
-        execute: async ({ hint, hintNumber, pointsDeduction, imageQuery }) => {
+        execute: async ({ hint, pointsDeduction, imageQuery }) => {
           let images;
           if (imageQuery) {
             try {
@@ -65,7 +64,7 @@ export function buildTools(correctCityNameAr: string, correctCityId?: string): R
               // Silently skip images on failure
             }
           }
-          return { hint, hintNumber, pointsDeduction, images, targetCityId: correctCityId };
+          return { hint, pointsDeduction, images, targetCityId: correctCityId };
         },
       })
     : giveHintTool;
@@ -119,24 +118,22 @@ Your goal: teach kids about Palestinian cities in a fun way — their famous foo
 ### How to Play (STEP BY STEP):
 1. Read the "City Data" section — it contains the city name, region, and numbered facts
 2. **Your opening clue**: Rephrase **fact #1** from City Data into a vague hint (do NOT mention the city name!)
-3. Use present_options to show city choices — ⚠️ the CORRECT_ANSWER city **MUST** be one of the options!
-4. If they don't know → use give_hint with hintNumber=1 — rephrase **fact #2** from City Data
-5. If they still don't know → use give_hint with hintNumber=2 — rephrase **fact #3** from City Data
-6. Use check_answer when they answer (they will send the exact text of the option they chose, or type a city name)
-7. After a correct answer → enter **TOUR MODE**: welcome the player to the city using the City Description, use image_search for a celebratory image, and offer explore options via suggest_replies
-8. In tour mode, drip-feed famousFor categories one at a time (food → landmark → craft) using present_options for fun choices and image_search for visuals
-9. When the player taps "السؤال الجاي" (or you've explored all categories), use advance_round to move to the next city
-10. ❌ NEVER use location_search — the map handles city locations automatically
-11. ❌ NEVER mention coordinates, latitude, longitude, or map positions in your text
+3. **ALWAYS** call present_options + give_hint together in the SAME response — the hint will be hidden until the player requests it
+4. The hint should rephrase **fact #2** from City Data — something different from your opening clue
+5. Use check_answer when they answer (they will send the exact text of the option they chose, or type a city name)
+6. After a correct answer → enter **TOUR MODE**: welcome the player to the city using the City Description, use image_search for a celebratory image, and offer explore options via suggest_replies
+7. In tour mode, drip-feed famousFor categories one at a time (food → landmark → craft) using present_options for fun choices and image_search for visuals
+8. When the player taps "السؤال الجاي" (or you've explored all categories), use advance_round to move to the next city
+9. ❌ NEVER use location_search — the map handles city locations automatically
+10. ❌ NEVER mention coordinates, latitude, longitude, or map positions in your text
 
-### ⚠️ CRITICAL — Hint-to-Fact Mapping (MUST FOLLOW!):
+### ⚠️ CRITICAL — Pre-generated Hint System (MUST FOLLOW!):
 - Your opening clue = rephrase **fact #1** from the City Data section
-- give_hint(hintNumber=1) = rephrase **fact #2** from the City Data section
-- give_hint(hintNumber=2) = rephrase **fact #3** from the City Data section
-- Each hint MUST come from a DIFFERENT numbered fact — never repeat the same fact!
+- give_hint = rephrase **fact #2** from the City Data section (sent together with present_options, but hidden until requested)
 - "Rephrase" means put the fact in your own words in Palestinian Arabic — but the CONTENT must match the provided fact
 - ❌ NEVER invent your own facts about the city — ONLY use what's in City Data!
 - ❌ NEVER describe a different city than CORRECT_ANSWER!
+- ❌ NEVER call give_hint without present_options — they must be called together!
 
 ### Important: When the player responds, they will send the exact text of the option they selected, not a number.
 
@@ -160,11 +157,10 @@ Your goal: teach kids about Palestinian cities in a fun way — their famous foo
 
 **3. Player picks a valid Palestinian city but the WRONG one:**
 - Use check_answer(correct: false) with a SHORT encouragement (max 1 sentence! e.g. "لا مش هاي! 😊")
-- IMMEDIATELY follow with give_hint (next hint number) — don't wait, combine both tools in one response!
-- The hint should use a DIFFERENT fact from the city data to help them
 - Do NOT call present_options again — the UI keeps the original options active after a wrong answer
 - Do NOT call advance_round — stay on the same city until they get it right or give up
-- ❌ NEVER write a long paragraph after wrong answer — keep it SHORT and move to hint
+- ❌ NEVER write a long paragraph after wrong answer — keep it SHORT and encouraging!
+- Note: The pre-generated hint is already available — the player can tap the hint button if needed
 
 **4. Player gives a vague/partial answer:**
 - If they say something like "المدينة اللي على البحر" (the city by the sea) — that's not a specific answer. Don't use check_answer. Instead ask them to be more specific or pick from the options
@@ -440,8 +436,8 @@ function buildSuggestRepliesRules(age: number): string {
   const frequency = age <= 7
     ? "ALWAYS use suggest_replies after every message — young kids struggle with typing"
     : age <= 9
-    ? "Use suggest_replies often — helpful for most kids"
-    : "Use suggest_replies occasionally — older kids can type but it speeds things up";
+      ? "Use suggest_replies often — helpful for most kids"
+      : "Use suggest_replies occasionally — older kids can type but it speeds things up";
 
   return `## Quick Reply Suggestions (suggest_replies) 💬 — Typed Chips
 - Use suggest_replies to show tappable suggestion chips the kid can tap instead of typing
