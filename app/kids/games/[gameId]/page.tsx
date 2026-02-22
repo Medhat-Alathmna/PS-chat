@@ -685,16 +685,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   />
                 ))}
 
-                {/* Active options — render prominently at bottom (hidden when hint is shown) */}
-                {activeOptions && !showPendingHint && (
-                  <ActiveOptionsBlock
-                    optionsData={activeOptions.data}
-                    onOptionClick={handleOptionClick}
-                    onHintClick={handleHintClick}
-                  />
-                )}
-
-                {/* Pending hint bubble — shown when player taps hint button */}
+                {/* Pending hint bubble — shown when player taps hint button (ABOVE options) */}
                 {showPendingHint && pendingHint && (
                   <div className="px-4 py-3 rounded-2xl shadow-md bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-300 animate-pop-in">
                     <div className="flex items-center gap-2 mb-2">
@@ -724,6 +715,16 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                       </div>
                     )}
                   </div>
+                )}
+
+                {/* Active options — render prominently at bottom (always visible for selection) */}
+                {activeOptions && (
+                  <ActiveOptionsBlock
+                    optionsData={activeOptions.data}
+                    onOptionClick={handleOptionClick}
+                    onHintClick={handleHintClick}
+                    hintAlreadyShown={showPendingHint}
+                  />
                 )}
 
                 {/* Quick reply suggestions — below the last assistant message */}
@@ -841,10 +842,12 @@ function ActiveOptionsBlock({
   optionsData,
   onOptionClick,
   onHintClick,
+  hintAlreadyShown = false,
 }: {
   optionsData: OptionsData;
   onOptionClick: (text: string) => void;
   onHintClick: () => void;
+  hintAlreadyShown?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3 animate-pop-in my-2">
@@ -866,7 +869,8 @@ function ActiveOptionsBlock({
         ))}
       </div>
 
-      {optionsData.allowHint && (
+      {/* Only show hint button if hint is allowed AND not already shown */}
+      {optionsData.allowHint && !hintAlreadyShown && (
         <button
           onClick={() => onHintClick()}
           className="self-center mt-2 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm sm:text-base font-bold bg-yellow-100 text-yellow-800 border-2 border-yellow-300 hover:bg-yellow-200 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"
