@@ -124,6 +124,145 @@ const TOOL_REFERENCE = `## Tool Combos:
 - type: "photo" (needs actionQuery) | "map" (needs actionQuery) | "curiosity" | "activity"
 - Example: { text: "وريني صور!", type: "photo", actionQuery: "نابلس البلدة القديمة" }`;
 
+// ── City Selection System (Smart + Region Diverse + Progressive) ────────
+
+/**
+ * City fame levels for progressive difficulty
+ * Cities are ranked by how well-known they are to Palestinian children
+ */
+const CITY_FAME_LEVELS = {
+  // Tier 1: Most famous - every Palestinian kid knows these
+  famous: [
+    "jerusalem", "nablus", "gaza", "haifa", "jaffa", "hebron", 
+    "bethlehem", "ramallah", "jericho", "nazareth"
+  ],
+  // Tier 2: Well known - most kids would recognize
+  known: [
+    "acre", "tulkarm", "jenin", "qalqilya", "salfit", "tubas",
+    "khan-yunis", "rafah", "deir-al-balah", "beersheba", "safad", "tiberias"
+  ],
+  // Tier 3: Less known - require more knowledge
+  lessKnown: [
+    "beisan", "ramla", "lod", "ashkelon", "ashdod", "um-al-fahm",
+    "shefa-amr", "tayibe", "baqa-al-gharbiyye", "sakhnin", "arraba",
+    "tamra", "maghar", "kafr-qasim", "rahat", "sebastia", "yibna",
+    "majdal-krum", "umm-rashrash", "ras-al-naqoura", "al-bireh",
+    "beit-jala", "beit-sahour", "qalansawe"
+  ]
+} as const;
+
+/**
+ * Preferred region order for diverse gameplay
+ * Each round should ideally be from a different region
+ */
+const REGION_PRIORITY: CityRegion[] = [
+  "west-bank",  // Start with heart of Palestine
+  "galilee",    // Then north
+  "coast",      // Then coast
+  "gaza",       // Then Gaza
+  "interior",   // Then 1948 territories
+  "negev"       // Finally south
+];
+
+type CityRegion = "west-bank" | "gaza" | "interior" | "galilee" | "negev" | "coast";
+
+/**
+ * Get fame tier for a city
+ */
+function getCityFameTier(cityId: string): "famous" | "known" | "lessKnown" {
+  if (CITY_FAME_LEVELS.famous.includes(cityId as typeof CITY_FAME_LEVELS.famous[number])) return "famous";
+  if (CITY_FAME_LEVELS.known.includes(cityId as typeof CITY_FAME_LEVELS.known[number])) return "known";
+  return "lessKnown";
+}
+
+/**
+ * Smart city selection with:
+ * 1. Progressive difficulty (famous cities first)
+ * 2. Regional diversity (different regions each round)
+ * 3. Deterministic seed for consistent sessions
+ */
+export function getCityForRound(
+  excludeIds?: string[],
+  roundNumber: number = 1,
+  difficulty: GameDifficulty = "medium",
+  sessionSeed?: number
+): { city: City; isReviewMode: boolean } {
+  // Get available cities
+  const pool = excludeIds?.length
+    ? CITIES.filter((c) => !excludeIds.includes(c.id))
+    : CITIES;
+
+  const isReviewMode = pool.length === 0;
+  if (isReviewMode) {
+    // All cities discovered - random pick from all
+    const index = sessionSeed !== undefined 
+      ? Math.abs(sessionSeed + roundNumber) % CITIES.length 
+      : Math.floor(Math.random() * CITIES.length);
+    return { city: CITIES[index], isReviewMode };
+  }
+
+  // Determine fame tier based on round number and difficulty
+  let fameTier: "famous" | "known" | "lessKnown";
+  
+  if (difficulty === "easy") {
+    // Easy: always famous cities
+    fameTier = "famous";
+  } else if (difficulty === "hard") {
+    // Hard: start with less known, progress to known
+    fameTier = roundNumber <= 2 ? "lessKnown" : "known";
+  } else {
+    // Medium: famous first, then known
+    fameTier = roundNumber <= 2 ? "famous" : "known";
+  }
+
+  // Get cities from the appropriate fame tier
+  const tierCityIds = CITY_FAME_LEVELS[fameTier] as readonly string[];
+  const tierCities = pool.filter(c => tierCityIds.includes(c.id));
+
+  // If no cities in this tier, fall back to available pool
+  const candidates = tierCities.length > 0 ? tierCities : pool;
+
+  // Try to pick from a different region than previous rounds
+  const usedRegions = excludeIds
+    ? CITIES.filter(c => excludeIds.includes(c.id)).map(c => c.region)
+    : [];
+
+  // Find a city from an unused region if possible
+  const regionOrder = REGION_PRIORITY.filter(r => !usedRegions.includes(r));
+  for (const region of regionOrder) {
+    const regionCities = candidates.filter(c => c.region === region);
+    if (regionCities.length > 0) {
+      // Use session seed for deterministic selection, or random
+      const index = sessionSeed !== undefined
+        ? Math.abs(sessionSeed * roundNumber) % regionCities.length
+        : Math.floor(Math.random() * regionCities.length);
+      return { city: regionCities[index], isReviewMode: false };
+    }
+  }
+
+  // Fall back to any available city
+  const index = sessionSeed !== undefined
+    ? Math.abs(sessionSeed + roundNumber) % candidates.length
+    : Math.floor(Math.random() * candidates.length);
+  
+  return { city: candidates[index], isReviewMode: false };
+}
+
+/**
+ * Get next regions for hint context
+ */
+export function getNextRegionHint(currentRegion: CityRegion): string {
+  const hints: Record<CityRegion, string> = {
+    "west-bank": "بالضفة الغربية",
+    "gaza": "بقطاع غزة",
+    "interior": "بالداخل المحتل",
+    "galilee": "بالجليل",
+    "negev": "بالنقب",
+    "coast": "على الساحل"
+  };
+  return hints[currentRegion] || "";
+}
+
 // ── Complexity System ─────────────────────────────────────────────────
 
 function getContentComplexity(age: number, difficulty: GameDifficulty): number {
@@ -148,27 +287,6 @@ function buildDifficultySection(difficulty: GameDifficulty, age: number): string
   return `## Difficulty: ${difficulty.toUpperCase()} (Level ${level}/10)
 ${getComplexityGuidance(level)}
 - Options: ${options} | Hint cost: ${hintCost}`;
-}
-
-// ── Data Provider ─────────────────────────────────────────────────────
-
-export function getCityForRound(
-  excludeIds?: string[],
-  roundSeed?: number
-): { city: City; isReviewMode: boolean } {
-  const pool = excludeIds?.length
-    ? CITIES.filter((c) => !excludeIds.includes(c.id))
-    : CITIES;
-
-  const isReviewMode = pool.length === 0;
-  const candidates = isReviewMode ? CITIES : pool;
-
-  const index =
-    roundSeed !== undefined
-      ? Math.abs(roundSeed) % candidates.length
-      : Math.floor(Math.random() * candidates.length);
-
-  return { city: candidates[index], isReviewMode };
 }
 
 /**
@@ -200,7 +318,7 @@ ${facts}
 
 /** @deprecated Use getCityForRound + formatCityData */
 export function getData(excludeIds?: string[], roundSeed?: number): string {
-  const { city, isReviewMode } = getCityForRound(excludeIds, roundSeed);
+  const { city, isReviewMode } = getCityForRound(excludeIds, 1, "medium", roundSeed);
   return formatCityData(city, isReviewMode);
 }
 
@@ -212,9 +330,10 @@ export function buildSystemPrompt(
   playerName?: string,
   chatContext?: KidsChatContext,
   excludeIds?: string[],
-  roundSeed?: number
+  roundNumber: number = 1,
+  sessionSeed?: number
 ): string {
-  const { city, isReviewMode } = getCityForRound(excludeIds, roundSeed);
+  const { city, isReviewMode } = getCityForRound(excludeIds, roundNumber, difficulty, sessionSeed);
   const regionInfo = REGIONS[city.region];
   
   const parts: string[] = [
