@@ -96,6 +96,8 @@ function KidsChatPageInner() {
   // Direct images from photo chip (no AI round-trip)
   const [directImages, setDirectImages] = useState<ImageResult[]>([]);
   const [directImagesLoading, setDirectImagesLoading] = useState(false);
+  // Persisted map of messageId → images so they survive the next send
+  const [persistedImages, setPersistedImages] = useState<Record<string, ImageResult[]>>({});
 
   // Background music - Use context from layout to avoid duplicate music
   const { isPlaying: isMusicPlaying, toggle: toggleMusic, isLoaded: isMusicLoaded } = useBackgroundMusicContext();
@@ -494,6 +496,18 @@ api: "/api/chat",
     }
   }, [isLoading, messages, playDing, addTopic]);
 
+  // When directImages load, pin them to the last assistant message so they
+  // survive the next user send (which clears directImages)
+  useEffect(() => {
+    if (directImages.length === 0) return;
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    if (!lastAssistant) return;
+    setPersistedImages((prev) => ({
+      ...prev,
+      [lastAssistant.id]: directImages,
+    }));
+  }, [directImages, messages]);
+
   // Auto-highlight cities when AI mentions them
   useEffect(() => {
     if (messages.length === 0) return;
@@ -765,14 +779,10 @@ api: "/api/chat",
             <main className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 py-3 scroll-smooth" ref={chatContainerRef}>
               <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
                 {messages.map((message, index) => {
-                  // Inject directImages into the last assistant message so they
-                  // appear inside that bubble (beside the text) instead of floating below
-                  const isLastAssistant =
-                    message.role === "assistant" && index === messages.length - 1;
-                  const displayMessage =
-                    isLastAssistant && directImages.length > 0
-                      ? { ...message, images: [...(message.images ?? []), ...directImages] }
-                      : message;
+                  const extra = persistedImages[message.id];
+                  const displayMessage = extra?.length
+                    ? { ...message, images: [...(message.images ?? []), ...extra] }
+                    : message;
                   return (
                     <KidsChatBubble
                       key={message.id}
