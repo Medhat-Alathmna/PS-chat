@@ -165,6 +165,7 @@ export function useProfiles() {
         localStorage.removeItem(`falastin_kids_rewards_${id}`);
         localStorage.removeItem(`falastin_kids_chat_context_${id}`);
         localStorage.removeItem(`falastin_kids_map_settings_${id}`);
+        localStorage.removeItem(`falastin_stories_${id}`);
         // Remove game states for this profile
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
