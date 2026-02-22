@@ -79,11 +79,30 @@ export default function GameChatBubble({
           style={{ backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` }}
         >
           <p className="leading-relaxed text-gray-700 whitespace-pre-wrap" dir="auto" style={textStyle}>
-            {content}
-            {isStreaming && (
-              <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
+              {content}
+              {isStreaming && (
+                <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
+              )}
+            </p>
+            {imageResults && imageResults.length > 0 && (
+              <div className="mt-3 grid grid-cols-2 gap-2 animate-pop-in">
+                {imageResults.slice(0, 4).map((img, i) => (
+                  <div
+                    key={i}
+                    className="relative rounded-xl overflow-hidden border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform shadow-sm"
+                    onClick={() => setExpandedImage(img.imageUrl || img.thumbnailUrl)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.thumbnailUrl || img.imageUrl}
+                      alt={img.title}
+                      className="w-full aspect-[4/3] object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
             )}
-          </p>
         </div>
 
         {/* Answer result overlay */}
@@ -143,27 +162,6 @@ export default function GameChatBubble({
           </div>
         )}
 
-
-        {/* Standalone image results (from image_search tool) */}
-        {imageResults && imageResults.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 animate-pop-in">
-            {imageResults.slice(0, 4).map((img, i) => (
-              <div
-                key={i}
-                className="relative rounded-xl overflow-hidden border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform shadow-sm"
-                onClick={() => setExpandedImage(img.imageUrl || img.thumbnailUrl)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.thumbnailUrl || img.imageUrl}
-                  alt={img.title}
-                  className="w-full h-28 sm:h-32 object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Speaking indicator */}
         {!isStreaming && onSpeak && (

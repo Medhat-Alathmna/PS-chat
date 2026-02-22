@@ -142,7 +142,7 @@ export default function KidsChatBubble({
           )}
         </div>
 
-        {/* Images */}
+        {/* Images — below text, full bubble width */}
         {message.images && message.images.length > 0 && (
           <div className="mt-3 grid grid-cols-2 gap-2 animate-pop-in">
             {message.images.slice(0, 4).map((img, i) => (

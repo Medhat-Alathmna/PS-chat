@@ -764,44 +764,39 @@ api: "/api/chat",
             {/* Chat Messages */}
             <main className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 py-3 scroll-smooth" ref={chatContainerRef}>
               <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
-                {messages.map((message, index) => (
-                  <KidsChatBubble
-                    key={message.id}
-                    message={message}
-                    isStreaming={
-                      status === "streaming" &&
-                      index === messages.length - 1 &&
-                      message.role === "assistant"
-                    }
-                    isSpeaking={currentMessageId === message.id}
-                    onSpeak={() => speakMessage(message)}
-                    onStopSpeaking={stopSpeaking}
-                    textStyle={textStyle}
-                  />
-                ))}
+                {messages.map((message, index) => {
+                  // Inject directImages into the last assistant message so they
+                  // appear inside that bubble (beside the text) instead of floating below
+                  const isLastAssistant =
+                    message.role === "assistant" && index === messages.length - 1;
+                  const displayMessage =
+                    isLastAssistant && directImages.length > 0
+                      ? { ...message, images: [...(message.images ?? []), ...directImages] }
+                      : message;
+                  return (
+                    <KidsChatBubble
+                      key={message.id}
+                      message={displayMessage}
+                      isStreaming={
+                        status === "streaming" &&
+                        index === messages.length - 1 &&
+                        message.role === "assistant"
+                      }
+                      isSpeaking={currentMessageId === message.id}
+                      onSpeak={() => speakMessage(message)}
+                      onStopSpeaking={stopSpeaking}
+                      textStyle={textStyle}
+                    />
+                  );
+                })}
 
-                {/* Direct images from photo chip */}
+                {/* Direct images loading indicator */}
                 {directImagesLoading && (
                   <div className="flex justify-center py-4 animate-fade-in">
                     <div className="flex items-center gap-2 text-blue-500 font-bold">
                       <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
                       <span>جاري تحميل الصور...</span>
                     </div>
-                  </div>
-                )}
-                {directImages.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 animate-pop-in">
-                    {directImages.map((img) => (
-                      <div key={img.id} className="rounded-xl overflow-hidden shadow-sm border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.thumbnailUrl || img.imageUrl}
-                          alt={img.title}
-                          className="w-full aspect-[4/3] object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    ))}
                   </div>
                 )}
 
