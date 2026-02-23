@@ -44,25 +44,25 @@ function getGenreGuidance(genre: StoryConfig["genre"]): string {
 function getSettingGuidance(setting: StoryConfig["setting"]): string {
   const guidance: Record<StoryConfig["setting"], string> = {
     jerusalem:
-      "Describe the Old City's golden stones, the Dome of the Rock's golden dome, narrow alleyways, ka'ak bread sellers, and the peaceful call to prayer.",
+      "Describe the Old City's golden stones glowing in sunset, the Dome of the Rock's magnificent golden dome, narrow alleyways filled with spice scents, ka'ak bread sellers calling out warmly, and the peaceful call to prayer echoing gently.",
     nablus:
-      "Feature the famous kunafa, old soap factories, Mount Gerizim views, and the warmth of Nabulsi hospitality.",
+      "Feature the famous sweet kunafa glistening with syrup, old soap factories with olive oil scents, Mount Gerizim's majestic views, and the warmth of Nabulsi hospitality in every corner.",
     jaffa:
-      "Paint the sea breeze, orange groves, the ancient port, old clock tower, and fishermen's boats.",
+      "Paint the refreshing sea breeze, fragrant orange groves stretching to the horizon, the ancient port with colorful boats, the old clock tower standing proud, and fishermen mending their nets by the shore.",
     gaza:
-      "Describe the Mediterranean waves, fishing boats, vibrant markets, and the resilient spirit of its people.",
+      "Describe the Mediterranean waves dancing on golden sand, colorful fishing boats at dawn, vibrant markets filled with spices and laughter, and the resilient, welcoming spirit of its people.",
     bethlehem:
-      "Feature the Church of the Nativity, olive wood crafts, starry nights, and shepherd hills.",
+      "Feature the ancient Church of the Nativity, skilled artisans carving olive wood, peaceful starry nights over shepherd hills, and the timeless magic of the birthplace of stories.",
     hebron:
-      "Describe the Ibrahimi Mosque, glass-blowing workshops, grape vines, and ancient markets.",
+      "Describe the majestic Ibrahimi Mosque, artisans blowing glass into beautiful shapes, grape vines climbing ancient terraces, and bustling markets echoing with friendly greetings.",
     acre:
-      "Feature the crusader tunnels, sea walls, old fishermen's port, and hummus restaurants.",
+      "Feature the mysterious crusader tunnels, sturdy sea walls against blue waves, the old fishermen's port with fresh catch, and hummus restaurants welcoming every visitor.",
     "enchanted-forest":
-      "Describe glowing mushrooms, talking trees, hidden paths, fairy lights, and magical streams.",
+      "Describe glowing mushrooms illuminating mossy paths, ancient talking oak trees sharing wisdom, hidden fairy villages among twisted roots, crystal-clear streams with golden fish, friendly squirrels and rabbits as guides, and fireflies forming shapes to guide travelers. The forest feels alive and welcoming.",
     "flying-castle":
-      "Paint towers among clouds, rainbow bridges, wind gardens, and rooms that change with your mood.",
+      "Paint majestic towers floating among fluffy clouds, rainbow bridges connecting sparkling towers, wind gardens with singing flowers, rooms that change colors based on mood, friendly cloud creatures as helpers, and windows showing breathtaking views of the world below.",
     "underwater-kingdom":
-      "Describe coral palaces, pearl streets, seahorse carriages, and bioluminescent gardens.",
+      "Describe coral palaces with pearl-encrusted walls glowing softly, streets made of rainbow seashells, seahorse carriages trotting elegantly, bioluminescent gardens dancing with light, friendly dolphins as playful companions, and mermaid friends who sing beautiful songs.",
   };
   return guidance[setting];
 }
@@ -77,15 +77,16 @@ export function buildStorySystemPrompt(
   const genre = getGenreOption(config.genre);
   const setting = getSettingOption(config.setting);
   const lengthConfig = getLengthConfig(config.length);
-  const companion = STORY_COMPANIONS.find((c) => c.id === config.companion)!;
+  const companion = STORY_COMPANIONS.find((c) => c.id === config.companion);
+  if (!companion) {
+    throw new Error(`Invalid companion: ${config.companion}`);
+  }
   const isInteractive = config.mode === "interactive";
 
   const heroDescription =
-    config.companion === "self" && playerName
-      ? `The hero is the child themselves: "${playerName}". Make them brave and clever.`
-      : config.companion === "self"
-        ? "The hero is the child themselves. Make them brave and clever."
-        : `The hero's companion is مدحت (Medhat), a cheerful Palestinian fox 🦊 who loves adventure. Medhat is funny, encouraging, and loyal.`;
+    config.companion === "self"
+      ? `The hero is the child themselves${playerName ? `: "${playerName}"` : ""}. Make them brave and clever.`
+      : `The hero's companion is مدحت (Medhat), a cheerful Palestinian fox 🦊 who loves adventure. Medhat is funny, encouraging, and loyal.${playerName ? ` The child "${playerName}" is the story's hero, accompanied by Medhat.` : ""}`;
 
   const totalPages = lengthConfig.pages;
   const choiceInterval = totalPages <= 5 ? 2 : 3;
@@ -139,8 +140,23 @@ Your tools: story_page, story_choice, end_story
 - end_story generates a creative Arabic title automatically
 - Total pages should be approximately ${totalPages}
 
+### Choice Impact Guidelines:
+- Each choice should meaningfully change the story direction
+- Brave choices → show courage being rewarded
+- Cautious choices → show wisdom and clever solutions
+- Creative choices → lead to wonderful surprises
+- ALL choices lead to happy endings
+- Never make a child feel their choice was "wrong"
+- Vary the path slightly based on choices to feel organic
+
 ### First Turn:
-On the FIRST message, output ${Math.min(choiceInterval, 2)} story_page calls to begin the story, then a story_choice to let the child decide what happens next. Start with an exciting opening!`
+On the FIRST message, output ${Math.min(choiceInterval, 2)} story_page calls to begin the story, then a story_choice to let the child decide what happens next. Start with an exciting opening!
+
+### Example Output Pattern:
+[story_page page 1]: "كان يا ما كان في قديم الزمان..."
+[story_page page 2]: "وصل البطل إلى الغابة المسحورة..."
+[story_choice]: { prompt: "ماذا يفعل البطل الآن؟", choices: [...] }
+[STOP — wait for child's response!]`
       : `## Tool Flow (CRITICAL — follow exactly!)
 
 Your tools: story_page, end_story

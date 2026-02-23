@@ -19,7 +19,7 @@ function StoriesHome() {
   const router = useRouter();
   const { activeProfile, isLoaded } = useProfiles();
   const profileId = activeProfile?.id;
-  const { stories, isLoaded: storiesLoaded } = useStories(profileId);
+  const { stories, isLoaded: storiesLoaded, deleteStory } = useStories(profileId);
 
   if (!isLoaded || !storiesLoaded) return null;
 
@@ -77,6 +77,7 @@ function StoriesHome() {
                       onClick={() =>
                         router.push(`/kids/games/stories/${story.id}`)
                       }
+                      onDelete={() => deleteStory(story.id)}
                     />
                   ))}
                 </div>
@@ -97,6 +98,7 @@ function StoriesHome() {
                       onClick={() =>
                         router.push(`/kids/games/stories/${story.id}`)
                       }
+                      onDelete={() => deleteStory(story.id)}
                     />
                   ))}
                 </div>
