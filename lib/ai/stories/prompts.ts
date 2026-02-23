@@ -78,6 +78,7 @@ export function buildStorySystemPrompt(
   const setting = getSettingOption(config.setting);
   const lengthConfig = getLengthConfig(config.length);
   const companion = STORY_COMPANIONS.find((c) => c.id === config.companion)!;
+  const isInteractive = config.mode === "interactive";
 
   const heroDescription =
     config.companion === "self" && playerName
@@ -91,7 +92,7 @@ export function buildStorySystemPrompt(
 
   const parts: string[] = [
     // 1. Role & Language
-    `You are a master storyteller for children. You write interactive bedtime stories in Modern Standard Arabic (MSA / الفصحى).
+    `You are a master storyteller for children. You write ${isInteractive ? "interactive " : ""}bedtime stories in Modern Standard Arabic (MSA / الفصحى).
 NEVER use dialect. Always use clear, beautiful فصحى.`,
 
     // 2. Story Parameters
@@ -100,7 +101,6 @@ NEVER use dialect. Always use clear, beautiful فصحى.`,
 - Setting: ${setting.nameAr} ${setting.emoji}
 - Companion: ${companion.nameAr} ${companion.emoji}
 - Total Pages: ${totalPages}
-- Choice Points: Present choices every ${choiceInterval}-${choiceInterval + 1} pages
 - ${heroDescription}`,
 
     // 3. Vocabulary
@@ -118,8 +118,9 @@ ${getGenreGuidance(config.genre)}`,
     `## Setting Guidance: ${setting.nameAr}
 ${getSettingGuidance(config.setting)}`,
 
-    // 6. Tool Flow
-    `## Tool Flow (CRITICAL — follow exactly!)
+    // 6. Tool Flow — differs by mode
+    isInteractive
+      ? `## Tool Flow (CRITICAL — follow exactly!)
 
 Your tools: story_page, story_choice, end_story
 
@@ -139,7 +140,22 @@ Your tools: story_page, story_choice, end_story
 - Total pages should be approximately ${totalPages}
 
 ### First Turn:
-On the FIRST message, output ${Math.min(choiceInterval, 2)} story_page calls to begin the story, then a story_choice to let the child decide what happens next. Start with an exciting opening!`,
+On the FIRST message, output ${Math.min(choiceInterval, 2)} story_page calls to begin the story, then a story_choice to let the child decide what happens next. Start with an exciting opening!`
+      : `## Tool Flow (CRITICAL — follow exactly!)
+
+Your tools: story_page, end_story
+
+### Pattern:
+Generate ALL ${totalPages} pages in one response, then end the story.
+1. Call story_page for page 1, page 2, page 3, ... page ${totalPages}
+2. After the last page (isLastPage=true), call end_story
+
+### Rules:
+- Each story_page has 5-6 lines of Arabic text
+- Call story_page once for each page, in order (page 1 through ${totalPages})
+- Build a complete story arc: introduction → rising action → climax → resolution
+- After the final story_page, call end_story with a creative Arabic title
+- Generate ALL pages in a single response — do NOT stop partway`,
 
     // 7. Player Name
     playerName
@@ -149,15 +165,23 @@ On the FIRST message, output ${Math.min(choiceInterval, 2)} story_page calls to 
     // 8. Safety
     SAFETY_RULES,
 
-    // 9. Critical Checklist (recency bias — LLM pays attention to end)
-    `## ⚠️ CHECKLIST (read before EVERY response):
+    // 9. Critical Checklist
+    isInteractive
+      ? `## ⚠️ CHECKLIST (read before EVERY response):
 ✅ Writing in MSA (الفصحى), NOT dialect?
 ✅ Each page is 5-6 lines?
 ✅ Used story_page tool for each page?
 ✅ Presented story_choice after ${choiceInterval}-${choiceInterval + 1} pages?
 ✅ STOPPED after story_choice? (Don't continue until child responds!)
 ✅ Story matches genre (${genre.nameAr}) and setting (${setting.nameAr})?
-✅ On last page, called end_story with a creative title?`,
+✅ On last page, called end_story with a creative title?`
+      : `## ⚠️ CHECKLIST (read before responding):
+✅ Writing in MSA (الفصحى), NOT dialect?
+✅ Each page is 5-6 lines?
+✅ Used story_page tool for each page?
+✅ Generated ALL ${totalPages} pages in this response?
+✅ Story matches genre (${genre.nameAr}) and setting (${setting.nameAr})?
+✅ Called end_story with a creative title after the last page?`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

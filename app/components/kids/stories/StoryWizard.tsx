@@ -7,6 +7,7 @@ import type {
   StorySetting,
   StoryCompanion,
   StoryLength,
+  StoryMode,
   WizardStep,
 } from "@/lib/types/stories";
 import {
@@ -14,6 +15,7 @@ import {
   STORY_SETTINGS,
   STORY_COMPANIONS,
   STORY_LENGTHS,
+  STORY_MODES,
 } from "@/lib/data/stories/config";
 
 interface StoryWizardProps {
@@ -21,13 +23,14 @@ interface StoryWizardProps {
   onBack: () => void;
 }
 
-const STEPS: WizardStep[] = ["genre", "setting", "companion", "length"];
+const STEPS: WizardStep[] = ["genre", "setting", "companion", "length", "mode"];
 
 const STEP_LABELS: Record<WizardStep, string> = {
   genre: "نوع القصة",
   setting: "مكان القصة",
   companion: "رفيق المغامرة",
   length: "طول القصة",
+  mode: "أسلوب القصة",
 };
 
 export default function StoryWizard({ onComplete, onBack }: StoryWizardProps) {
@@ -36,6 +39,7 @@ export default function StoryWizard({ onComplete, onBack }: StoryWizardProps) {
   const [setting, setSetting] = useState<StorySetting | null>(null);
   const [companion, setCompanion] = useState<StoryCompanion | null>(null);
   const [length, setLength] = useState<StoryLength | null>(null);
+  const [mode, setMode] = useState<StoryMode | null>(null);
 
   const currentStep = STEPS[stepIndex];
 
@@ -65,15 +69,20 @@ export default function StoryWizard({ onComplete, onBack }: StoryWizardProps) {
     autoAdvance(3);
   }, [autoAdvance]);
 
-  // Last step — auto-complete after selection
   const pickLength = useCallback((id: StoryLength) => {
     setLength(id);
-    if (genre && setting && companion) {
+    autoAdvance(4);
+  }, [autoAdvance]);
+
+  // Last step — auto-complete after selection
+  const pickMode = useCallback((id: StoryMode) => {
+    setMode(id);
+    if (genre && setting && companion && length) {
       setTimeout(() => {
-        onComplete({ genre, setting, companion, length: id });
+        onComplete({ genre, setting, companion, length, mode: id });
       }, 300);
     }
-  }, [genre, setting, companion, onComplete]);
+  }, [genre, setting, companion, length, onComplete]);
 
   const handleBack = useCallback(() => {
     if (stepIndex === 0) {
@@ -248,6 +257,27 @@ export default function StoryWizard({ onComplete, onBack }: StoryWizardProps) {
                     <span className="text-white/50 text-sm">{l.descriptionAr}</span>
                   </div>
                 </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Mode step */}
+        {currentStep === "mode" && (
+          <div className="flex flex-col gap-4 max-w-sm mx-auto mt-4">
+            {STORY_MODES.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => pickMode(m.id)}
+                className={`p-6 rounded-2xl text-center transition-all duration-200 border-2 ${
+                  mode === m.id
+                    ? "border-white/60 bg-white/20 scale-105 shadow-lg"
+                    : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30"
+                }`}
+              >
+                <span className="text-5xl block mb-3">{m.emoji}</span>
+                <span className="text-white font-bold text-lg block">{m.nameAr}</span>
+                <span className="text-white/50 text-sm block mt-1">{m.descriptionAr}</span>
               </button>
             ))}
           </div>

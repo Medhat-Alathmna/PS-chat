@@ -36,11 +36,14 @@ export type StoryLengthConfig = {
   emoji: string;
 };
 
+export type StoryMode = "interactive" | "continuous";
+
 export type StoryConfig = {
   genre: StoryGenre;
   setting: StorySetting;
   companion: StoryCompanion;
   length: StoryLength;
+  mode: StoryMode;
 };
 
 export type StoryPage = {
@@ -73,7 +76,7 @@ export type SavedStory = {
   completedAt?: number;
 };
 
-export type WizardStep = "genre" | "setting" | "companion" | "length";
+export type WizardStep = "genre" | "setting" | "companion" | "length" | "mode";
 
 export type GenreOption = {
   id: StoryGenre;

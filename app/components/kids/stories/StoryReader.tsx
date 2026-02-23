@@ -46,12 +46,14 @@ export default function StoryReader({
 
   const maxIndex = slides.length - 1;
 
-  // Auto-advance to latest slide during generation
+  // Auto-advance when new slides arrive during generation (only move forward)
+  const prevSlidesLen = useRef(slides.length);
   useEffect(() => {
-    if (isGenerating && slides.length > 0) {
-      setCurrentIndex(maxIndex);
+    if (slides.length > prevSlidesLen.current) {
+      setCurrentIndex(slides.length - 1);
     }
-  }, [isGenerating, slides.length, maxIndex]);
+    prevSlidesLen.current = slides.length;
+  }, [slides.length]);
 
   const goNext = useCallback(() => {
     setCurrentIndex((i) => Math.min(i + 1, maxIndex));

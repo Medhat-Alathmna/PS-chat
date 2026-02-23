@@ -5,6 +5,7 @@ import type {
   StoryGenre,
   StoryLength,
   StoryLengthConfig,
+  StoryMode,
   StorySetting,
 } from "@/lib/types/stories";
 
@@ -177,6 +178,28 @@ export const STORY_LENGTHS: StoryLengthConfig[] = [
     labelAr: "طويلة",
     descriptionAr: "١٢ صفحة",
     emoji: "📚",
+  },
+];
+
+// ── Modes ────────────────────────────────────────────────────────────
+
+export const STORY_MODES: {
+  id: StoryMode;
+  nameAr: string;
+  descriptionAr: string;
+  emoji: string;
+}[] = [
+  {
+    id: "interactive",
+    nameAr: "تفاعلية",
+    descriptionAr: "اختر ماذا يحدث في القصة!",
+    emoji: "🎮",
+  },
+  {
+    id: "continuous",
+    nameAr: "متواصلة",
+    descriptionAr: "اقرأ القصة كاملة دون توقف",
+    emoji: "📖",
   },
 ];
 

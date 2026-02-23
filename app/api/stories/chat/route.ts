@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       kidsProfile?.age || 8
     );
 
-    const tools = buildStoryTools();
+    const tools = buildStoryTools(storyConfig.mode !== "continuous");
 
     console.log("[stories] Config:", storyConfig);
     console.log("[stories] System prompt length:", systemPrompt.length);

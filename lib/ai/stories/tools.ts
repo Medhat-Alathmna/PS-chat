@@ -63,13 +63,20 @@ export const endStoryTool = tool({
 });
 
 /**
- * Build all story tools — returns Record<string, any> per project convention
+ * Build story tools — returns Record<string, any> per project convention.
+ * In continuous mode, story_choice is excluded to save tokens.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildStoryTools(): Record<string, any> {
+export function buildStoryTools(interactive: boolean = true): Record<string, any> {
+  if (interactive) {
+    return {
+      story_page: storyPageTool,
+      story_choice: storyChoiceTool,
+      end_story: endStoryTool,
+    };
+  }
   return {
     story_page: storyPageTool,
-    story_choice: storyChoiceTool,
     end_story: endStoryTool,
   };
 }

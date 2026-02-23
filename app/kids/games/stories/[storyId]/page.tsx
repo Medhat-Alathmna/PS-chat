@@ -113,6 +113,9 @@ function StorySession({
   const [isComplete, setIsComplete] = useState(story.completed);
 
   const processedTools = useRef(new Set<string>());
+  const latestPageRef = useRef(
+    Math.max(0, ...story.pages.map((p) => p.pageNumber))
+  );
   const startSentRef = useRef(false);
 
   // Transport is created once — story.config is guaranteed non-null here
@@ -170,6 +173,7 @@ function StorySession({
             pageNumber: toolPart.output.pageNumber as number,
             text: toolPart.output.text as string,
           };
+          latestPageRef.current = Math.max(latestPageRef.current, page.pageNumber);
           setLivePages((prev) => {
             if (prev.some((p) => p.pageNumber === page.pageNumber)) return prev;
             return [...prev, page];
@@ -180,19 +184,15 @@ function StorySession({
             prompt: string;
             choices: { id: string; emoji: string; textAr: string }[];
           };
-          setLivePages((prevPages) => {
-            const latestPage = Math.max(...prevPages.map((p) => p.pageNumber), 0);
-            const choicePoint: StoryChoicePoint = {
-              prompt: output.prompt,
-              choices: output.choices,
-              afterPage: latestPage,
-            };
-            setLiveChoicePoints((prev) => {
-              if (prev.some((cp) => cp.afterPage === choicePoint.afterPage)) return prev;
-              addChoicePoint(storyId, choicePoint);
-              return [...prev, choicePoint];
-            });
-            return prevPages; // no change to pages
+          const choicePoint: StoryChoicePoint = {
+            prompt: output.prompt,
+            choices: output.choices,
+            afterPage: latestPageRef.current,
+          };
+          setLiveChoicePoints((prev) => {
+            if (prev.some((cp) => cp.afterPage === choicePoint.afterPage)) return prev;
+            addChoicePoint(storyId, choicePoint);
+            return [...prev, choicePoint];
           });
         } else if (toolName === "end_story") {
           const title = toolPart.output.titleAr as string;
@@ -251,7 +251,7 @@ function StorySession({
             choicePoints={liveChoicePoints}
             totalPages={totalPages}
             isGenerating={isGenerating && !isComplete}
-            onSelectChoice={isNew && !isComplete ? handleSelectChoice : undefined}
+            onSelectChoice={isNew && !isComplete && story.config.mode !== "continuous" ? handleSelectChoice : undefined}
             textStyle={textStyle}
           />
         </div>
