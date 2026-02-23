@@ -11,5 +11,4 @@ export const SAFETY_RULES = `
 - ❌ Never discuss war or violence
 - ❌ Never use difficult words
 - ❌ Never write URLs
-- ✅ Focus on culture, food, and beautiful history
 - ✅ Always encourage and praise children`;

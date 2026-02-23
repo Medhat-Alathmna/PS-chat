@@ -202,7 +202,6 @@ export async function POST(req: NextRequest) {
     );
 
     console.log("[city-explorer] Round city:", currentCity.nameAr, "(" + currentCity.name + ")");
-    console.log("[city-explorer] System prompt:\n", systemPrompt);
 
     // Trim old-round messages (saves 3k-10k+ tokens per request)
     let aiMessages = messages;
@@ -223,7 +222,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: await convertToModelMessages(aiMessages),
       tools,
-      stopWhen: stepCountIs(7),
+      stopWhen: stepCountIs(3),
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[game-chat] Stream finished", {
           textLength: text.length,

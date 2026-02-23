@@ -90,34 +90,32 @@ export function buildTools(correctCityNameAr: string, correctCityId?: string): R
 const CORE_RULES = `## Game: City Explorer 🗺️
 
 ### Flow (State Machine):
-QUIZ → correct → TOUR (food→landmark→craft) → NEXT CITY → QUIZ
+QUIZ → correct → brief celebration → (auto) NEXT CITY → QUIZ
 
 ### QUIZ Phase:
-1. Read City Data → give hint from fact #1 → call present_options + give_hint together
+1. Read City Data → WRITE a fun riddle/clue as TEXT (2-3 sentences) + call present_options + give_hint together. ALWAYS write text!
 2. Player answers → check_answer (accept typed city names too!)
 3. Wrong answer → short encouragement "قريب! جرّب كمان 😊" (no new options)
 4. "I don't know" → give_hint (FREE in Easy mode)
-5. Correct → welcome to city (rephrase descriptionAr) + image_search + suggest_replies
+5. Correct → check_answer + SHORT celebration TEXT (1-2 sentences about the city). The frontend auto-advances to the next city.
+6. "السؤال الجاي" → advance_round + WRITE next riddle/clue as TEXT + present_options + give_hint (all in ONE response)
 
-### TOUR Phase:
-- Drip-feed ONE category per message: food → landmark → craft
-- Each: narrate 2-3 sentences + image_search + present_options (fun choices, all "correct")
-- After each: suggest_replies ["احكيلي أكتر", "وريني صور!", "السؤال الجاي"]
-- "السؤال الجاي" → advance_round immediately, then next hint
+⚠️ CRITICAL: ALWAYS write visible TEXT before/with tool calls! Never send ONLY tool calls without text.
 
 ### Critical Rules:
 ✅ Use ONLY City Data facts — never invent facts
 ✅ CORRECT_ANSWER must be in present_options
 ✅ Image queries MUST include city name (e.g. "كنافة نابلسية")
-❌ NEVER mention coordinates/lat/lng
-❌ NEVER dump all tour data at once`;
+✅ After correct answer: keep response BRIEF — no tour, no image_search, no suggest_replies
+❌ NEVER mention coordinates/lat/lng`;
 
 // ── Tool Quick Reference ─────────────────────────────────────────────
 
 const TOOL_REFERENCE = `## Tool Combos:
 - present_options + give_hint (quiz start)
-- check_answer + image_search + suggest_replies (correct answer)
+- check_answer ONLY (correct answer — keep brief, frontend auto-advances!)
 - give_hint + image_search ("I don't know")
+- advance_round + present_options + give_hint ("السؤال الجاي" — all in ONE response)
 
 ## suggest_replies Format:
 { suggestions: [{ text, type, actionQuery? }], showHintChip }
@@ -385,8 +383,7 @@ export function buildSystemPrompt(
     `⚠️ CHECKLIST before responding:
 ✅ Hint about ${city.nameAr}? (not other cities!)
 ✅ ${city.nameAr} in present_options? (player must win!)
-✅ Image query includes "${city.nameAr}"?
-✅ Tour: ONE category per message?`,
+✅ After correct: BRIEF celebration only (no tour/images) — frontend auto-advances!`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

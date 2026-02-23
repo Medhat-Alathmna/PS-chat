@@ -65,6 +65,13 @@ export default function GameChatBubble({
     );
   }
 
+  // Skip rendering entirely if there's nothing visible to show
+  const hasText = content.trim().length > 0;
+  const hasImages = imageResults && imageResults.length > 0;
+  const hasVisibleContent = hasText || isStreaming || hasImages || answerResult || hintData;
+
+  if (!hasVisibleContent) return null;
+
   return (
     <div className="flex gap-2 items-start animate-fade-in-up">
       <AnimatedMascot
@@ -73,37 +80,39 @@ export default function GameChatBubble({
         className="shrink-0 mt-1"
       />
       <div className="max-w-[85%] flex flex-col gap-2">
-        {/* Main message */}
-        <div
-          className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-md"
-          style={{ backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` }}
-        >
-          <p className="leading-relaxed text-gray-700 whitespace-pre-wrap" dir="auto" style={textStyle}>
-              {content}
-              {isStreaming && (
-                <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
+        {/* Main message - only render if there's text content, images, or streaming */}
+        {(hasText || isStreaming || hasImages) && (
+          <div
+            className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-md"
+            style={{ backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` }}
+          >
+            <p className="leading-relaxed text-gray-700 whitespace-pre-wrap" dir="auto" style={textStyle}>
+                {content}
+                {isStreaming && (
+                  <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
+                )}
+              </p>
+              {imageResults && imageResults.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2 animate-pop-in">
+                  {imageResults.slice(0, 4).map((img, i) => (
+                    <div
+                      key={i}
+                      className="relative rounded-xl overflow-hidden border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform shadow-sm"
+                      onClick={() => setExpandedImage(img.imageUrl || img.thumbnailUrl)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.thumbnailUrl || img.imageUrl}
+                        alt={img.title}
+                        className="w-full aspect-[4/3] object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
-            </p>
-            {imageResults && imageResults.length > 0 && (
-              <div className="mt-3 grid grid-cols-2 gap-2 animate-pop-in">
-                {imageResults.slice(0, 4).map((img, i) => (
-                  <div
-                    key={i}
-                    className="relative rounded-xl overflow-hidden border-2 border-[var(--kids-purple)]/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-transform shadow-sm"
-                    onClick={() => setExpandedImage(img.imageUrl || img.thumbnailUrl)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img.thumbnailUrl || img.imageUrl}
-                      alt={img.title}
-                      className="w-full aspect-[4/3] object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-        </div>
+          </div>
+        )}
 
         {/* Answer result overlay */}
         {answerResult && (

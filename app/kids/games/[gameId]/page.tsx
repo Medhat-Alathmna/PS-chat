@@ -92,6 +92,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const startSentRef = useRef(false);
 
+  // Auto-advance: after correct answer, auto-send "next question" so the AI presents the next city
+  const autoAdvancePending = useRef(false);
+
   // Profiles
   const {
     profiles,
@@ -189,6 +192,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   gameId,
                   (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
                 );
+                // Schedule auto-advance to next question
+                autoAdvancePending.current = true;
                 // Map: reveal city on correct answer and auto-zoom to it
                 if (isCityExplorer && toolPart.output.explanation) {
                   const cityId = detectCityInText(toolPart.output.explanation as string);
@@ -291,6 +296,33 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [aiMessages, isLoading]);
 
+  // Auto-advance to next question after correct answer
+  useEffect(() => {
+    if (status !== "ready" || !autoAdvancePending.current) return;
+    autoAdvancePending.current = false;
+
+    // Count advance_round calls to determine current round
+    let advanceCount = 0;
+    for (const msg of aiMessages) {
+      if (msg.role !== "assistant") continue;
+      for (const part of msg.parts) {
+        if (part.type === "tool-invocation") {
+          const tp = part as Record<string, unknown>;
+          if (tp.toolName === "advance_round") advanceCount++;
+        }
+      }
+    }
+
+    // Don't auto-advance on last round — let AI call end_game
+    const maxRounds = typeof config.rounds === "number" ? config.rounds : 99;
+    if (advanceCount >= maxRounds - 1) return;
+
+    const timer = setTimeout(() => {
+      sendMessage({ text: "السؤال الجاي" });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [status, aiMessages, config.rounds, sendMessage]);
+
   // Resize textarea
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -303,7 +335,18 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   // NOTE: give_hint data is extracted but NOT displayed in the message
   // Instead, it's stored as pendingHint and shown when the player taps the hint button
   const displayMessages = useMemo(() => {
-    return aiMessages.map((msg) => {
+    return aiMessages.filter((msg) => {
+      // Hide auto-advance "next question" messages from display
+      if (msg.role === "user") {
+        const text = msg.parts
+          .filter((p) => p.type === "text")
+          .map((p) => (p as { type: "text"; text: string }).text)
+          .join("")
+          .trim();
+        if (text === "السؤال الجاي") return false;
+      }
+      return true;
+    }).map((msg) => {
       let textContent = "";
       let answerResult: { correct: boolean; explanation: string } | null = null;
       let hiddenHintData: { hint: string; images?: ImageResult[]; targetCityId?: string } | null = null;

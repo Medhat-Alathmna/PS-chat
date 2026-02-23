@@ -1,7 +1,7 @@
 "use server";
 
 import { NextRequest } from "next/server";
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
+import { streamText, UIMessage, convertToModelMessages } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { buildMainSystemPrompt } from "@/lib/ai/main";
 import { getModel } from "@/lib/ai/config";
@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools: mainTools,
-      stopWhen: stepCountIs(5), // Allow more steps for tool calls + complete response
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[main-chat] Stream finished", {
           textLength: text.length,
