@@ -167,32 +167,38 @@ export async function POST(req: NextRequest) {
     // deterministic within a session (same round = same city on retries).
     const roundNumber = countAdvanceRounds(messages);
     const sessionSeedVal = sessionSeed || 0;
+    const playerAge = kidsProfile?.age || 8;
+    const gameDifficulty = difficulty || "medium";
 
     // If the user is asking for the next question, pre-load round N+1 into the
     // system prompt so the AI can present the new city immediately after
     // calling advance_round (without needing an extra round-trip).
     const advanceSignal = isNextRoundSignal(messages);
     const promptRound = advanceSignal ? roundNumber + 1 : roundNumber;
-    const roundSeed = sessionSeedVal + promptRound;
 
     // Compute exclude list for the prompt round (excludes all cities before it).
+    // Pass sessionSeed + proper round numbers for deterministic selection.
     const previousRoundExcludeIds: string[] = [];
     for (let r = 0; r < promptRound; r++) {
-      const { city } = getCityForRound(previousRoundExcludeIds, sessionSeedVal + r);
+      const { city } = getCityForRound(previousRoundExcludeIds, r + 1, gameDifficulty, sessionSeedVal, playerAge);
       previousRoundExcludeIds.push(city.id);
     }
 
     // Get the city for the prompt round (for tool validation + system prompt)
-    const { city: currentCity } = getCityForRound(previousRoundExcludeIds, roundSeed);
+    // Uses same params as buildSystemPrompt to guarantee the same city is selected.
+    const { city: currentCity } = getCityForRound(
+      previousRoundExcludeIds, promptRound + 1, gameDifficulty, sessionSeedVal, playerAge
+    );
     const tools = buildTools(currentCity.nameAr, currentCity.id);
 
     const systemPrompt = buildSystemPrompt(
-      difficulty || "medium",
-      kidsProfile?.age || 8,
+      gameDifficulty,
+      playerAge,
       kidsProfile?.name,
       chatContext,
       previousRoundExcludeIds,
-      roundSeed
+      promptRound + 1,
+      sessionSeedVal
     );
 
     // For display/trimming: include all discovered cities (current + previous)
@@ -209,11 +215,11 @@ export async function POST(req: NextRequest) {
       const discoveredNames = allUsedCityIds
         .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
         .filter(Boolean) as string[];
-      aiMessages = trimCompletedRoundMessages(messages, roundSeed, discoveredNames);
+      aiMessages = trimCompletedRoundMessages(messages, promptRound, discoveredNames);
       console.log("[game-chat] Trimmed messages", {
         original: messages.length,
         trimmed: aiMessages.length,
-        round: roundSeed + 1,
+        round: promptRound + 1,
       });
     }
 
@@ -222,7 +228,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: await convertToModelMessages(aiMessages),
       tools,
-      stopWhen: stepCountIs(3),
+      stopWhen: stepCountIs(7),
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[game-chat] Stream finished", {
           textLength: text.length,
