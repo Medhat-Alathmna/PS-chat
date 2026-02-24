@@ -28,6 +28,7 @@ import QuickReplyChips, { QuickReplyData, normalizeSuggestions } from "../../../
 import type { SuggestionChip } from "../../../components/kids/games/QuickReplyChips";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
 import ExpandableMap from "../../../components/kids/ExpandableMap";
+import { extractTextAndImages, getToolOutput } from "@/lib/utils/messageConverter";
 
 export default function GamePage() {
   return (
@@ -338,74 +339,29 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     return aiMessages.filter((msg) => {
       // Hide auto-advance "next question" messages from display
       if (msg.role === "user") {
-        const text = msg.parts
-          .filter((p) => p.type === "text")
-          .map((p) => (p as { type: "text"; text: string }).text)
-          .join("")
-          .trim();
-        if (text === "السؤال الجاي") return false;
+        const { textContent } = extractTextAndImages(msg.parts);
+        if (textContent.trim() === "السؤال الجاي") return false;
       }
       return true;
     }).map((msg) => {
-      let textContent = "";
-      let answerResult: { correct: boolean; explanation: string } | null = null;
-      let hiddenHintData: { hint: string; images?: ImageResult[]; targetCityId?: string } | null = null;
-      let optionsData: OptionsData | null = null;
-      let suggestRepliesData: QuickReplyData | null = null;
-      let imageResults: ImageResult[] | null = null;
-
-      for (const part of msg.parts) {
-        if (part.type === "text") {
-          textContent += part.text;
-        } else if (part.type.startsWith("tool-")) {
-          const toolPart = part as {
-            type: string;
-            state: string;
-            output?: Record<string, unknown>;
-          };
-          if (toolPart.state === "output-available" && toolPart.output) {
-            const toolName = toolPart.type.replace("tool-", "");
-            if (toolName === "check_answer") {
-              answerResult = {
-                correct: toolPart.output.correct as boolean,
-                explanation: toolPart.output.explanation as string,
-              };
-            } else if (toolName === "give_hint") {
-              // Store hint data but don't display it - will be shown on button click
-              hiddenHintData = {
-                hint: toolPart.output.hint as string,
-                images: toolPart.output.images as ImageResult[] | undefined,
-                targetCityId: toolPart.output.targetCityId as string | undefined,
-              };
-            } else if (toolName === "present_options") {
-              optionsData = {
-                options: toolPart.output.options as string[],
-                allowHint: toolPart.output.allowHint as boolean,
-              };
-            } else if (toolName === "suggest_replies") {
-              suggestRepliesData = {
-                suggestions: normalizeSuggestions(toolPart.output.suggestions as unknown[]),
-                showHintChip: toolPart.output.showHintChip as boolean,
-              };
-            } else if (toolName === "image_search") {
-              const imgs = toolPart.output.images as ImageResult[] | undefined;
-              if (imgs && imgs.length > 0) {
-                imageResults = imgs;
-              }
-            }
-          }
-        }
-      }
+      const { textContent } = extractTextAndImages(msg.parts);
+      
+      // Use getToolOutput for cleaner tool extraction
+      const answerOutput = getToolOutput<{ correct: boolean; explanation: string }>(msg.parts, "check_answer");
+      const hintOutput = getToolOutput<{ hint: string; images?: ImageResult[]; targetCityId?: string }>(msg.parts, "give_hint");
+      const optionsOutput = getToolOutput<{ options: string[]; allowHint: boolean }>(msg.parts, "present_options");
+      const repliesOutput = getToolOutput<{ suggestions: unknown[]; showHintChip: boolean }>(msg.parts, "suggest_replies");
+      const imageOutput = getToolOutput<{ images: ImageResult[] }>(msg.parts, "image_search");
 
       return {
         id: msg.id,
         role: msg.role as "user" | "assistant",
         content: textContent,
-        answerResult,
-        hiddenHintData, // Not passed to GameChatBubble
-        optionsData,
-        suggestRepliesData,
-        imageResults,
+        answerResult: answerOutput ? { correct: answerOutput.correct, explanation: answerOutput.explanation } : null,
+        hiddenHintData: hintOutput ? { hint: hintOutput.hint, images: hintOutput.images, targetCityId: hintOutput.targetCityId } : null,
+        optionsData: optionsOutput ? { options: optionsOutput.options, allowHint: optionsOutput.allowHint } : null,
+        suggestRepliesData: repliesOutput ? { suggestions: normalizeSuggestions(repliesOutput.suggestions), showHintChip: repliesOutput.showHintChip } : null,
+        imageResults: imageOutput?.images || null,
       };
     });
   }, [aiMessages]);
