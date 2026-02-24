@@ -2,9 +2,11 @@ import { NextRequest } from "next/server";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getModel } from "@/lib/ai/config";
-import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds } from "@/lib/ai/games/city-explorer";
+import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery } from "@/lib/ai/games/city-explorer";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
+import { ImageResult } from "@/lib/types";
 import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
+import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { logError } from "@/lib/utils/error-handler";
 
 type GameChatRequest = {
@@ -14,6 +16,7 @@ type GameChatRequest = {
   kidsProfile?: KidsProfile;
   discoveredCityIds?: string[];
   sessionSeed?: number;
+  currentRound?: number;
 };
 
 /**
@@ -140,10 +143,22 @@ function trimCompletedRoundMessages(
   return [summaryMessage, ...messages.slice(lastAdvanceIdx + 1)];
 }
 
+/**
+ * Cap within-round messages to prevent token bloat from many wrong guesses.
+ * Keeps the first 2 messages (riddle/options context) + last 4 (recent attempts).
+ */
+function trimWithinRoundMessages(
+  messages: UIMessage[],
+  maxMessages = 8
+): UIMessage[] {
+  if (messages.length <= maxMessages) return messages;
+  return [...messages.slice(0, 2), ...messages.slice(-4)];
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as GameChatRequest;
-    const { messages = [], difficulty, chatContext, kidsProfile, discoveredCityIds, sessionSeed } = body;
+    const { messages = [], difficulty, chatContext, kidsProfile, discoveredCityIds, sessionSeed, currentRound } = body;
 
     if (!messages || messages.length === 0) {
       return new Response(
@@ -162,10 +177,9 @@ export async function POST(req: NextRequest) {
 
     const openai = createOpenAI({ apiKey });
 
-    // Combine session seed (random per game session) + round number for city selection.
-    // This ensures each session starts with a different city while staying
-    // deterministic within a session (same round = same city on retries).
-    const roundNumber = countAdvanceRounds(messages);
+    // Use client-supplied round (survives client-side message trimming),
+    // fall back to counting advance_round calls in the message history.
+    const roundNumber = currentRound ?? countAdvanceRounds(messages);
     const sessionSeedVal = sessionSeed || 0;
     const playerAge = kidsProfile?.age || 8;
     const gameDifficulty = difficulty || "medium";
@@ -196,7 +210,25 @@ export async function POST(req: NextRequest) {
     const { city: nextCity } = getCityForRound(
       nextExcludeIds, promptRound + 2, gameDifficulty, sessionSeedVal, playerAge
     );
-    const tools = buildTools(currentCity.nameAr, currentCity.id, nextCity.nameAr);
+
+    // Pre-fetch hint images for BOTH cities in parallel (with 3s timeout)
+    const IMAGE_TIMEOUT_MS = 3000;
+    const fetchWithTimeout = (query: string): Promise<ImageResult[]> =>
+      Promise.race([
+        searchImagesMultiSource(query, 2, true).catch(() => []),
+        new Promise<ImageResult[]>(resolve => setTimeout(() => resolve([]), IMAGE_TIMEOUT_MS)),
+      ]);
+
+    const [currentImages, nextImages] = await Promise.all([
+      fetchWithTimeout(buildHintImageQuery(currentCity)),
+      fetchWithTimeout(buildHintImageQuery(nextCity)),
+    ]);
+
+    // Build pre-computed hints from city data + pre-fetched images
+    const currentHint = buildPrecomputedHint(currentCity, gameDifficulty, currentImages);
+    const nextHint = buildPrecomputedHint(nextCity, gameDifficulty, nextImages);
+
+    const tools = buildTools(currentCity.nameAr, currentCity.id, nextCity.nameAr, currentHint, nextHint);
 
     const systemPrompt = buildSystemPrompt(
       gameDifficulty,
@@ -223,10 +255,20 @@ export async function POST(req: NextRequest) {
         .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
         .filter(Boolean) as string[];
       aiMessages = trimCompletedRoundMessages(messages, promptRound, discoveredNames);
-      console.log("[game-chat] Trimmed messages", {
+      console.log("[game-chat] Trimmed cross-round messages", {
         original: messages.length,
         trimmed: aiMessages.length,
         round: promptRound + 1,
+      });
+    }
+
+    // Cap within-round messages (safety net for many wrong guesses)
+    const preTrimCount = aiMessages.length;
+    aiMessages = trimWithinRoundMessages(aiMessages);
+    if (aiMessages.length < preTrimCount) {
+      console.log("[game-chat] Trimmed within-round messages", {
+        before: preTrimCount,
+        after: aiMessages.length,
       });
     }
 
@@ -235,7 +277,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: await convertToModelMessages(aiMessages),
       tools,
-      stopWhen: stepCountIs(7),
+      stopWhen: stepCountIs(5),
       onFinish: async ({ text, toolCalls, toolResults }) => {
         console.log("[game-chat] Stream finished", {
           textLength: text.length,

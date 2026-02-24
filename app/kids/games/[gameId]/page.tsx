@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { useState, useEffect, useRef, useMemo, FormEvent, KeyboardEvent, useCallback } from "react";
 import { GameId, GameDifficulty, GameConfig } from "@/lib/types/games";
 import { ImageResult } from "@/lib/types";
@@ -95,6 +95,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   // Auto-advance: after correct answer, auto-send "next question" so the AI presents the next city
   const autoAdvancePending = useRef(false);
+  // Trim history after round advance — clear old messages once the new round starts
+  const trimPending = useRef(false);
 
   // Profiles
   const {
@@ -153,9 +155,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             kidsProfile: activeProfile,
             discoveredCityIds: isCityExplorer ? discoveredCities.discoveredIds : undefined,
             sessionSeed,
+            currentRound: isCityExplorer ? gameState.state.round - 1 : undefined,
           },
         }),
-      [gameId, difficulty, activeProfile, getContext, isCityExplorer, discoveredCities.discoveredIds]
+      [gameId, difficulty, activeProfile, getContext, isCityExplorer, discoveredCities.discoveredIds, gameState.state.round]
     ),
   });
 
@@ -271,6 +274,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   }
                 }
               }
+              // Mark for post-advance trim (clear old messages once new round starts)
+              trimPending.current = true;
             } else if (toolName === "end_game") {
               playSound("gameOver" as any);
               if (gameState.summary) {
@@ -336,6 +341,45 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     return () => clearTimeout(timer);
   }, [status, aiMessages, config.rounds, sendMessage]);
 
+  // Trim chat history after round advance — keep only the new round's content
+  useEffect(() => {
+    if (status !== "ready" || !trimPending.current) return;
+
+    // Find last assistant message
+    const lastAssistant = [...aiMessages].reverse().find(m => m.role === "assistant");
+    if (!lastAssistant) return;
+
+    // Only trim once the new round actually started (has present_options)
+    const hasOptions = lastAssistant.parts.some(p => {
+      const tp = p as { type: string };
+      return tp.type === "tool-present_options";
+    });
+    if (!hasOptions) return;
+
+    trimPending.current = false;
+
+    // Synthetic user message (hidden by displayMessages filter)
+    const syntheticUser: UIMessage = {
+      id: "trim-" + Date.now(),
+      role: "user",
+      parts: [{ type: "text", text: "السؤال الجاي" }],
+    };
+
+    setMessages([syntheticUser, lastAssistant]);
+
+    // Clean up processedTools — only keep IDs from the surviving message
+    const survivingIds = new Set<string>();
+    for (const part of lastAssistant.parts) {
+      if (part.type.startsWith("tool-")) {
+        const tp = part as { type: string; toolCallId: string };
+        if (tp.toolCallId) survivingIds.add(tp.toolCallId);
+      }
+    }
+    processedTools.current = survivingIds;
+
+    console.log("[game] Trimmed history after round advance, kept", survivingIds.size, "tool parts");
+  }, [status, aiMessages, setMessages]);
+
   // Resize textarea
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -361,16 +405,24 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       // Use getToolOutput for cleaner tool extraction
       const answerOutput = getToolOutput<{ correct: boolean; explanation: string }>(msg.parts, "check_answer");
       const hintOutput = getToolOutput<{ hint: string; images?: ImageResult[]; targetCityId?: string }>(msg.parts, "give_hint");
-      const optionsOutput = getToolOutput<{ options: string[]; allowHint: boolean }>(msg.parts, "present_options");
+      const optionsOutput = getToolOutput<{ options: string[]; allowHint: boolean; hintData?: { hint: string; images?: ImageResult[]; targetCityId?: string } }>(msg.parts, "present_options");
       const repliesOutput = getToolOutput<{ suggestions: unknown[]; showHintChip: boolean }>(msg.parts, "suggest_replies");
       const imageOutput = getToolOutput<{ images: ImageResult[] }>(msg.parts, "image_search");
+
+      // Prefer pre-computed hintData from present_options, fall back to give_hint
+      const embeddedHint = optionsOutput?.hintData;
+      const resolvedHint = embeddedHint
+        ? { hint: embeddedHint.hint, images: embeddedHint.images, targetCityId: embeddedHint.targetCityId }
+        : hintOutput
+          ? { hint: hintOutput.hint, images: hintOutput.images, targetCityId: hintOutput.targetCityId }
+          : null;
 
       return {
         id: msg.id,
         role: msg.role as "user" | "assistant",
         content: textContent,
         answerResult: answerOutput ? { correct: answerOutput.correct, explanation: answerOutput.explanation } : null,
-        hiddenHintData: hintOutput ? { hint: hintOutput.hint, images: hintOutput.images, targetCityId: hintOutput.targetCityId } : null,
+        hiddenHintData: resolvedHint,
         optionsData: optionsOutput ? { options: optionsOutput.options, allowHint: optionsOutput.allowHint } : null,
         suggestRepliesData: repliesOutput ? { suggestions: normalizeSuggestions(repliesOutput.suggestions), showHintChip: repliesOutput.showHintChip } : null,
         imageResults: imageOutput?.images || null,
@@ -609,6 +661,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         onPlayAgain={() => {
           startSentRef.current = false;
           processedTools.current.clear();
+          trimPending.current = false;
           prevMsgCountRef.current = 0;
           setMessages([]); // Clear chat history so AI starts fresh
           gameState.resetGame(difficulty || undefined);

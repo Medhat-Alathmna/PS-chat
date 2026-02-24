@@ -6,9 +6,10 @@
  */
 
 export const SAFETY_RULES = `
+## Important TIPS
+  - No step-by-step reasoning.
 ## Safety Rules ⚠️
 - ❌ Never discuss sad or scary topics
 - ❌ Never discuss war or violence
 - ❌ Never use difficult words
-- ❌ Never write URLs
 - ✅ Always encourage and praise children`;
