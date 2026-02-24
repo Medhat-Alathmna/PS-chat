@@ -34,10 +34,12 @@ export const trimCompletedRounds = true;
 // ── Tool collection ──────────────────────────────────────────────────
 
 /**
- * Build game tools with validated present_options
+ * Build game tools with validated present_options.
+ * Pass nextCityNameAr so present_options accepts both current and next city answers
+ * (the combined correct-answer response presents the next city's options).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildTools(correctCityNameAr: string, correctCityId?: string): Record<string, any> {
+export function buildTools(correctCityNameAr: string, correctCityId?: string, nextCityNameAr?: string): Record<string, any> {
   const wrappedGiveHint = correctCityId
     ? tool({
         description: "Provide hint with optional image. Call WITH present_options. Deduction: Easy=0, Medium=1, Hard=2.",
@@ -71,7 +73,10 @@ export function buildTools(correctCityNameAr: string, correctCityId?: string): R
       }),
       execute: async ({ options, allowHint }) => {
         let validatedOptions = [...options];
-        if (!validatedOptions.includes(correctCityNameAr)) {
+        const hasCurrentCity = validatedOptions.includes(correctCityNameAr);
+        const hasNextCity = nextCityNameAr && validatedOptions.includes(nextCityNameAr);
+        // Auto-inject only if neither the current nor the next city answer is present
+        if (!hasCurrentCity && !hasNextCity) {
           const insertIdx = Math.floor(Math.random() * (validatedOptions.length + 1));
           validatedOptions.splice(insertIdx, 0, correctCityNameAr);
           console.warn(`[city-explorer] Auto-injected correct answer: ${correctCityNameAr}`);
@@ -90,32 +95,32 @@ export function buildTools(correctCityNameAr: string, correctCityId?: string): R
 const CORE_RULES = `## Game: City Explorer 🗺️
 
 ### Flow (State Machine):
-QUIZ → correct → brief celebration → (auto) NEXT CITY → QUIZ
+QUIZ → correct → advance → NEXT CITY QUIZ (all in ONE response, no extra round-trip!)
 
 ### QUIZ Phase:
 1. Read City Data → WRITE a fun riddle/clue as TEXT (2-3 sentences) + call present_options + give_hint together. ALWAYS write text!
 2. Player answers → check_answer (accept typed city names too!)
-3. Wrong answer → short encouragement "قريب! جرّب كمان 😊" (no new options)
+3. Wrong answer → short encouragement "قريب! جرّب كمان 😊" (no new options) , and don't say the correct answer.
 4. "I don't know" → give_hint (FREE in Easy mode)
-5. Correct → check_answer + SHORT celebration TEXT (1-2 sentences about the city). The frontend auto-advances to the next city.
-6. "السؤال الجاي" → advance_round + WRITE next riddle/clue as TEXT + present_options + give_hint (all in ONE response)
+5. Correct → IN ONE RESPONSE: check_answer + advance_round + WRITE riddle for NEXT CITY + present_options (NEXT CITY answer!) + give_hint (NEXT CITY hint). No separate round-trip needed.
+6. "السؤال الجاي" (fallback only) → advance_round + WRITE next riddle/clue as TEXT + present_options + give_hint (all in ONE response)
 
 ⚠️ CRITICAL: ALWAYS write visible TEXT before/with tool calls! Never send ONLY tool calls without text.
 
 ### Critical Rules:
 ✅ Use ONLY City Data facts — never invent facts
-✅ CORRECT_ANSWER must be in present_options
+✅ CORRECT_ANSWER must be in present_options (use NEXT CITY answer after advance_round!)
 ✅ Image queries MUST include city name (e.g. "كنافة نابلسية")
-✅ After correct answer: keep response BRIEF — no tour, no image_search, no suggest_replies
+✅ After correct: BRIEF celebration (1 sentence) → immediately advance + next city question
 ❌ NEVER mention coordinates/lat/lng`;
 
 // ── Tool Quick Reference ─────────────────────────────────────────────
 
 const TOOL_REFERENCE = `## Tool Combos:
 - present_options + give_hint (quiz start)
-- check_answer ONLY (correct answer — keep brief, frontend auto-advances!)
+- check_answer + advance_round + present_options + give_hint (CORRECT ANSWER — all in ONE response, use NEXT CITY data!)
 - give_hint + image_search ("I don't know")
-- advance_round + present_options + give_hint ("السؤال الجاي" — all in ONE response)
+- advance_round + present_options + give_hint ("السؤال الجاي" fallback — all in ONE response)
 
 ## suggest_replies Format:
 { suggestions: [{ text, type, actionQuery? }], showHintChip }
@@ -331,6 +336,20 @@ export function getData(excludeIds?: string[], roundSeed?: number): string {
 
 // ── System Prompt Builder (Optimized) ────────────────────────────────
 
+/**
+ * Compact next-city section — only what the AI needs to write the riddle/hint/options
+ */
+function formatNextCityData(city: City): string {
+  const regionInfo = REGIONS[city.region];
+  const facts = city.facts.slice(0, 3).map((f, i) => `${i + 1}. ${f}`).join(" | ");
+  return `## Next City Data (use AFTER correct answer + advance_round)
+🎯 NEXT ANSWER: ${city.nameAr} (${city.name})
+📍 Region: ${regionInfo.nameAr}
+📝 Facts: ${facts}
+🍽️ Food: ${city.famousFor.food} | 🏛️ Landmark: ${city.famousFor.landmark}
+📖 ${city.descriptionAr}`;
+}
+
 export function buildSystemPrompt(
   difficulty: GameDifficulty,
   age: number,
@@ -342,48 +361,55 @@ export function buildSystemPrompt(
 ): string {
   const { city, isReviewMode } = getCityForRound(excludeIds, roundNumber, difficulty, sessionSeed, age);
   const regionInfo = REGIONS[city.region];
-  
+
+  // Pre-load next city so the AI can present it immediately after a correct answer
+  const nextExcludeIds = [...(excludeIds || []), city.id];
+  const { city: nextCity } = getCityForRound(nextExcludeIds, roundNumber + 1, difficulty, sessionSeed, age);
+
   const parts: string[] = [
     // 1. CRITICAL: Target city FIRST (LLM pays most attention to start)
-    `⚠️ TARGET CITY: ${city.nameAr} | Region: ${regionInfo.nameAr}`,
-    
+    `⚠️ TARGET CITY: ${city.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
+
     // 2. Character
     MEDHAT_BASE,
-    
+
     // 3. Core rules (compact)
     CORE_RULES,
-    
-    // 4. City data
+
+    // 4. City data (current)
     formatCityData(city, isReviewMode),
-    
-    // 5. Difficulty
+
+    // 5. Next city data (compact — for immediate advance after correct answer)
+    formatNextCityData(nextCity),
+
+    // 6. Difficulty
     buildDifficultySection(difficulty, age),
-    
-    // 6. Age adaptation
+
+    // 7. Age adaptation
     buildAgeAdaptationSection(age),
-    
-    // 7. Player name
+
+    // 8. Player name
     playerName ? `## Player: ${playerName}\nAddress by name in EVERY response.` : "",
-    
-    // 8. Chat context
-    chatContext?.recentTopics?.length 
-      ? `## Context: Player was talking about ${chatContext.recentTopics.join(", ")}` 
+
+    // 9. Chat context
+    chatContext?.recentTopics?.length
+      ? `## Context: Player was talking about ${chatContext.recentTopics.join(", ")}`
       : "",
-    
-    // 9. Game info
+
+    // 10. Game info
     `## Game: مستكشف المدن | Rounds: 5 | Points: 15/correct | Bonus: 25`,
-    
-    // 10. Safety
+
+    // 11. Safety
     SAFETY_RULES,
-    
-    // 11. Tool reference
+
+    // 12. Tool reference
     TOOL_REFERENCE,
-    
-    // 12. CRITICAL REMINDER at END (LLM pays attention to end)
+
+    // 13. CRITICAL REMINDER at END (LLM pays attention to end)
     `⚠️ CHECKLIST before responding:
-✅ Hint about ${city.nameAr}? (not other cities!)
-✅ ${city.nameAr} in present_options? (player must win!)
-✅ After correct: BRIEF celebration only (no tour/images) — frontend auto-advances!`,
+✅ Active question about ${city.nameAr}? → options/hint use ${city.nameAr}
+✅ Correct answer detected? → check_answer + advance_round + riddle for ${nextCity.nameAr} + present_options (${nextCity.nameAr}!) + give_hint — ALL IN ONE RESPONSE
+✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

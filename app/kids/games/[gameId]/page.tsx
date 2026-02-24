@@ -193,8 +193,15 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   gameId,
                   (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
                 );
-                // Schedule auto-advance to next question
-                autoAdvancePending.current = true;
+                // Schedule auto-advance only if the AI didn't already call advance_round
+                // in the same response (combined correct-answer + next city flow).
+                const hasAdvanceInThisMsg = msg.parts.some((p) => {
+                  const tp = p as { type: string };
+                  return tp.type.replace("tool-", "") === "advance_round";
+                });
+                if (!hasAdvanceInThisMsg) {
+                  autoAdvancePending.current = true;
+                }
                 // Map: reveal city on correct answer and auto-zoom to it
                 if (isCityExplorer && toolPart.output.explanation) {
                   const cityId = detectCityInText(toolPart.output.explanation as string);

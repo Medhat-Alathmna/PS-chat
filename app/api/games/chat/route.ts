@@ -177,8 +177,9 @@ export async function POST(req: NextRequest) {
     const promptRound = advanceSignal ? roundNumber + 1 : roundNumber;
 
     // Compute exclude list for the prompt round (excludes all cities before it).
+    // Seed with cross-session discovered cities so they are never repeated.
     // Pass sessionSeed + proper round numbers for deterministic selection.
-    const previousRoundExcludeIds: string[] = [];
+    const previousRoundExcludeIds: string[] = [...(discoveredCityIds || [])];
     for (let r = 0; r < promptRound; r++) {
       const { city } = getCityForRound(previousRoundExcludeIds, r + 1, gameDifficulty, sessionSeedVal, playerAge);
       previousRoundExcludeIds.push(city.id);
@@ -189,7 +190,13 @@ export async function POST(req: NextRequest) {
     const { city: currentCity } = getCityForRound(
       previousRoundExcludeIds, promptRound + 1, gameDifficulty, sessionSeedVal, playerAge
     );
-    const tools = buildTools(currentCity.nameAr, currentCity.id);
+    // Pre-compute the next city so present_options accepts its answer in the combined
+    // correct-answer response (check_answer + advance_round + next city — one round-trip).
+    const nextExcludeIds = [...previousRoundExcludeIds, currentCity.id];
+    const { city: nextCity } = getCityForRound(
+      nextExcludeIds, promptRound + 2, gameDifficulty, sessionSeedVal, playerAge
+    );
+    const tools = buildTools(currentCity.nameAr, currentCity.id, nextCity.nameAr);
 
     const systemPrompt = buildSystemPrompt(
       gameDifficulty,
@@ -207,7 +214,7 @@ export async function POST(req: NextRequest) {
       new Set([...(discoveredCityIds || []), ...sessionCityIds])
     );
 
-    console.log("[city-explorer] Round city:", currentCity.nameAr, "(" + currentCity.name + ")");
+    console.log("[city-explorer] Round city:", currentCity.nameAr, "→ next:", nextCity.nameAr);
 
     // Trim old-round messages (saves 3k-10k+ tokens per request)
     let aiMessages = messages;
