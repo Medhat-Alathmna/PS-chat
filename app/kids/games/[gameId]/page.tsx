@@ -482,7 +482,11 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         if (nextMsg?.role === "assistant" && nextMsg.answerResult && !nextMsg.answerResult.correct) {
           continue; // wrong answer — keep looking back for options
         }
-        return null; // correct answer or new question — disable options
+        // Conversational response (no check_answer) — keep looking back for active options
+        if (nextMsg?.role === "assistant" && !nextMsg.answerResult) {
+          continue;
+        }
+        return null; // correct answer — disable options
       }
       if (msg.role === "assistant") {
         if (msg.optionsData) {
