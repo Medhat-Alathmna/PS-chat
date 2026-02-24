@@ -193,15 +193,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   gameId,
                   (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
                 );
-                // Schedule auto-advance only if the AI didn't already call advance_round
-                // in the same response (combined correct-answer + next city flow).
-                const hasAdvanceInThisMsg = msg.parts.some((p) => {
-                  const tp = p as { type: string };
-                  return tp.type.replace("tool-", "") === "advance_round";
-                });
-                if (!hasAdvanceInThisMsg) {
-                  autoAdvancePending.current = true;
-                }
+                // Mark that a correct answer happened. The auto-advance effect
+                // (which runs only when status==="ready") will check whether the
+                // AI already called advance_round before sending "السؤال الجاي".
+                autoAdvancePending.current = true;
                 // Map: reveal city on correct answer and auto-zoom to it
                 if (isCityExplorer && toolPart.output.explanation) {
                   const cityId = detectCityInText(toolPart.output.explanation as string);
@@ -309,15 +304,25 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     if (status !== "ready" || !autoAdvancePending.current) return;
     autoAdvancePending.current = false;
 
+    // Now that streaming is complete, check if the AI already called
+    // advance_round in its response. If so, it already presented the
+    // next question — no need to send "السؤال الجاي".
+    const lastAssistantMsg = [...aiMessages].reverse().find(m => m.role === "assistant");
+    if (lastAssistantMsg) {
+      const hasAdvance = lastAssistantMsg.parts.some((p) => {
+        const tp = p as { type: string };
+        return tp.type === "tool-advance_round";
+      });
+      if (hasAdvance) return; // AI already advanced, skip auto-advance
+    }
+
     // Count advance_round calls to determine current round
     let advanceCount = 0;
     for (const msg of aiMessages) {
       if (msg.role !== "assistant") continue;
       for (const part of msg.parts) {
-        if (part.type === "tool-invocation") {
-          const tp = part as Record<string, unknown>;
-          if (tp.toolName === "advance_round") advanceCount++;
-        }
+        const tp = part as { type: string };
+        if (tp.type === "tool-advance_round") advanceCount++;
       }
     }
 
