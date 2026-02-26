@@ -441,7 +441,6 @@ export function buildSystemPrompt(
     `⚠️ CHECKLIST before responding:
 ✅ Active question about ${city.nameAr}? → present_options uses ${city.nameAr} (hint auto-attached)
 ✅ Correct answer detected? → check_answer + advance_round + riddle for ${nextCity.nameAr} + present_options (${nextCity.nameAr}!) — ALL IN ONE RESPONSE
-✅ Player says "I don't know"? → give_hint (text only)
 ✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)`,
   ];
 
