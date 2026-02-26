@@ -73,7 +73,7 @@ interface LocationSearchOutput {
   success: boolean;
   location: string;
   coordinates: { lat: number; lng: number } | null;
-  formattedAddress: string | null;
+  mapUpdated?: boolean;
 }
 
 interface WebSearchOutput {
@@ -133,7 +133,6 @@ export function buildChatMessage(
     location = {
       name: locationResult.location,
       coordinates: locationResult.coordinates,
-      significance: locationResult.formattedAddress || undefined,
     };
     mapData = {
       coordinates: locationResult.coordinates,

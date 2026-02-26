@@ -1,6 +1,7 @@
 import { ToolResult, Coordinates } from "@/lib/types";
 import { geocodeWithGoogle } from "./google-maps";
 import { geocodeWithOSM } from "./osm";
+import { geocodeWithWikipedia } from "./wikipedia";
 import { logError } from "@/lib/utils/error-handler";
 
 /**
@@ -29,10 +30,15 @@ export async function geocodeLocation(
     const osmResult = await geocodeWithOSM(locationName);
 
     if (osmResult.success) {
-      return {
-        ...osmResult,
-        fallbackUsed: true, // Indicate that we used fallback
-      };
+      return { ...osmResult, fallbackUsed: true };
+    }
+
+    // Last resort: Wikipedia — excellent coverage of Palestinian places including
+    // depopulated 1948 villages, landmarks, mosques, and heritage sites
+    const wikiResult = await geocodeWithWikipedia(locationName);
+
+    if (wikiResult.success) {
+      return { ...wikiResult, fallbackUsed: true };
     }
 
     return {

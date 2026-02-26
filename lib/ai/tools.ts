@@ -73,8 +73,8 @@ export const imageSearchTool = tool({
  */
 export const locationSearchTool = tool({
   description:
-    "ابحث عن موقع جغرافي في فلسطين واحصل على إحداثياته. استخدم هذه الأداة عندما يسأل المستخدم عن مكان معين ويحتاج خريطة. " +
-    "Search for a geographic location in Palestine and get its coordinates. Use this tool when the user asks about a specific place and needs a map.",
+    "Find a Palestinian location and show it on the map. Use ONLY after the user asks to see a place on the map. " +
+    "IMPORTANT: After this tool succeeds, NEVER mention lat/lng numbers or the formattedAddress in your text response — just confirm the place name and that it's shown on the map.",
   inputSchema: z.object({
     location: z
       .string()
@@ -97,7 +97,6 @@ export const locationSearchTool = tool({
           success: false,
           location,
           coordinates: null,
-          formattedAddress: null,
           message: `لم يتم العثور على موقع "${location}"`,
         };
       }
@@ -106,8 +105,8 @@ export const locationSearchTool = tool({
         success: true,
         location,
         coordinates: result.data.coordinates,
-        formattedAddress: result.data.formattedAddress,
-        message: `تم العثور على "${location}" في ${result.data.formattedAddress}`,
+        mapUpdated: true,
+        message: `Map updated — ${location} is now shown on the map. Do NOT mention coordinates or the raw address in your response.`,
       };
     } catch (error) {
       console.error("[location_search] Error:", error);
@@ -115,7 +114,6 @@ export const locationSearchTool = tool({
         success: false,
         location,
         coordinates: null,
-        formattedAddress: null,
         message: "حدث خطأ أثناء البحث عن الموقع",
       };
     }
@@ -404,7 +402,7 @@ export type LocationSearchResult = {
   success: boolean;
   location: string;
   coordinates: Coordinates | null;
-  formattedAddress: string | null;
+  mapUpdated?: boolean;
   message: string;
 };
 
