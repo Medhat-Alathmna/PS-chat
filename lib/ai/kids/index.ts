@@ -58,7 +58,6 @@ const KIDS_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER CHILD CONFIRMS!)
   suggestions: [
     { text: "وريني صور!", type: "photo", actionQuery: "الدبكة رقصة فلسطينية" },
     { text: "احكيلي أكتر", type: "curiosity" },
-    { text: "موضوع تاني!", type: "activity" }
   ], showHintChip: false
 
 **Example — after talking about Nablus:**

@@ -105,9 +105,9 @@ export const suggestRepliesTool = tool({
           ),
         })
       )
-      .min(2)
-      .max(5)
-      .describe("2-5 typed suggestion chips"),
+      .min(1)
+      .max(6)
+      .describe("1-6 typed suggestion chips — vary count based on how rich the topic is"),
     showHintChip: z
       .boolean()
       .describe("Whether to include a hint chip alongside suggestions"),

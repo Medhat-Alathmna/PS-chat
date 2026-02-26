@@ -39,7 +39,8 @@
       "Bash(exit 0)",
       "Bash(grep:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(find:*)"
     ]
   }
 }

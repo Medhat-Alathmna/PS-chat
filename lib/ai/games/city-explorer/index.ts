@@ -23,7 +23,6 @@ import {
   checkAnswerTool,
   advanceRoundTool,
   endGameTool,
-  suggestRepliesTool,
 } from "../../game-tools";
 import { imageSearchTool } from "../../tools";
 
@@ -119,7 +118,6 @@ export function buildTools(
     }),
     end_game: endGameTool,
     image_search: imageSearchTool,
-    suggest_replies: suggestRepliesTool,
   };
 }
 
@@ -155,9 +153,7 @@ const TOOL_REFERENCE = `## Tool Combos:
 - give_hint ("I don't know" ONLY — text-only, no images)
 - advance_round + present_options ("السؤال الجاي" fallback — all in ONE response)
 
-## suggest_replies Format:
-{ suggestions: [{ text, type, actionQuery? }], showHintChip }
-- type: "photo" (needs actionQuery) | "map" (needs actionQuery) | "curiosity" | "activity"`;
+`;
 
 // ── City Selection System (Smart + Region Diverse + Progressive) ────────
 
