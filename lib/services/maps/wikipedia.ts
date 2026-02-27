@@ -5,43 +5,59 @@ function isArabic(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text);
 }
 
-async function searchWikipediaCoords(
-  query: string,
+type WikiCoords = { lat: number; lng: number; title: string };
+
+function extractCoordsFromPages(pages: Record<string, unknown>): WikiCoords | null {
+  for (const page of Object.values(pages) as Record<string, unknown>[]) {
+    const coords = (page as { coordinates?: { lat: number; lon: number }[] }).coordinates;
+    if (coords && coords.length > 0) {
+      return { lat: coords[0].lat, lng: coords[0].lon, title: page.title as string };
+    }
+  }
+  return null;
+}
+
+async function fetchWikipediaCoords(
+  params: Record<string, string>,
   lang: "en" | "ar"
-): Promise<{ lat: number; lng: number; title: string } | null> {
+): Promise<WikiCoords | null> {
   try {
     const url = new URL(`https://${lang}.wikipedia.org/w/api.php`);
     url.searchParams.set("action", "query");
-    url.searchParams.set("generator", "search");
-    url.searchParams.set("gsrsearch", query);
-    url.searchParams.set("gsrlimit", "3");
     url.searchParams.set("prop", "coordinates");
     url.searchParams.set("format", "json");
     url.searchParams.set("origin", "*");
+    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
     const response = await fetch(url.toString(), {
       headers: { "User-Agent": "Palestine-Chat/1.0 (Educational App)" },
       next: { revalidate: 86400 },
     });
-
     if (!response.ok) return null;
 
     const data = await response.json();
     const pages = data?.query?.pages;
     if (!pages) return null;
 
-    // Return first page that has coordinates
-    for (const page of Object.values(pages) as Record<string, unknown>[]) {
-      const coords = (page as { coordinates?: { lat: number; lon: number }[] }).coordinates;
-      if (coords && coords.length > 0) {
-        return { lat: coords[0].lat, lng: coords[0].lon, title: page.title as string };
-      }
-    }
-
-    return null;
+    return extractCoordsFromPages(pages);
   } catch {
     return null;
   }
+}
+
+async function searchWikipediaCoords(
+  query: string,
+  lang: "en" | "ar"
+): Promise<WikiCoords | null> {
+  // 1. Direct title lookup — fastest, works when query matches article title
+  const direct = await fetchWikipediaCoords({ titles: query }, lang);
+  if (direct) return direct;
+
+  // 2. Full-text search fallback — handles partial names, transliterations, etc.
+  return fetchWikipediaCoords(
+    { generator: "search", gsrsearch: query, gsrlimit: "3" },
+    lang
+  );
 }
 
 /**

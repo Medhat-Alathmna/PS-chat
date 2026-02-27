@@ -185,7 +185,7 @@ export function useChatPage(): UseChatPageReturn {
   // Map state
   const [highlightedCityId, setHighlightedCityId] = useState<string | null>(null);
   const [showMobileMap, setShowMobileMap] = useState(false);
-  const [flyToCoordinates, setFlyToCoordinates] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
+  const [flyToCoordinates, setFlyToCoordinates] = useState<{ lat: number; lng: number; zoom?: number; label?: string } | null>(null);
 
   // Direct images from photo chip (no AI round-trip)
   const [directImages, setDirectImages] = useState<ImageResult[]>([]);
@@ -350,15 +350,31 @@ export function useChatPage(): UseChatPageReturn {
       }
 
       if (chip.type === "map" && chip.actionQuery) {
-        // Direct map action — highlight city + open mobile map
+        // Try known cities first
         const cityId = detectCityInText(chip.actionQuery);
         if (cityId) {
           const city = CITIES.find((c) => c.id === cityId);
           if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
             setHighlightedCityId(cityId);
+            setFlyToCoordinates({ lat: city.lat, lng: city.lng, zoom: 13, label: city.nameAr ?? city.name });
             setShowMobileMap(true);
+            return;
           }
         }
+        // Unknown place — geocode it server-side then fly to coordinates
+        setShowMobileMap(true);
+        fetch("/api/geocode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: chip.actionQuery }),
+        })
+          .then((res) => res.json())
+          .then((data: { success: boolean; coordinates?: { lat: number; lng: number } }) => {
+            if (data.success && data.coordinates) {
+              setFlyToCoordinates({ lat: data.coordinates.lat, lng: data.coordinates.lng, zoom: 15, label: chip.actionQuery });
+            }
+          })
+          .catch(() => {});
         return;
       }
 
@@ -474,7 +490,7 @@ export function useChatPage(): UseChatPageReturn {
     if (lastMsg.role === "assistant" && lastMsg.mapData?.coordinates) {
       const { lat, lng } = lastMsg.mapData.coordinates;
       if (typeof lat === "number" && typeof lng === "number" && !isNaN(lat) && !isNaN(lng)) {
-        setFlyToCoordinates({ lat, lng, zoom: lastMsg.mapData.zoom ?? 14 });
+        setFlyToCoordinates({ lat, lng, zoom: lastMsg.mapData.zoom ?? 14, label: lastMsg.mapData.label ?? lastMsg.location?.name });
       }
     }
   }, [messages]);

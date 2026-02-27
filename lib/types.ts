@@ -104,6 +104,7 @@ export type LocationInfo = {
 export type MapData = {
   coordinates: Coordinates;
   zoom: number;
+  label?: string;
   markers?: MapMarker[];
 };
 

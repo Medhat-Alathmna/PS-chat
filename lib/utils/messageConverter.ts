@@ -158,6 +158,7 @@ export function buildChatMessage(
     mapData = {
       coordinates: locationResult.coordinates,
       zoom: 14,
+      label: locationResult.location,
     };
   }
 

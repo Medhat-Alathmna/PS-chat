@@ -43,7 +43,7 @@ interface PalestineLeafletMapProps {
   /** City ID to auto-fly to (e.g. just-revealed city) */
   flyToCity?: string;
   /** Arbitrary coordinates to fly to (e.g. from location_search tool) */
-  flyToCoordinates?: { lat: number; lng: number; zoom?: number } | null;
+  flyToCoordinates?: { lat: number; lng: number; zoom?: number; label?: string } | null;
   /** Show map controls (search, filter, reset) */
   showControls?: boolean;
   /** Enable full map interaction (zoom, pan, drag) */
@@ -419,6 +419,50 @@ function LeafletMapInner({
     return null;
   }
 
+  function LocationMarker({ coords }: { coords: { lat: number; lng: number; label?: string } | null | undefined }) {
+    if (!coords || isNaN(coords.lat) || isNaN(coords.lng)) return null;
+
+    const label = coords.label ?? "";
+    const labelHtml = label
+      ? `<div style="
+          position:absolute;
+          bottom:18px;left:50%;
+          transform:translateX(-50%);
+          background:rgba(229,62,62,0.92);
+          color:#fff;
+          font-size:11px;font-weight:700;
+          padding:2px 7px;
+          border-radius:8px;
+          white-space:nowrap;
+          box-shadow:0 1px 4px rgba(0,0,0,0.25);
+          pointer-events:none;
+          direction:auto;
+        ">${label}</div>`
+      : "";
+
+    const icon = L.divIcon({
+      className: "",
+      html: `<div style="position:relative;width:14px;height:14px;">
+        ${labelHtml}
+        <div style="
+          width:14px;height:14px;
+          background:#e53e3e;
+          border:2.5px solid #fff;
+          border-radius:50%;
+          box-shadow:0 0 0 3px rgba(229,62,62,0.35),0 2px 6px rgba(0,0,0,0.3);
+          animation:location-pulse 1.8s ease-in-out infinite;
+        "></div>
+      </div>
+      <style>
+        @keyframes location-pulse{0%,100%{box-shadow:0 0 0 3px rgba(229,62,62,0.35),0 2px 6px rgba(0,0,0,0.3)}50%{box-shadow:0 0 0 7px rgba(229,62,62,0.15),0 2px 6px rgba(0,0,0,0.3)}}
+      </style>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    });
+
+    return <Marker position={[coords.lat, coords.lng]} icon={icon} />;
+  }
+
   const handleCitySelect = (cityId: string) => {
     setSelectedCityId(cityId);
     const city = CITIES.find((c) => c.id === cityId);
@@ -514,6 +558,9 @@ function LeafletMapInner({
 
         {/* Fly to arbitrary coordinates (e.g. from location_search tool) */}
         <FlyToCoordinatesComponent coords={flyToCoordinates} />
+
+        {/* Small pin marker for location_search / map chip results */}
+        <LocationMarker coords={flyToCoordinates} />
 
         {/* Render filtered cities */}
         {filteredCities
