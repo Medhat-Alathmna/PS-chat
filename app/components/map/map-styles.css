@@ -239,6 +239,39 @@
   }
 }
 
+/* ========== Location Search Marker ========== */
+
+@keyframes location-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.35), 0 2px 6px rgba(0,0,0,0.3); }
+  50%       { box-shadow: 0 0 0 7px rgba(229, 62, 62, 0.15), 0 2px 6px rgba(0,0,0,0.3); }
+}
+
+.location-marker-dot {
+  width: 14px;
+  height: 14px;
+  background: #e53e3e;
+  border: 2.5px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.35), 0 2px 6px rgba(0,0,0,0.3);
+  animation: location-pulse 1.8s ease-in-out infinite;
+}
+
+.leaflet-tooltip.location-label {
+  background: rgba(229, 62, 62, 0.92);
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.location-label::before {
+  border-top-color: rgba(229, 62, 62, 0.92);
+}
+
 /* ========== Animation Level Overrides ========== */
 
 .no-animation,

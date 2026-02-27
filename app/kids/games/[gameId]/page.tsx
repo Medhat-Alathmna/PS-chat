@@ -740,7 +740,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           {/* Chat + Input column — offset on desktop for city-explorer map */}
           <div className={`flex-1 min-h-0 flex flex-col overflow-hidden `}>
             {/* Chat area */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
               <div className={`mx-auto flex flex-col gap-4 pb-4 ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}>
                 {displayMessages.map((msg, index) => {
                   if (shouldHideMsg(index, msg.role)) return null;

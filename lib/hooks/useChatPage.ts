@@ -495,9 +495,12 @@ export function useChatPage(): UseChatPageReturn {
     }
   }, [messages]);
 
-  // City click handler — just highlight the city
+  // City click handler — highlight + place location marker
   const handleCityClick = useCallback((city: City) => {
     setHighlightedCityId(city.id);
+    if (typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+      setFlyToCoordinates({ lat: city.lat, lng: city.lng, zoom: 11, label: city.nameAr ?? city.name });
+    }
   }, []);
 
   // Ask about city handler — fill input and close map/popup
@@ -540,6 +543,7 @@ export function useChatPage(): UseChatPageReturn {
     setImagePreview(null);
     setDirectImages([]); // Clear direct images on new message
     setDirectImagesLoading(false);
+    setFlyToCoordinates(null); // Clear location marker on new message
     playPop();
     recordMessage(); // Add points for sending message
 
