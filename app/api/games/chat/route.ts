@@ -1,5 +1,12 @@
 import { NextRequest } from "next/server";
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+  UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+} from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { getModel } from "@/lib/ai/config";
 import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery } from "@/lib/ai/games/city-explorer";
@@ -8,6 +15,7 @@ import { ImageResult } from "@/lib/types";
 import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { logError } from "@/lib/utils/error-handler";
+import { extractChipsFromText } from "@/lib/utils/messageConverter";
 
 type GameChatRequest = {
   messages: UIMessage[];
@@ -272,22 +280,37 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const result = streamText({
-      model: openai(getModel()),
-      system: systemPrompt,
-      messages: await convertToModelMessages(aiMessages),
-      tools,
-      stopWhen: stepCountIs(5),
-      onFinish: async ({ text, toolCalls, toolResults }) => {
-        console.log("[game-chat] Stream finished", {
-          textLength: text.length,
-          toolCallsCount: toolCalls?.length || 0,
-          toolResultsCount: toolResults?.length || 0,
+    const convertedMessages = await convertToModelMessages(aiMessages);
+
+    const uiStream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        const result = streamText({
+          model: openai(getModel()),
+          system: systemPrompt,
+          messages: convertedMessages,
+          tools,
+          stopWhen: stepCountIs(5),
+          onFinish: async ({ text, toolCalls, toolResults }) => {
+            console.log("[game-chat] Stream finished", {
+              textLength: text.length,
+              toolCallsCount: toolCalls?.length || 0,
+              toolResultsCount: toolResults?.length || 0,
+            });
+          },
         });
+
+        writer.merge(result.toUIMessageStream());
+
+        try {
+          const chips = extractChipsFromText(await result.text);
+          if (chips) writer.write({ type: "data-chips", data: chips });
+        } catch {
+          // Chips parse failed — skip gracefully
+        }
       },
     });
 
-    return result.toUIMessageStreamResponse();
+    return createUIMessageStreamResponse({ stream: uiStream });
   } catch (error) {
     logError("game-chat-route", error);
     return new Response(

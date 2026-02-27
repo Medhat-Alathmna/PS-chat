@@ -8,7 +8,6 @@ export interface SuggestionChip {
 
 export interface QuickReplyData {
   suggestions: SuggestionChip[];
-  showHintChip: boolean;
 }
 
 interface QuickReplyChipsProps {
@@ -100,17 +99,6 @@ export default function QuickReplyChips({
         })}
       </div>
 
-      {data.showHintChip && (
-        <button
-          type="button"
-          onClick={onHintClick}
-          disabled={disabled}
-          className="self-center mt-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm sm:text-base font-bold bg-yellow-100 text-yellow-800 border-2 border-yellow-300 hover:bg-yellow-200 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:hover:scale-100 cursor-pointer shadow-sm"
-        >
-          <span className="text-xl">{"\uD83D\uDCA1"}</span>
-          <span>أحتاج مساعدة (تلميح)</span>
-        </button>
-      )}
     </div>
   );
 }

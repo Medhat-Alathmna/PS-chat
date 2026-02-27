@@ -1,12 +1,19 @@
 "use server";
 
 import { NextRequest } from "next/server";
-import { streamText, UIMessage, convertToModelMessages } from "ai";
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+  UIMessage,
+  convertToModelMessages,
+} from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { buildMainSystemPrompt } from "@/lib/ai/main";
 import { getModel } from "@/lib/ai/config";
 import { kidsTools, timelineSearchTool } from "@/lib/ai/tools";
 import { logError } from "@/lib/utils/error-handler";
+import { extractChipsFromText } from "@/lib/utils/messageConverter";
 
 const mainTools = {
   ...kidsTools,
@@ -24,7 +31,8 @@ type KidsChatRequest = {
 
 /**
  * POST /api/chat - Main chat agent (Medhat)
- * Tools: image_search, location_search, suggest_replies, timeline_search
+ * Tools: image_search, location_search, timeline_search
+ * Chips generated via Output.object (parallel with text — no extra tool round-trip)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -53,20 +61,35 @@ export async function POST(req: NextRequest) {
         ? config.systemPrompt
         : buildMainSystemPrompt(playerName);
 
-    const result = streamText({
-      model: openai(getModel()),
-      system: systemPrompt,
-      messages: await convertToModelMessages(messages),
-      tools: mainTools,
-      onFinish: async ({ text, toolCalls, toolResults }) => {
-        console.log("[main-chat] Stream finished", {
-          textLength: text.length,
-          toolCallsCount: toolCalls?.length || 0,
+    const convertedMessages = await convertToModelMessages(messages);
+
+    const uiStream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        const result = streamText({
+          model: openai(getModel()),
+          system: systemPrompt,
+          messages: convertedMessages,
+          tools: mainTools,
+          onFinish: async ({ text, toolCalls }) => {
+            console.log("[main-chat] Stream finished", {
+              textLength: text.length,
+              toolCallsCount: toolCalls?.length || 0,
+            });
+          },
         });
+
+        writer.merge(result.toUIMessageStream());
+
+        try {
+          const chips = extractChipsFromText(await result.text);
+          if (chips) writer.write({ type: "data-chips", data: chips });
+        } catch {
+          // Chips parse failed — skip gracefully
+        }
       },
     });
 
-    return result.toUIMessageStreamResponse();
+    return createUIMessageStreamResponse({ stream: uiStream });
   } catch (error) {
     logError("kids-chat-route", error);
     return new Response(

@@ -433,11 +433,21 @@ export function buildSystemPrompt(
     // 12. Tool reference
     TOOL_REFERENCE,
 
-    // 13. CRITICAL REMINDER at END (LLM pays attention to end)
+    // 13. Chips output (inline at end of every response)
+    `## Quick Reply Chips
+At the very end of EVERY response (last line, nothing after it), append:
+CHIPS:{"chips":[{"text":"chip text in Arabic","type":"curiosity|activity","actionQuery":null},...]}
+- 2–4 chips, Arabic text (2–5 words each)
+- Use type "curiosity" for follow-up questions, "activity" for actions
+- actionQuery must be null for game chips
+- Examples: "أعطني تلميح", "أعرف!", "مدينة جديدة 🎉", "كيف تلعب؟"`,
+
+    // 14. CRITICAL REMINDER at END (LLM pays attention to end)
     `⚠️ CHECKLIST before responding:
 ✅ Active question about ${city.nameAr}? → present_options uses ${city.nameAr} (hint auto-attached)
 ✅ Correct answer detected? → check_answer + advance_round + riddle for ${nextCity.nameAr} + present_options (${nextCity.nameAr}!) — ALL IN ONE RESPONSE
-✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)`,
+✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)
+✅ Last line of response is CHIPS:{...}`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

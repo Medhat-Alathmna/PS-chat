@@ -400,13 +400,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       }
       return true;
     }).map((msg) => {
-      const { textContent } = extractTextAndImages(msg.parts);
-      
+      const { textContent, inlineChips } = extractTextAndImages(msg.parts);
+
       // Use getToolOutput for cleaner tool extraction
       const answerOutput = getToolOutput<{ correct: boolean; explanation: string }>(msg.parts, "check_answer");
       const hintOutput = getToolOutput<{ hint: string; images?: ImageResult[]; targetCityId?: string }>(msg.parts, "give_hint");
       const optionsOutput = getToolOutput<{ options: string[]; allowHint: boolean; hintData?: { hint: string; images?: ImageResult[]; targetCityId?: string } }>(msg.parts, "present_options");
-      const repliesOutput = getToolOutput<{ suggestions: unknown[]; showHintChip: boolean }>(msg.parts, "suggest_replies");
       const imageOutput = getToolOutput<{ images: ImageResult[] }>(msg.parts, "image_search");
 
       // Prefer pre-computed hintData from present_options, fall back to give_hint
@@ -417,6 +416,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           ? { hint: hintOutput.hint, images: hintOutput.images, targetCityId: hintOutput.targetCityId }
           : null;
 
+      // Chips: prefer inline CHIPS: from text, fall back to data-chips part
+      const chipsSource = inlineChips?.chips?.length
+        ? inlineChips.chips
+        : (msg.parts as Array<{ type?: string; data?: { chips?: unknown[] } }>)
+            ?.find((p) => p?.type === "data-chips")?.data?.chips;
+
       return {
         id: msg.id,
         role: msg.role as "user" | "assistant",
@@ -424,7 +429,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         answerResult: answerOutput ? { correct: answerOutput.correct, explanation: answerOutput.explanation } : null,
         hiddenHintData: resolvedHint,
         optionsData: optionsOutput ? { options: optionsOutput.options, allowHint: optionsOutput.allowHint } : null,
-        suggestRepliesData: repliesOutput ? { suggestions: normalizeSuggestions(repliesOutput.suggestions), showHintChip: repliesOutput.showHintChip } : null,
+        suggestRepliesData: chipsSource?.length
+          ? { suggestions: normalizeSuggestions(chipsSource) }
+          : null,
         imageResults: imageOutput?.images || null,
       };
     });
@@ -503,7 +510,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     return null;
   }, [displayMessages, status]);
 
-  // Find active quick reply suggestions (from the last assistant message with suggest_replies)
+  // Find active quick reply suggestions (from the last assistant message with data-chips)
   const activeQuickReplies = useMemo<QuickReplyData | null>(() => {
     if (status === "streaming") return null;
     // Only show if the last message is from assistant (no user reply yet)

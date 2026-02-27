@@ -6,7 +6,7 @@
  * Order (matters for LLM attention):
  *   1. Constitution  — lib/ai/kids/constitution.ts  (safety & age rules, non-negotiable)
  *   2. Character     — Medhat persona & speaking style
- *   3. Tools guide   — image_search, location_search, timeline_search, suggest_replies
+ *   3. Tools guide   — image_search, location_search, timeline_search, chips (structured output)
  *   4. Interaction   — two-step tool rule + golden rule
  */
 

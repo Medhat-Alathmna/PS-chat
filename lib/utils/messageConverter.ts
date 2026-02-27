@@ -17,25 +17,51 @@ import {
 import { normalizeSuggestions } from "@/app/components/kids/games/QuickReplyChips";
 
 /**
+ * Extracts chips from the full response text.
+ * The model appends a chips block at the end: "chips: [{...}]" or "CHIPS:{"chips":[...]}"
+ * Handles lowercase/uppercase, multiline JSON, and both array and object wrapping.
+ */
+export function extractChipsFromText(text: string): { chips: unknown[] } | null {
+  const match = text.match(/\nCHIPS:\s*([\s\S]+)$/i);
+  if (!match) return null;
+  try {
+    let raw = match[1].trim();
+    // Model may output [...] directly instead of {"chips":[...]}
+    if (raw.startsWith("[")) raw = `{"chips":${raw}}`;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed?.chips) && parsed.chips.length > 0) return parsed;
+  } catch {
+    // parse failed
+  }
+  return null;
+}
+
+/**
  * Extracts text content and image file parts from message parts.
  */
 export function extractTextAndImages(parts: unknown[]): {
   textContent: string;
   userImageParts: { url: string; mediaType: string }[];
+  inlineChips: { chips: unknown[] } | null;
 } {
-  let textContent = "";
+  let rawText = "";
   const userImageParts: { url: string; mediaType: string }[] = [];
 
   for (const part of parts) {
     const p = part as { type: string; text?: string; mediaType?: string; url?: string };
     if (p.type === "text" && p.text) {
-      textContent += p.text;
+      rawText += p.text;
     } else if (p.type === "file" && p.mediaType?.startsWith("image/") && p.url) {
       userImageParts.push({ url: p.url, mediaType: p.mediaType });
     }
   }
 
-  return { textContent, userImageParts };
+  // Extract chips from raw text, then strip the chips block from display text
+  const inlineChips = extractChipsFromText(rawText);
+  const chipsPos = rawText.search(/\nCHIPS:/i);
+  const textContent = chipsPos >= 0 ? rawText.slice(0, chipsPos).trim() : rawText;
+
+  return { textContent, userImageParts, inlineChips };
 }
 
 /**
@@ -96,21 +122,16 @@ interface TimelineSearchOutput {
   events: TimelineEvent[];
 }
 
-interface SuggestRepliesOutput {
-  suggestions: unknown[];
-  showHintChip: boolean;
-}
-
 /**
  * Builds a ChatMessage from an AI SDK message.
- * Handles all 7 tools: image_search, location_search, web_search, video_search, 
- * news_search, timeline_search, suggest_replies.
+ * Handles tools: image_search, location_search, web_search, video_search,
+ * news_search, timeline_search. Chips come from data-chips part (experimental_output).
  */
 export function buildChatMessage(
   msg: { id: string; role: string; parts: unknown[] },
   index: number
 ): ChatMessage {
-  const { textContent, userImageParts } = extractTextAndImages(msg.parts);
+  const { textContent, userImageParts, inlineChips } = extractTextAndImages(msg.parts);
 
   let images: ImageResult[] | undefined;
   let location: LocationInfo | undefined;
@@ -119,7 +140,7 @@ export function buildChatMessage(
   let video: VideoResult | undefined;
   let news: NewsItem[] | undefined;
   let timeline: TimelineEvent[] | undefined;
-  let suggestRepliesData: { suggestions: SuggestionChip[]; showHintChip: boolean } | undefined;
+  let suggestRepliesData: { suggestions: SuggestionChip[] } | undefined;
 
   // Process image_search
   const imageResult = getToolOutput<ImageSearchOutput>(msg.parts, "image_search");
@@ -164,13 +185,13 @@ export function buildChatMessage(
     timeline = timelineResult.events;
   }
 
-  // Process suggest_replies
-  const repliesResult = getToolOutput<SuggestRepliesOutput>(msg.parts, "suggest_replies");
-  if (repliesResult?.suggestions) {
-    suggestRepliesData = {
-      suggestions: normalizeSuggestions(repliesResult.suggestions),
-      showHintChip: repliesResult.showHintChip,
-    };
+  // Process chips — prefer inline CHIPS: from text, fall back to data-chips part
+  const chipsSource = inlineChips?.chips?.length
+    ? inlineChips.chips
+    : (msg.parts as Array<{ type?: string; data?: { chips?: unknown[] } }>)
+        ?.find((p) => p?.type === "data-chips")?.data?.chips;
+  if (chipsSource?.length) {
+    suggestRepliesData = { suggestions: normalizeSuggestions(chipsSource) };
   }
 
   return {

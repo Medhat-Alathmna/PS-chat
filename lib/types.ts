@@ -50,7 +50,7 @@ export type ChatMessage = {
   video?: VideoResult;
   news?: NewsItem[];
   timeline?: TimelineEvent[];
-  suggestRepliesData?: { suggestions: SuggestionChip[]; showHintChip: boolean };
+  suggestRepliesData?: { suggestions: SuggestionChip[] };
   debug?: DebugInfo;
 };
 

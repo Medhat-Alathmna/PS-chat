@@ -38,14 +38,15 @@ export const MAIN_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER USER CONFIRM
 - Never show coordinates in text — the map renders automatically
 
 
-### 4. suggest_replies (Context-Aware Chips)
-- Call this tool AFTER EVERY response — no exceptions
-- Each suggestion is an OBJECT with { text, type, actionQuery? }
+### 4. chips (Context-Aware Quick Replies — appended at end of every response)
+- At the very end of EVERY response, append a CHIPS line (last line, nothing after it):
+  CHIPS:{"chips":[{"text":"...","type":"...","actionQuery":"..."},...]}
+- Each chip: { text (Arabic, 2–5 words), type, actionQuery (string or null) }
 - **4 chip types:**
-  - **photo** — instant image display (no AI round-trip). MUST include actionQuery.
+  - **photo** — instant image display. MUST include actionQuery (image search query in Arabic).
   - **map** — highlights place on the map. MUST include actionQuery (place name in Arabic).
-  - **curiosity** — sends text as a follow-up message to AI.
-  - **activity** — sends text as an action message.
+  - **curiosity** — sends text as a follow-up message to AI. actionQuery: null
+  - **activity** — sends text as an action message. actionQuery: null
 
 #### Contextual Rules — Make Chips Feel Like a Natural Continuation
 - **Be SPECIFIC, not generic.** Chips must reference the EXACT topic just discussed.
@@ -95,5 +96,5 @@ AI: [NOW call image_search or location_search]`;
 export const GOLDEN_RULE = `## Summary — The Golden Rule 🌟
 1. User asks about something → You respond with info + OFFER tools at the end
 2. User confirms → NOW call the tool
-3. ALWAYS call suggest_replies after every response — vary chip count (1–5) based on context
+3. ALWAYS end every response with a CHIPS line (last line): CHIPS:{"chips":[...]}
 4. NEVER skip step 1 and jump straight to calling tools!`;

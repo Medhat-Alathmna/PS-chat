@@ -6,7 +6,21 @@ import { searchYouTubeVideos } from "@/lib/services/video/youtube";
 import { fetchPalestinianNews } from "@/lib/services/news/rss-parser";
 import { searchTimelineByKeyword, getTimelineEvents } from "@/lib/data/palestinian-history";
 import { ImageResult, Coordinates, VideoResult, NewsItem, TimelineEvent } from "@/lib/types";
-import { suggestRepliesTool } from "./game-tools";
+
+// ============================================
+// CHIP SCHEMAS (for experimental_output / Output.object)
+// ============================================
+
+export const chipSchema = z.object({
+  text: z.string().min(2).max(30),
+  type: z.enum(["photo", "map", "curiosity", "activity"]),
+  // nullable (not optional) — OpenAI structured output requires all keys in `required`
+  actionQuery: z.string().nullable(),
+});
+
+export const chipsOutputSchema = z.object({
+  chips: z.array(chipSchema).min(1).max(5),
+});
 
 /**
  * Image Search Tool
@@ -457,9 +471,9 @@ export const allTools = {
 /**
  * Kids chat tools - limited set with conversational usage
  * Only image_search and location_search for child-friendly experience
+ * Chips are now generated via experimental_output (Output.object) — not a tool
  */
 export const kidsTools = {
   image_search: imageSearchTool,
   location_search: locationSearchTool,
-  suggest_replies: suggestRepliesTool,
 };

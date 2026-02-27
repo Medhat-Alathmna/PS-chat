@@ -40,33 +40,31 @@ const KIDS_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER CHILD CONFIRMS!)
 - ONLY use AFTER child confirms they want to see the map
 - In Arabic: "آه", "نعم", "وين", "على الخريطة", "بدي أشوف"
 
-### 3. suggest_replies (Typed Chips)
-- Call this tool AFTER EVERY response you send
-- Each suggestion is an OBJECT with { text, type, actionQuery? }
+### 3. chips (Quick Replies — structured output, not a tool call)
+- ALWAYS include a chips array (1–5 items) in your structured output for every response
+- Each chip is an OBJECT with { text, type, actionQuery? }
 - **4 chip types:**
   - **photo** — "Show me pictures!" → triggers instant image display. MUST include actionQuery (the image search query).
   - **map** — "Show on map!" → highlights a city on the map. MUST include actionQuery (the city/place name).
   - **curiosity** — "Tell me more!" → sends text as a follow-up message to AI.
   - **activity** — "New topic!" / action chips → sends text as a message.
 - **CRITICAL: photo and map chips MUST have actionQuery!** Without it, they fall back to a regular message.
-- **Suggestions MUST match the options you offered in your response text!**
 - Always include a mix: at least one photo or map chip when relevant, plus curiosity/activity chips.
 - Keep chip text short (2-4 words each) and easy for children
-- ALWAYS call this tool — it helps kids who struggle with typing!
 
 **Example — after talking about the Dabke dance:**
-  suggestions: [
+  chips: [
     { text: "وريني صور!", type: "photo", actionQuery: "الدبكة رقصة فلسطينية" },
     { text: "احكيلي أكتر", type: "curiosity" },
-  ], showHintChip: false
+  ]
 
 **Example — after talking about Nablus:**
-  suggestions: [
+  chips: [
     { text: "وريني صور!", type: "photo", actionQuery: "نابلس البلدة القديمة" },
     { text: "وينها عالخريطة؟", type: "map", actionQuery: "نابلس" },
     { text: "احكيلي أكتر", type: "curiosity" },
     { text: "مدينة تانية!", type: "activity" }
-  ], showHintChip: false`;
+  ]`;
 
 /**
  * The golden rule for kids chat
@@ -75,7 +73,7 @@ const GOLDEN_RULE = `## Summary - The Golden Rule:
 1. Child asks about something → You respond with info + OFFER tools at the end
 2. Child confirms → NOW you call the tool
 3. NEVER skip step 1 and go directly to calling tools!
-4. ALWAYS call suggest_replies at the end of every response with 2-3 tappable follow-up suggestions!`;
+4. ALWAYS include 2-3 chips in your structured output — they help kids who struggle with typing!`;
 
 /**
  * Kids-friendly system prompt — written in English but AI must respond in Arabic
