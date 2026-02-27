@@ -5,8 +5,8 @@
  * 1. DRY principle - no repeated rules
  * 2. Minimal examples - only essential ones
  * 3. State machine approach - clear transitions
- * 4. Critical info at START and END (recency bias)
- * 5. Separated static vs dynamic content
+ * 4. Static content FIRST for prompt caching (OpenAI 50% discount on cached prefix)
+ * 5. Critical checklist at END (recency bias)
  */
 
 import { tool } from "ai";
@@ -395,45 +395,24 @@ export function buildSystemPrompt(
   const { city: nextCity } = getCityForRound(nextExcludeIds, roundNumber + 1, difficulty, sessionSeed, age);
 
   const parts: string[] = [
-    // 1. CRITICAL: Target city FIRST (LLM pays most attention to start)
-    `⚠️ TARGET CITY: ${city.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
+    // ── STATIC PREFIX (cacheable ~1200-1500 tokens) ──────────────────
 
-    // 2. Character
+    // 1. Character (static)
     MEDHAT_BASE,
 
-    // 3. Core rules (compact)
+    // 2. Core rules (static)
     CORE_RULES,
 
-    // 4. City data (current)
-    formatCityData(city, isReviewMode),
-
-    // 5. Next city data (compact — for immediate advance after correct answer)
-    formatNextCityData(nextCity),
-
-    // 6. Difficulty
-    buildDifficultySection(difficulty, age),
-
-    // 7. Age adaptation
-    buildAgeAdaptationSection(age),
-
-    // 8. Player name
-    playerName ? `## Player: ${playerName}\nAddress by name in EVERY response.` : "",
-
-    // 9. Chat context
-    chatContext?.recentTopics?.length
-      ? `## Context: Player was talking about ${chatContext.recentTopics.join(", ")}`
-      : "",
-
-    // 10. Game info
-    `## Game: مستكشف المدن | Rounds: 5 | Points: 15/correct | Bonus: 25`,
-
-    // 11. Safety
+    // 3. Safety (static)
     SAFETY_RULES,
 
-    // 12. Tool reference
+    // 4. Tool reference (static)
     TOOL_REFERENCE,
 
-    // 13. Chips output (inline at end of every response)
+    // 5. Game info (static)
+    `## Game: مستكشف المدن | Rounds: 5 | Points: 15/correct | Bonus: 25`,
+
+    // 6. Chips output (static)
     `## Quick Reply Chips
 At the very end of EVERY response (last line, nothing after it), append:
 CHIPS:{"chips":[{"text":"chip text in Arabic","type":"curiosity|activity","actionQuery":null},...]}
@@ -441,6 +420,31 @@ CHIPS:{"chips":[{"text":"chip text in Arabic","type":"curiosity|activity","actio
 - Use type "curiosity" for follow-up questions, "activity" for actions
 - actionQuery must be null for game chips
 - Examples: "أعطني تلميح", "أعرف!", "مدينة جديدة 🎉", "كيف تلعب؟"`,
+
+    // ── SEMI-STATIC / DYNAMIC (changes per session/round) ────────────
+
+    // 7. Difficulty (semi-static — per session)
+    buildDifficultySection(difficulty, age),
+
+    // 8. Age adaptation (semi-static — per session)
+    buildAgeAdaptationSection(age),
+
+    // 9. Player name (semi-static — per session)
+    playerName ? `## Player: ${playerName}\nAddress by name in EVERY response.` : "",
+
+    // 10. Chat context (dynamic)
+    chatContext?.recentTopics?.length
+      ? `## Context: Player was talking about ${chatContext.recentTopics.join(", ")}`
+      : "",
+
+    // 11. Target city (dynamic — changes per round)
+    `⚠️ TARGET CITY: ${city.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
+
+    // 12. City data current (dynamic)
+    formatCityData(city, isReviewMode),
+
+    // 13. Next city data (dynamic)
+    formatNextCityData(nextCity),
 
     // 14. CRITICAL REMINDER at END (LLM pays attention to end)
     `⚠️ CHECKLIST before responding:

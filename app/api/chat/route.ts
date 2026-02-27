@@ -14,6 +14,7 @@ import { getModel } from "@/lib/ai/config";
 import { kidsTools, timelineSearchTool } from "@/lib/ai/tools";
 import { logError } from "@/lib/utils/error-handler";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
+import { buildCacheOptions, formatCacheUsage } from "@/lib/ai/cache";
 
 const mainTools = {
   ...kidsTools,
@@ -70,10 +71,13 @@ export async function POST(req: NextRequest) {
           system: systemPrompt,
           messages: convertedMessages,
           tools: mainTools,
-          onFinish: async ({ text, toolCalls }) => {
+          ...buildCacheOptions("main-chat"),
+          onFinish: async ({ text, toolCalls, usage }) => {
+            const cache = formatCacheUsage(usage as Record<string, unknown>);
             console.log("[main-chat] Stream finished", {
               textLength: text.length,
               toolCallsCount: toolCalls?.length || 0,
+              ...(cache && { cache }),
             });
           },
         });

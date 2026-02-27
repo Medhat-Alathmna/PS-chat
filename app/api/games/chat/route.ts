@@ -16,6 +16,7 @@ import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games"
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { logError } from "@/lib/utils/error-handler";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
+import { buildCacheOptions, formatCacheUsage } from "@/lib/ai/cache";
 
 type GameChatRequest = {
   messages: UIMessage[];
@@ -284,17 +285,21 @@ export async function POST(req: NextRequest) {
 
     const uiStream = createUIMessageStream({
       execute: async ({ writer }) => {
+        const cacheKey = `game-${sessionSeedVal}-d${gameDifficulty}-a${playerAge}`;
         const result = streamText({
           model: openai(getModel()),
           system: systemPrompt,
           messages: convertedMessages,
           tools,
           stopWhen: stepCountIs(5),
-          onFinish: async ({ text, toolCalls, toolResults }) => {
+          ...buildCacheOptions(cacheKey),
+          onFinish: async ({ text, toolCalls, toolResults, usage }) => {
+            const cache = formatCacheUsage(usage as Record<string, unknown>);
             console.log("[game-chat] Stream finished", {
               textLength: text.length,
               toolCallsCount: toolCalls?.length || 0,
               toolResultsCount: toolResults?.length || 0,
+              ...(cache && { cache }),
             });
           },
         });

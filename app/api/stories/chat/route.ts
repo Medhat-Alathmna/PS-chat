@@ -7,6 +7,7 @@ import { buildStorySystemPrompt } from "@/lib/ai/stories/prompts";
 import { StoryConfig } from "@/lib/types/stories";
 import { KidsProfile } from "@/lib/types/games";
 import { logError } from "@/lib/utils/error-handler";
+import { buildCacheOptions, formatCacheUsage } from "@/lib/ai/cache";
 
 type StoryChatRequest = {
   messages: UIMessage[];
@@ -54,17 +55,21 @@ export async function POST(req: NextRequest) {
     console.log("[stories] Config:", storyConfig);
     console.log("[stories] System prompt length:", systemPrompt.length);
 
+    const cacheKey = `story-${storyConfig.genre}-${storyConfig.setting}-${storyConfig.mode}`;
     const result = streamText({
       model: openai(getModel()),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools,
       stopWhen: stepCountIs(15),
-      onFinish: async ({ text, toolCalls, toolResults }) => {
+      ...buildCacheOptions(cacheKey),
+      onFinish: async ({ text, toolCalls, toolResults, usage }) => {
+        const cache = formatCacheUsage(usage as Record<string, unknown>);
         console.log("[stories] Stream finished", {
           textLength: text.length,
           toolCallsCount: toolCalls?.length || 0,
           toolResultsCount: toolResults?.length || 0,
+          ...(cache && { cache }),
         });
       },
     });
