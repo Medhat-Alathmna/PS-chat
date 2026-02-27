@@ -28,7 +28,6 @@ export const MAIN_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER USER CONFIRM
 
 ### 2. location_search
 - ONLY use AFTER user confirms they want to see the map
-- Confirms: "وين"، "على الخريطة"، "بدي أشوف مكانها"
 - Never show coordinates in text — the map renders automatically
 
 
