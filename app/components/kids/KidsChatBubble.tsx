@@ -8,8 +8,6 @@ import SpeakingIndicator from "./SpeakingIndicator";
 interface KidsChatBubbleProps {
   message: ChatMessage;
   isStreaming?: boolean;
-  onLike?: () => void;
-  liked?: boolean;
   isSpeaking?: boolean;
   onSpeak?: () => void;
   onStopSpeaking?: () => void;
@@ -22,8 +20,6 @@ const ASSISTANT_COLORS = ["#6C5CE7", "#0984E3", "#00B894", "#E17055", "#FDCB6E"]
 export default function KidsChatBubble({
   message,
   isStreaming = false,
-  onLike,
-  liked = false,
   isSpeaking = false,
   onSpeak,
   onStopSpeaking,
@@ -79,7 +75,7 @@ export default function KidsChatBubble({
             </div>
           )}
           <p className="leading-relaxed whitespace-pre-wrap" dir="auto" style={textStyle}>
-            {formatKidsMessageWithIcons(message.content)}
+            {message.content}
           </p>
         </div>
 
@@ -91,7 +87,6 @@ export default function KidsChatBubble({
   // ── Assistant message — matches GameChatBubble structure ──────
   return (
     <div className={`flex gap-2 items-start ${className ?? "animate-fade-in-up"}`}>
-      <AnimatedMascot state={mascotState} size="sm" className="shrink-0 mt-1" />
 
       <div className="max-w-[85%] flex flex-col gap-2">
         {/* Bubble */}
@@ -167,12 +162,6 @@ export default function KidsChatBubble({
                 onToggle={isSpeaking ? () => onStopSpeaking?.() : () => onSpeak()}
               />
             )}
-            <button
-              onClick={() => onLike?.()}
-              className={`w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-lg hover:scale-110 active:scale-95 transition-transform ${liked ? "animate-heart-beat" : ""}`}
-            >
-              {liked ? "❤️" : "🤍"}
-            </button>
           </div>
         )}
       </div>

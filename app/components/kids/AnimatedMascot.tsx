@@ -120,14 +120,6 @@ export default function AnimatedMascot({
           }}
         />
 
-        {/* Face emoji */}
-        <span
-          className="text-4xl sm:text-5xl lg:text-6xl select-none"
-          style={{ fontSize: size === "xl" ? "4rem" : undefined }}
-        >
-          {currentEmoji}
-        </span>
-
         {/* Celebration effects */}
         {state === "celebrating" && (
           <>
