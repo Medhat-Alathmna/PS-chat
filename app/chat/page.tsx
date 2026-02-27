@@ -138,7 +138,7 @@ function KidsChatPageInner() {
           </div>
 
           {/* Chat Column */}
-            {/* Chat Messages */}          <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ paddingInlineEnd: "23rem" }}>
+            {/* Chat Messages */}          <div className="flex-1 flex flex-col min-w-0 overflow-hidden md:pe-[23rem]">
 
             <ChatMessages
               messages={chat.messages}

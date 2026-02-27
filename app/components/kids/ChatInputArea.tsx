@@ -69,27 +69,9 @@ export default function ChatInputArea({
         onSubmit={(event) => void onSubmit(event)}
         className="mx-auto max-w-2xl"
       >
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onImageSelect}
-        />
+
 
         <div className={`flex items-end gap-3 sm:gap-4 rounded-[2rem] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] transition-all focus-within:shadow-[0_12px_48px_rgba(108,92,231,0.25)] focus-within:ring-4 focus-within:ring-[var(--kids-purple)]/20 border-2 border-white p-3 sm:p-4 ${hasActiveChips ? "opacity-90 grayscale-[0.5]" : ""}`}>
-
-          {/* Camera button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-purple-50 text-[var(--kids-purple)] transition-all hover:from-purple-200 hover:to-purple-100 hover:scale-110 active:scale-90 disabled:opacity-40 shadow-md"
-            aria-label="إرفاق صورة"
-          >
-            <span className="text-2xl sm:text-3xl">📷</span>
-          </button>
 
           <div className="flex-1 min-w-0 py-3 sm:py-4">
             <textarea
