@@ -35,6 +35,7 @@ import { useChatContext } from "@/lib/hooks/useChatContext";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import { useMapSettings } from "@/lib/hooks/useMapSettings";
 import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
+import { useChatSettings } from "@/lib/hooks/useChatSettings";
 import { useBackgroundMusicContext } from "@/app/layout";
 
 // Dynamic import for map component
@@ -139,6 +140,7 @@ export interface UseChatPageReturn {
   // Text settings
   text: {
     style: { fontFamily: string; fontSize: string };
+    displayMode: import("@/lib/types/chat-settings").MessageDisplayMode;
   };
 
   // Popups state
@@ -252,6 +254,9 @@ export function useChatPage(): UseChatPageReturn {
   // Text settings
   const { settings: textSettings } = useTextSettings(profileId);
   const textStyle = getTextStyleValues(textSettings);
+
+  // Chat display settings
+  const { settings: chatSettings } = useChatSettings(profileId);
 
   // System prompt with name
   const systemPrompt = useMemo(
@@ -629,6 +634,7 @@ export function useChatPage(): UseChatPageReturn {
     // Text settings
     text: {
       style: textStyle,
+      displayMode: chatSettings.displayMode,
     },
 
     // Popups state

@@ -25,6 +25,7 @@ interface GameChatBubbleProps {
   onSpeak?: () => void;
   onStopSpeaking?: () => void;
   textStyle?: { fontFamily: string; fontSize: string };
+  className?: string;
 }
 
 const ASSISTANT_COLORS = [
@@ -48,6 +49,7 @@ export default function GameChatBubble({
   onSpeak,
   onStopSpeaking,
   textStyle,
+  className,
 }: GameChatBubbleProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const bgColor = useMemo(
@@ -73,7 +75,7 @@ export default function GameChatBubble({
   if (!hasVisibleContent) return null;
 
   return (
-    <div className="flex gap-2 items-start animate-fade-in-up">
+    <div className={`flex gap-2 items-start ${className ?? "animate-fade-in-up"}`}>
       <AnimatedMascot
         state={isStreaming ? "thinking" : "happy"}
         size="sm"

@@ -133,6 +133,7 @@ function KidsChatPageInner() {
               activeQuickReplies={chat.activeQuickReplies}
               currentMessageId={voice.currentMessageId}
               textStyle={text.style}
+              displayMode={text.displayMode}
               onChipClick={handlers.handleChipClick}
               onSpeak={voice.speakMessage}
               onStopSpeaking={voice.stopSpeaking}

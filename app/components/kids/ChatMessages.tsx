@@ -5,6 +5,8 @@ import { ChatMessage, ImageResult } from "@/lib/types";
 import KidsChatBubble, { TypingBubble } from "./KidsChatBubble";
 import QuickReplyChips from "./games/QuickReplyChips";
 import type { QuickReplyData, SuggestionChip } from "./games/QuickReplyChips";
+import type { MessageDisplayMode } from "@/lib/types/chat-settings";
+import { useStaticReveal } from "@/lib/hooks/useStaticReveal";
 
 /**
  * Props for the ChatMessages component
@@ -18,6 +20,7 @@ interface ChatMessagesProps {
   activeQuickReplies: QuickReplyData | null;
   currentMessageId: string | null;
   textStyle: { fontFamily: string; fontSize: string };
+  displayMode?: MessageDisplayMode;
   onChipClick: (chip: SuggestionChip) => void;
   onSpeak: (message: ChatMessage) => void;
   onStopSpeaking: () => void;
@@ -37,19 +40,24 @@ export default function ChatMessages({
   activeQuickReplies,
   currentMessageId,
   textStyle,
+  displayMode = "streaming",
   onChipClick,
   onSpeak,
   onStopSpeaking,
   chatContainerRef,
 }: ChatMessagesProps) {
+  const { shouldHide, revealClass, showTypingBubble } = useStaticReveal(status, messages, displayMode);
+
   return (
     <main className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 py-3 scroll-smooth" ref={chatContainerRef}>
       <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
         {messages.map((message, index) => {
+          if (shouldHide(index, message.role)) return null;
           const extra = persistedImages[message.id];
           const displayMessage = extra?.length
             ? { ...message, images: [...(message.images ?? []), ...extra] }
             : message;
+          const reveal = revealClass(message.id);
           return (
             <KidsChatBubble
               key={message.id}
@@ -63,6 +71,7 @@ export default function ChatMessages({
               onSpeak={() => onSpeak(message)}
               onStopSpeaking={onStopSpeaking}
               textStyle={textStyle}
+              {...(reveal ? { className: reveal } : {})}
             />
           );
         })}
@@ -88,7 +97,7 @@ export default function ChatMessages({
         )}
 
         {/* Typing indicator */}
-        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+        {isLoading && (showTypingBubble || messages[messages.length - 1]?.role !== "assistant") && (
           <TypingBubble />
         )}
       </div>

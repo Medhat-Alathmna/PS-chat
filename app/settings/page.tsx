@@ -8,6 +8,7 @@ import ErrorBoundary from "@/app/components/ErrorBoundary";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import TextSettingsContent from "@/app/components/kids/settings/TextSettingsContent";
 import MapSettingsContent from "@/app/components/kids/settings/MapSettingsContent";
+import ChatSettingsContent from "@/app/components/kids/settings/ChatSettingsContent";
 
 export default function SettingsPage() {
   return (
@@ -22,7 +23,8 @@ export default function SettingsPage() {
 function SettingsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") === "map" ? "map" : "text";
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "map" ? "map" : tabParam === "chat" ? "chat" : "text";
 
   const {
     profiles,
@@ -97,6 +99,17 @@ function SettingsInner() {
               <span>إعدادات النص</span>
             </button>
             <button
+              onClick={() => router.replace("/settings?tab=chat")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                activeTab === "chat"
+                  ? "bg-[var(--kids-purple)] text-white shadow-md"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <span>💬</span>
+              <span>إعدادات المحادثة</span>
+            </button>
+            <button
               onClick={() => router.replace("/settings?tab=map")}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 activeTab === "map"
@@ -105,7 +118,7 @@ function SettingsInner() {
               }`}
             >
               <span>🗺️</span>
-              <span>إعدادات الخريطة</span>
+              <span>الخريطة</span>
             </button>
           </div>
         </div>
@@ -115,6 +128,8 @@ function SettingsInner() {
           <div className="mx-auto max-w-2xl">
             {activeTab === "text" ? (
               <TextSettingsContent profileId={profileId} />
+            ) : activeTab === "chat" ? (
+              <ChatSettingsContent profileId={profileId} />
             ) : (
               <MapSettingsContent profileId={profileId} />
             )}

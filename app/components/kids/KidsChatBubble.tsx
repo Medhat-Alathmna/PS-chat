@@ -14,6 +14,7 @@ interface KidsChatBubbleProps {
   onSpeak?: () => void;
   onStopSpeaking?: () => void;
   textStyle?: { fontFamily: string; fontSize: string };
+  className?: string;
 }
 
 const ASSISTANT_COLORS = ["#6C5CE7", "#0984E3", "#00B894", "#E17055", "#FDCB6E"];
@@ -27,6 +28,7 @@ export default function KidsChatBubble({
   onSpeak,
   onStopSpeaking,
   textStyle,
+  className,
 }: KidsChatBubbleProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const isUser = message.role === "user";
@@ -88,7 +90,7 @@ export default function KidsChatBubble({
 
   // ── Assistant message — matches GameChatBubble structure ──────
   return (
-    <div className="flex gap-2 items-start animate-fade-in-up">
+    <div className={`flex gap-2 items-start ${className ?? "animate-fade-in-up"}`}>
       <AnimatedMascot state={mascotState} size="sm" className="shrink-0 mt-1" />
 
       <div className="max-w-[85%] flex flex-col gap-2">

@@ -15,6 +15,8 @@ import { useSounds } from "@/lib/hooks/useSounds";
 import { useDiscoveredCities } from "@/lib/hooks/useDiscoveredCities";
 import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
+import { useChatSettings } from "@/lib/hooks/useChatSettings";
+import { useStaticReveal } from "@/lib/hooks/useStaticReveal";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import ProfileSetup from "../../../components/kids/ProfileSetup";
@@ -123,6 +125,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const { getContext } = useChatContext(profileId);
   const { settings: textSettings } = useTextSettings(profileId);
   const textStyle = getTextStyleValues(textSettings);
+  const { settings: chatSettings } = useChatSettings(profileId);
   const gameState = useGameState(gameId, difficulty || undefined, profileId);
   const gameRewards = useGameRewards(profileId);
   const discoveredCities = useDiscoveredCities(profileId);
@@ -437,6 +440,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     });
   }, [aiMessages]);
 
+  // Static reveal for display mode
+  const { shouldHide: shouldHideMsg, revealClass: getRevealClass, showTypingBubble } = useStaticReveal(status, displayMessages, chatSettings.displayMode);
+
   // Extract pending hint from the last assistant message with options
   // The hint is pre-generated with give_hint but hidden until the player requests it
   useEffect(() => {
@@ -736,29 +742,34 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             {/* Chat area */}
             <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth" ref={chatContainerRef}>
               <div className={`mx-auto flex flex-col gap-4 pb-4 ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}>
-                {displayMessages.map((msg, index) => (
-                  <GameChatBubble
-                    key={msg.id}
-                    role={msg.role}
-                    content={msg.content}
-                    isStreaming={
-                      status === "streaming" &&
-                      index === displayMessages.length - 1 &&
-                      msg.role === "assistant"
-                    }
-                    answerResult={msg.answerResult}
-                    hintData={null}
-                    optionsData={msg.optionsData}
-                    isActiveOptions={false}
-                    onOptionClick={handleOptionClick}
-                    onHintClick={handleHintClick}
-                    imageResults={msg.imageResults}
-                    isSpeaking={currentMessageId === msg.id}
-                    onSpeak={() => speakMessage(msg)}
-                    onStopSpeaking={stopSpeaking}
-                    textStyle={textStyle}
-                  />
-                ))}
+                {displayMessages.map((msg, index) => {
+                  if (shouldHideMsg(index, msg.role)) return null;
+                  const reveal = getRevealClass(msg.id);
+                  return (
+                    <GameChatBubble
+                      key={msg.id}
+                      role={msg.role}
+                      content={msg.content}
+                      isStreaming={
+                        status === "streaming" &&
+                        index === displayMessages.length - 1 &&
+                        msg.role === "assistant"
+                      }
+                      answerResult={msg.answerResult}
+                      hintData={null}
+                      optionsData={msg.optionsData}
+                      isActiveOptions={false}
+                      onOptionClick={handleOptionClick}
+                      onHintClick={handleHintClick}
+                      imageResults={msg.imageResults}
+                      isSpeaking={currentMessageId === msg.id}
+                      onSpeak={() => speakMessage(msg)}
+                      onStopSpeaking={stopSpeaking}
+                      textStyle={textStyle}
+                      {...(reveal ? { className: reveal } : {})}
+                    />
+                  );
+                })}
 
                 {/* Pending hint bubble — shown when player taps hint button (ABOVE options) */}
                 {showPendingHint && pendingHint && (
@@ -813,7 +824,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 )}
 
                 {isLoading &&
-                  displayMessages[displayMessages.length - 1]?.role !== "assistant" && (
+                  (showTypingBubble || displayMessages[displayMessages.length - 1]?.role !== "assistant") && (
                     <GameTypingBubble />
                   )}
               </div>

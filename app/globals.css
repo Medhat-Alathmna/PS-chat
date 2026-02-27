@@ -760,6 +760,22 @@ code {
   animation: slideInFromRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
+/* Fade-in reveal for static message mode */
+@keyframes fadeInReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-reveal {
+  animation: fadeInReveal 0.4s ease-out forwards;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-speaking,
@@ -770,7 +786,8 @@ code {
   .city-marker-region-hint,
   .city-marker-revealed,
   .animate-slide-in-from-left,
-  .animate-slide-in-from-right {
+  .animate-slide-in-from-right,
+  .animate-fade-in-reveal {
     animation: none;
   }
 }
