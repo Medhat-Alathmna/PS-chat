@@ -33,6 +33,8 @@ interface ExpandableMapProps {
   highlightRegion?: string;
   /** City ID to auto-fly to (e.g. just-revealed city) */
   flyToCity?: string;
+  /** Arbitrary coordinates to fly to (e.g. from location_search tool) */
+  flyToCoordinates?: { lat: number; lng: number; zoom?: number } | null;
   /** Show map controls (search, filter, reset) */
   showControls?: boolean;
   /** Title to display in header */
@@ -65,6 +67,7 @@ function ExpandableMapBase({
   revealedCities = [],
   highlightRegion,
   flyToCity,
+  flyToCoordinates,
   showControls = false,
   title = "🗺️ خريطة فلسطين",
   subtitle,
@@ -165,6 +168,7 @@ function ExpandableMapBase({
               revealedCities={revealedCities}
               highlightRegion={highlightRegion}
               flyToCity={flyToCity}
+              flyToCoordinates={flyToCoordinates}
               showControls={true}
               enableFullInteraction={true}
               className="h-full"
@@ -223,6 +227,7 @@ function ExpandableMapBase({
               revealedCities={revealedCities}
               highlightRegion={highlightRegion}
               flyToCity={flyToCity}
+              flyToCoordinates={flyToCoordinates}
               showControls={showControls}
               enableFullInteraction={true}
               className="h-full"
@@ -251,6 +256,8 @@ function arePropsEqual(prev: ExpandableMapProps, next: ExpandableMapProps): bool
     prev.gameMode === next.gameMode &&
     prev.highlightRegion === next.highlightRegion &&
     prev.flyToCity === next.flyToCity &&
+    prev.flyToCoordinates?.lat === next.flyToCoordinates?.lat &&
+    prev.flyToCoordinates?.lng === next.flyToCoordinates?.lng &&
     prev.showControls === next.showControls &&
     prev.title === next.title &&
     prev.subtitle === next.subtitle &&

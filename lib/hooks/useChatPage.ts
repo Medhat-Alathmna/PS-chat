@@ -79,6 +79,7 @@ export interface UseChatPageReturn {
     showMobileMap: boolean;
     setShowMobileMap: React.Dispatch<React.SetStateAction<boolean>>;
     highlightedCityId: string | null;
+    flyToCoordinates: { lat: number; lng: number; zoom?: number } | null;
     mapSettings: ReturnType<typeof useMapSettings>["settings"];
     PalestineLeafletMap: typeof PalestineLeafletMap;
   };
@@ -184,6 +185,7 @@ export function useChatPage(): UseChatPageReturn {
   // Map state
   const [highlightedCityId, setHighlightedCityId] = useState<string | null>(null);
   const [showMobileMap, setShowMobileMap] = useState(false);
+  const [flyToCoordinates, setFlyToCoordinates] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
 
   // Direct images from photo chip (no AI round-trip)
   const [directImages, setDirectImages] = useState<ImageResult[]>([]);
@@ -465,6 +467,18 @@ export function useChatPage(): UseChatPageReturn {
     }
   }, [messages]);
 
+  // Fly to coordinates from location_search tool result
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role === "assistant" && lastMsg.mapData?.coordinates) {
+      const { lat, lng } = lastMsg.mapData.coordinates;
+      if (typeof lat === "number" && typeof lng === "number" && !isNaN(lat) && !isNaN(lng)) {
+        setFlyToCoordinates({ lat, lng, zoom: lastMsg.mapData.zoom ?? 14 });
+      }
+    }
+  }, [messages]);
+
   // City click handler — just highlight the city
   const handleCityClick = useCallback((city: City) => {
     setHighlightedCityId(city.id);
@@ -573,6 +587,7 @@ export function useChatPage(): UseChatPageReturn {
       showMobileMap,
       setShowMobileMap,
       highlightedCityId,
+      flyToCoordinates,
       mapSettings,
       PalestineLeafletMap,
     },

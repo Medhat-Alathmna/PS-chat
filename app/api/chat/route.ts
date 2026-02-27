@@ -72,6 +72,18 @@ export async function POST(req: NextRequest) {
           messages: convertedMessages,
           tools: mainTools,
           ...buildCacheOptions("main-chat"),
+          onStepFinish: ({ toolCalls, toolResults }) => {
+            if (toolCalls?.length) {
+              for (const call of toolCalls) {
+                const result = toolResults?.find((r) => r.toolCallId === call.toolCallId);
+                console.log("[main-chat] Tool call", {
+                  tool: call.toolName,
+                  args: call.args,
+                  result: result?.result,
+                });
+              }
+            }
+          },
           onFinish: async ({ text, toolCalls, usage }) => {
             const cache = formatCacheUsage(usage as Record<string, unknown>);
             console.log("[main-chat] Stream finished", {

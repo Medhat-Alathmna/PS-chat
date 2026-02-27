@@ -42,6 +42,8 @@ interface PalestineLeafletMapProps {
   highlightRegion?: string;
   /** City ID to auto-fly to (e.g. just-revealed city) */
   flyToCity?: string;
+  /** Arbitrary coordinates to fly to (e.g. from location_search tool) */
+  flyToCoordinates?: { lat: number; lng: number; zoom?: number } | null;
   /** Show map controls (search, filter, reset) */
   showControls?: boolean;
   /** Enable full map interaction (zoom, pan, drag) */
@@ -264,6 +266,7 @@ function LeafletMapInner({
   revealedCities = [],
   highlightRegion,
   flyToCity: flyToCityProp,
+  flyToCoordinates,
   showControls = false,
   enableFullInteraction = false,
   height = "100%",
@@ -391,6 +394,31 @@ function LeafletMapInner({
     return null;
   }
 
+  function FlyToCoordinatesComponent({ coords }: { coords: { lat: number; lng: number; zoom?: number } | null | undefined }) {
+    const map = useMap();
+    useEffect(() => {
+      if (!coords) return;
+      const { lat, lng, zoom = 14 } = coords;
+      if (isNaN(lat) || isNaN(lng) || !isFinite(lat) || !isFinite(lng)) return;
+
+      let retries = 0;
+      const tryFly = () => {
+        try {
+          const container = map.getContainer();
+          if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
+            if (retries < 10) { retries++; requestAnimationFrame(tryFly); }
+            return;
+          }
+          map.setView([lat, lng], zoom, { animate: true });
+        } catch (error) {
+          console.error("FlyToCoordinates error:", error, coords);
+        }
+      };
+      tryFly();
+    }, [coords, map]);
+    return null;
+  }
+
   const handleCitySelect = (cityId: string) => {
     setSelectedCityId(cityId);
     const city = CITIES.find((c) => c.id === cityId);
@@ -483,6 +511,9 @@ function LeafletMapInner({
           cityId={flyToCityProp || highlightedCity || selectedCityId || undefined}
           zoomLevel={enableFullInteraction ? 11 : 10}
         />
+
+        {/* Fly to arbitrary coordinates (e.g. from location_search tool) */}
+        <FlyToCoordinatesComponent coords={flyToCoordinates} />
 
         {/* Render filtered cities */}
         {filteredCities
@@ -582,6 +613,8 @@ function arePropsEqual(prev: PalestineLeafletMapProps, next: PalestineLeafletMap
     prev.gameMode === next.gameMode &&
     prev.highlightRegion === next.highlightRegion &&
     prev.flyToCity === next.flyToCity &&
+    prev.flyToCoordinates?.lat === next.flyToCoordinates?.lat &&
+    prev.flyToCoordinates?.lng === next.flyToCoordinates?.lng &&
     prev.showControls === next.showControls &&
     prev.enableFullInteraction === next.enableFullInteraction &&
     prev.height === next.height &&

@@ -293,6 +293,18 @@ export async function POST(req: NextRequest) {
           tools,
           stopWhen: stepCountIs(5),
           ...buildCacheOptions(cacheKey),
+          onStepFinish: ({ toolCalls, toolResults }) => {
+            if (toolCalls?.length) {
+              for (const call of toolCalls) {
+                const result = toolResults?.find((r) => r.toolCallId === call.toolCallId);
+                console.log("[game-chat] Tool call", {
+                  tool: call.toolName,
+                  args: call.args,
+                  result: result?.result,
+                });
+              }
+            }
+          },
           onFinish: async ({ text, toolCalls, toolResults, usage }) => {
             const cache = formatCacheUsage(usage as Record<string, unknown>);
             console.log("[game-chat] Stream finished", {

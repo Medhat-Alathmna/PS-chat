@@ -49,7 +49,7 @@ export default function ChatMessages({
   const { shouldHide, revealClass, showTypingBubble } = useStaticReveal(status, messages, displayMode);
 
   return (
-    <main className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 py-3 scroll-smooth" ref={chatContainerRef}>
+    <main className="flex-1 overflow-y-auto  px-2 sm:px-3 py-3 " ref={chatContainerRef}>
       <div className="mx-auto max-w-2xl flex flex-col gap-4 pb-4">
         {messages.map((message, index) => {
           if (shouldHide(index, message.role)) return null;

@@ -8,6 +8,7 @@ import AnimatedBackground from "@/app/components/kids/AnimatedBackground";
 import ProfileSetup from "@/app/components/kids/ProfileSetup";
 import ChatHeader from "@/app/components/kids/ChatHeader";
 import MobileMapOverlay from "@/app/components/kids/MobileMapOverlay";
+import ExpandableMap from "@/app/components/kids/ExpandableMap";
 import ChatMessages from "@/app/components/kids/ChatMessages";
 import ChatInputArea from "@/app/components/kids/ChatInputArea";
 import Confetti from "@/app/components/kids/Confetti";
@@ -121,8 +122,23 @@ function KidsChatPageInner() {
             MapComponent={map.PalestineLeafletMap}
           />
 
+          {/* Desktop Map Column — shown on md+ */}
+          <div className="hidden md:flex flex-col w-[260px] lg:w-[300px] xl:w-[340px] shrink-0">
+            <ExpandableMap
+              onCityClick={handlers.handleCityClick}
+              onAskAboutCity={handlers.handleAskAboutCity}
+              highlightedCity={map.highlightedCityId || undefined}
+              flyToCity={map.highlightedCityId || undefined}
+              flyToCoordinates={map.flyToCoordinates}
+              mapSettings={map.mapSettings}
+              collapsible
+              collapsedHeight="h-full"
+              className="flex-1 min-h-0 flex flex-col"
+            />
+          </div>
+
           {/* Chat Column */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ paddingInlineEnd: "23rem" }}>
             {/* Chat Messages */}
             <ChatMessages
               messages={chat.messages}
