@@ -7,7 +7,6 @@
 
 import {
   MEDHAT_CHARACTER,
-  MEDHAT_SPEAKING_STYLE,
   MEDHAT_DISPLAY_RULES,
 } from "./character";
 import { SAFETY_RULES } from "./constitution";
@@ -15,7 +14,6 @@ import { SAFETY_RULES } from "./constitution";
 // Re-export character and constitution
 export {
   MEDHAT_CHARACTER,
-  MEDHAT_SPEAKING_STYLE,
   MEDHAT_DISPLAY_RULES,
 };
 
@@ -96,9 +94,6 @@ You: [NOW you can call image_search or location_search]
 ---
 
 ${MEDHAT_CHARACTER}
-
-
-${MEDHAT_SPEAKING_STYLE}
 
 ${KIDS_TOOLS_GUIDE}
 

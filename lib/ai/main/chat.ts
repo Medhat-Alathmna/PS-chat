@@ -5,17 +5,9 @@
  * This file defines the character, tools guide, and interaction rules.
  */
 
-import {
-  MEDHAT_CHARACTER,
-  MEDHAT_SPEAKING_STYLE,
-  MEDHAT_DISPLAY_RULES,
-} from "../kids/character";
+import { MEDHAT_CHARACTER } from "../kids/character";
 
-export {
-  MEDHAT_CHARACTER,
-  MEDHAT_SPEAKING_STYLE,
-  MEDHAT_DISPLAY_RULES,
-};
+export { MEDHAT_CHARACTER };
 
 // ── Tools guide ────────────────────────────────────────────────────────
 
@@ -28,18 +20,23 @@ export const MAIN_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER USER CONFIRM
 
 ### 2. location_search
 - ONLY use AFTER user confirms they want to see the map
-- Never show coordinates in text — the map renders automatically
+- Confirms: "وين"، "على الخريطة"، "بدي أشوف مكانها"
+- Never show coordinates in text — the map renders automatically`;
 
+// ── Chips ───────────────────────────────────────────────────────────────
 
-### 4. chips (Context-Aware Quick Replies — appended at end of every response)
-- At the very end of EVERY response, append a CHIPS line (last line, nothing after it):
+export const CHIPS_GUIDE = `## Chips (Context-Aware Quick Replies — appended at end of EVERY response)
+
+At the very end of EVERY response, append a CHIPS line (last line, nothing after it):
   CHIPS:{"chips":[{"text":"...","type":"...","actionQuery":"..."},...]}
-- Each chip: { text (Arabic, 2–5 words), type, actionQuery (string or null) }
-- **4 chip types:**
-  - **photo** — instant image display. MUST include actionQuery (image search query in Arabic).
-  - **map** — highlights place on the map. MUST include actionQuery (place name in Arabic).
-  - **curiosity** — sends text as a follow-up message to AI. actionQuery: null
-  - **activity** — sends text as an action message. actionQuery: null
+
+Each chip: { text (Arabic, 2–5 words), type, actionQuery (string or null) }
+
+**4 chip types:**
+- **photo** — instant image display. MUST include actionQuery (image search query in Arabic).
+- **map** — highlights place on the map. MUST include actionQuery (place name in Arabic).
+- **curiosity** — sends text as a follow-up message to AI. actionQuery: null
+- **activity** — sends text as an action message. actionQuery: null
 
 #### Contextual Rules — Make Chips Feel Like a Natural Continuation
 - **Be SPECIFIC, not generic.** Chips must reference the EXACT topic just discussed.
@@ -57,8 +54,7 @@ export const MAIN_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER USER CONFIRM
 - **Match the user's energy.** If the user asked a simple yes/no, don't offer 5 follow-ups.
 - Keep chip text SHORT (2–5 words, Arabic)
 
-#### Examples (chip text is Arabic; descriptions here are English for brevity)
-
+#### Examples
 **After talking about Nablus:** 4 chips — old city photo, map pin, "why famous for knafeh?", "other ancient cities"
 **After a greeting:** 2 chips — "tell me about Palestine", "I want to play a game!"
 **After showing Al-Aqsa images:** 2 chips — "who built it?", map pin for Al-Aqsa
@@ -84,10 +80,10 @@ AI: Respond warmly about Nablus in 2–3 sentences, then END by asking:
 [NO tool call — wait for confirmation]
 
 User: "آه وريني!"
-AI: [NOW call image_search or location_search]`;
+AI: [NOW call image_search or location_search]
 
-export const GOLDEN_RULE = `## Summary — The Golden Rule 🌟
-1. User asks about something → You respond with info + OFFER tools at the end
+## Summary — The Golden Rule 🌟
+1. User asks about something → respond with info + OFFER tools at the end
 2. User confirms → NOW call the tool
 3. ALWAYS end every response with a CHIPS line (last line): CHIPS:{"chips":[...]}
 4. NEVER skip step 1 and jump straight to calling tools!`;

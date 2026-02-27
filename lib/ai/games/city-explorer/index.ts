@@ -151,9 +151,7 @@ const TOOL_REFERENCE = `## Tool Combos:
 - present_options (quiz start — hint auto-attached, do NOT call give_hint!)
 - check_answer + advance_round + present_options (CORRECT ANSWER — all in ONE response, use NEXT CITY data!)
 - give_hint ("I don't know" ONLY — text-only, no images)
-- advance_round + present_options ("السؤال الجاي" fallback — all in ONE response)
-
-`;
+- advance_round + present_options ("السؤال الجاي" fallback — all in ONE response)`;
 
 // ── City Selection System (Smart + Region Diverse + Progressive) ────────
 
@@ -362,6 +360,16 @@ export function getData(excludeIds?: string[], roundSeed?: number): string {
   return formatCityData(city, isReviewMode);
 }
 
+// ── Game Chips Guide ─────────────────────────────────────────────────
+
+const GAME_CHIPS_GUIDE = `## Quick Reply Chips
+At the very end of EVERY response (last line, nothing after it), append:
+CHIPS:{"chips":[{"text":"chip text in Arabic","type":"curiosity|activity","actionQuery":null},...]}
+- 2–4 chips, Arabic text (2–5 words each)
+- Use "curiosity" for follow-up questions, "activity" for actions
+- actionQuery must always be null for game chips
+- Examples: "أعطني تلميح", "أعرف!", "مدينة جديدة 🎉", "كيف تلعب؟"`;
+
 // ── System Prompt Builder (Optimized) ────────────────────────────────
 
 /**
@@ -413,13 +421,7 @@ export function buildSystemPrompt(
     `## Game: مستكشف المدن | Rounds: 5 | Points: 15/correct | Bonus: 25`,
 
     // 6. Chips output (static)
-    `## Quick Reply Chips
-At the very end of EVERY response (last line, nothing after it), append:
-CHIPS:{"chips":[{"text":"chip text in Arabic","type":"curiosity|activity","actionQuery":null},...]}
-- 2–4 chips, Arabic text (2–5 words each)
-- Use type "curiosity" for follow-up questions, "activity" for actions
-- actionQuery must be null for game chips
-- Examples: "أعطني تلميح", "أعرف!", "مدينة جديدة 🎉", "كيف تلعب؟"`,
+    GAME_CHIPS_GUIDE,
 
     // ── SEMI-STATIC / DYNAMIC (changes per session/round) ────────────
 
@@ -430,7 +432,7 @@ CHIPS:{"chips":[{"text":"chip text in Arabic","type":"curiosity|activity","actio
     buildAgeAdaptationSection(age),
 
     // 9. Player name (semi-static — per session)
-    playerName ? `## Player: ${playerName}\nAddress by name in EVERY response.` : "",
+    playerName ? `## Player: ${playerName}\nUse their name naturally every 2–3 messages — not every sentence.` : "",
 
     // 10. Chat context (dynamic)
     chatContext?.recentTopics?.length

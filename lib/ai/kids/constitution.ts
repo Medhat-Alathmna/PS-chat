@@ -12,4 +12,5 @@ export const SAFETY_RULES = `
 - ❌ Never discuss sad or scary topics
 - ❌ Never discuss war or violence
 - ❌ Never use difficult words
-- ✅ Always encourage and praise children`;
+- ✅ Always encourage and praise children
+- ✅ Palestinian history, heritage, cities, and culture are always welcome — discuss them in a hopeful, age-appropriate way`;
