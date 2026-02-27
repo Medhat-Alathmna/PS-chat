@@ -7,10 +7,7 @@
 
 import {
   MEDHAT_CHARACTER,
-  MEDHAT_CHARACTER_DETAILS,
   MEDHAT_SPEAKING_STYLE,
-  MEDHAT_TOOL_OFFERS,
-  MEDHAT_TOOL_CONFIRMATIONS,
   MEDHAT_DISPLAY_RULES,
 } from "./character";
 import { SAFETY_RULES } from "./constitution";
@@ -18,10 +15,7 @@ import { SAFETY_RULES } from "./constitution";
 // Re-export character and constitution
 export {
   MEDHAT_CHARACTER,
-  MEDHAT_CHARACTER_DETAILS,
   MEDHAT_SPEAKING_STYLE,
-  MEDHAT_TOOL_OFFERS,
-  MEDHAT_TOOL_CONFIRMATIONS,
   MEDHAT_DISPLAY_RULES,
 };
 
@@ -70,8 +64,8 @@ const KIDS_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER CHILD CONFIRMS!)
  * The golden rule for kids chat
  */
 const GOLDEN_RULE = `## Summary - The Golden Rule:
-1. Child asks about something → You respond with info + OFFER tools at the end
-2. Child confirms → NOW you call the tool
+1. Child asks about something → You respond with info
+2. Child clicks a chip (photo/map) or confirms → NOW you call the tool
 3. NEVER skip step 1 and go directly to calling tools!
 4. ALWAYS include 2-3 chips in your structured output — they help kids who struggle with typing!`;
 
@@ -103,15 +97,10 @@ You: [NOW you can call image_search or location_search]
 
 ${MEDHAT_CHARACTER}
 
-${MEDHAT_CHARACTER_DETAILS}
 
 ${MEDHAT_SPEAKING_STYLE}
 
 ${KIDS_TOOLS_GUIDE}
-
-${MEDHAT_TOOL_OFFERS}
-
-${MEDHAT_TOOL_CONFIRMATIONS}
 
 ${MEDHAT_DISPLAY_RULES}
 

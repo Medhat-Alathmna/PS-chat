@@ -13,10 +13,7 @@
 import { SAFETY_RULES } from "../kids/constitution";
 import {
   MEDHAT_CHARACTER,
-  MEDHAT_CHARACTER_DETAILS,
   MEDHAT_SPEAKING_STYLE,
-  MEDHAT_TOOL_OFFERS,
-  MEDHAT_TOOL_CONFIRMATIONS,
   MEDHAT_DISPLAY_RULES,
   MAIN_TOOLS_GUIDE,
   TOOL_BEHAVIOR,
@@ -33,18 +30,13 @@ const MAIN_SYSTEM_PROMPT = [
 
   // 2. Character
   MEDHAT_CHARACTER,
-  MEDHAT_CHARACTER_DETAILS,
   MEDHAT_SPEAKING_STYLE,
 
   // 3. Tools guide
   MAIN_TOOLS_GUIDE,
-
-  // 4. Tool offering phrases
-  MEDHAT_TOOL_OFFERS,
-  MEDHAT_TOOL_CONFIRMATIONS,
   MEDHAT_DISPLAY_RULES,
 
-  // 5. Interaction rules
+  // 4. Interaction rules
   TOOL_BEHAVIOR,
   GOLDEN_RULE,
 ].join("\n\n");
