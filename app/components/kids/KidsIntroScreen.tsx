@@ -162,38 +162,8 @@ export default function KidsIntroScreen({
               </p>
             </div>
 
-            {/* Suggestion cards — carousel on mobile, 2×2 grid on tablet+ */}
-
-            {/* Mobile: horizontal scroll carousel */}
-            <div className="sm:hidden w-full overflow-x-auto snap-x snap-mandatory flex gap-3 pb-3 -mx-4 px-4">
-              {prompts.map((prompt, index) => (
-                <div key={prompt.id} className="snap-start shrink-0 w-[80vw] max-w-[300px]">
-                  <PromptCard
-                    prompt={prompt}
-                    delay={index * 100}
-                    isHovered={hoveredCard === prompt.id}
-                    onHover={() => setHoveredCard(prompt.id)}
-                    onLeave={() => setHoveredCard(null)}
-                    onClick={() => onSelect(prompt.textAr)}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Swipe hint — mobile only */}
-            {prompts.length > 0 && (
-              <div className="sm:hidden flex items-center justify-center gap-2 mt-2 mb-1">
-                <div className="flex gap-1.5">
-                  {prompts.map((_, i) => (
-                    <div key={i} className="w-2 h-2 rounded-full bg-[var(--kids-purple)]/40" />
-                  ))}
-                </div>
-                <span className="text-xs text-gray-400">اسحب للمزيد</span>
-              </div>
-            )}
-
-            {/* Tablet+: 2×2 grid */}
-            <div className="hidden sm:grid grid-cols-2 gap-4 max-w-xl mx-auto w-full">
+            {/* Suggestion cards — 2×2 grid on all sizes */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-xl mx-auto w-full">
               {prompts.map((prompt, index) => (
                 <PromptCard
                   key={prompt.id}
