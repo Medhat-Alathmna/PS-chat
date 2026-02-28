@@ -239,7 +239,7 @@ export default function StoryWizard({
         <div className="flex items-center gap-3 mb-3">
           <button
             onClick={handleBack}
-            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-all active:scale-90"
+            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-all active:scale-90 touch-manipulation"
             aria-label="رجوع"
           >
             <svg className="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,7 +277,7 @@ export default function StoryWizard({
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
         {/* ═══ STEP 1: GENRE ═══ */}
         {currentStep === "genre" && (
           <div className="max-w-md mx-auto">
@@ -288,7 +288,7 @@ export default function StoryWizard({
                   <button
                     key={g.id}
                     onClick={() => pickGenre(g.id)}
-                    className={`relative overflow-hidden rounded-2xl text-center transition-all duration-200 border-2 p-4 min-h-[120px] flex flex-col items-center justify-center bg-gradient-to-br ${GENRE_GRADIENTS[g.id]} ${
+                    className={`relative overflow-hidden rounded-2xl text-center transition-all duration-200 border-2 p-4 min-h-[130px] flex flex-col items-center justify-center bg-gradient-to-br touch-manipulation ${GENRE_GRADIENTS[g.id]} ${
                       isSelected
                         ? "border-white/70 scale-105 shadow-[0_0_20px_rgba(255,255,255,0.25)]"
                         : "border-white/10 hover:border-white/30 hover:scale-[1.02] active:scale-95"
@@ -321,7 +321,7 @@ export default function StoryWizard({
                   <button
                     key={s.id}
                     onClick={() => pickSetting(s.id)}
-                    className={`relative overflow-hidden rounded-2xl text-center transition-all duration-200 border-2 p-5 min-h-[130px] flex flex-col items-center justify-center ${
+                    className={`relative overflow-hidden rounded-2xl text-center transition-all duration-200 border-2 p-5 min-h-[130px] flex flex-col items-center justify-center touch-manipulation ${
                       isSelected
                         ? "border-white/70 scale-105 shadow-[0_0_20px_rgba(255,255,255,0.25)]"
                         : "border-white/10 hover:border-white/30 hover:scale-[1.02] active:scale-95"
@@ -379,7 +379,7 @@ export default function StoryWizard({
                 <button
                   key={c.id}
                   onClick={() => pickCompanion(c.id)}
-                  className={`relative p-6 rounded-2xl text-center transition-all duration-200 border-2 overflow-hidden ${
+                  className={`relative p-6 rounded-2xl text-center transition-all duration-200 border-2 overflow-hidden touch-manipulation ${
                     isSelected
                       ? "border-white/70 bg-white/20 scale-[1.03] shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                       : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 active:scale-95"
@@ -428,7 +428,7 @@ export default function StoryWizard({
                 <button
                   key={l.id}
                   onClick={() => pickLength(l.id)}
-                  className={`relative p-4 rounded-2xl text-right transition-all duration-200 border-2 ${
+                  className={`relative p-4 rounded-2xl text-right transition-all duration-200 border-2 touch-manipulation ${
                     isSelected
                       ? "border-white/70 bg-white/20 scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                       : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 active:scale-95"
@@ -483,7 +483,7 @@ export default function StoryWizard({
                 <button
                   key={m.id}
                   onClick={() => pickMode(m.id)}
-                  className={`relative p-5 rounded-2xl text-right transition-all duration-200 border-2 ${
+                  className={`relative p-5 rounded-2xl text-right transition-all duration-200 border-2 touch-manipulation ${
                     isSelected
                       ? "border-white/70 bg-white/20 scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                       : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 active:scale-95"

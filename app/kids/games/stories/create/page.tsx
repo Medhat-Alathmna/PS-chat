@@ -45,7 +45,7 @@ function CreateStory() {
 
   return (
     <AnimatedBackground variant="night" showStars showClouds={false} showBirds={false}>
-      <div className="h-screen">
+      <div className="h-[100dvh]">
         <StoryWizard
           onComplete={handleComplete}
           onBack={() => router.push("/kids/games/stories")}
