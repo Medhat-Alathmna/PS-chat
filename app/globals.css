@@ -776,6 +776,53 @@ code {
   animation: fadeInReveal 0.4s ease-out forwards;
 }
 
+/* ── Story Wizard animations ─────────────────────────────────────────── */
+
+/* Floating particles for genre cards */
+@keyframes floatParticle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.5;
+  }
+  33% {
+    transform: translateY(-10px) rotate(8deg);
+    opacity: 0.85;
+  }
+  66% {
+    transform: translateY(-5px) rotate(-5deg);
+    opacity: 0.65;
+  }
+}
+
+/* Emoji bounce-pulse for companion cards */
+@keyframes emojiBouncePulse {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-10px) scale(1.08);
+  }
+  60% {
+    transform: translateY(-6px) scale(1.04);
+  }
+}
+
+/* Shimmer for selected fantasy setting card */
+@keyframes shimmer {
+  0% {
+    opacity: 0.6;
+    transform: translateX(-30%) skewX(-10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(130%) skewX(-10deg);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translateX(130%) skewX(-10deg);
+  }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-speaking,

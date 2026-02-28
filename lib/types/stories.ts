@@ -11,6 +11,7 @@ export type StoryGenre =
   | "funny";
 
 export type StorySetting =
+  | "palestine"
   | "jerusalem"
   | "nablus"
   | "jaffa"

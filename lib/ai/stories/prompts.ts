@@ -43,6 +43,8 @@ function getGenreGuidance(genre: StoryConfig["genre"]): string {
 
 function getSettingGuidance(setting: StoryConfig["setting"]): string {
   const guidance: Record<StoryConfig["setting"], string> = {
+    palestine:
+      "Set the story in the beautiful land of Palestine — rolling olive groves shimmering silver-green, terraced hillsides fragrant with thyme and sage, ancient stone villages where neighbors share bread and stories, bustling markets alive with spices and laughter, coastal waves rolling onto golden shores, and a sky that glows amber and rose at sunset. Weave in iconic Palestinian details: olive trees, tatreez embroidery, the smell of ka'ak, the sound of the call to prayer drifting over rooftops. Celebrate the land and its warmth without specifying a single city unless the story naturally leads there.",
     jerusalem:
       "Describe the Old City's golden stones glowing in sunset, the Dome of the Rock's magnificent golden dome, narrow alleyways filled with spice scents, ka'ak bread sellers calling out warmly, and the peaceful call to prayer echoing gently.",
     nablus:

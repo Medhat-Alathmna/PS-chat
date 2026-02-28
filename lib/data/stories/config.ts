@@ -59,7 +59,15 @@ export const STORY_GENRES: GenreOption[] = [
 // ── Settings ──────────────────────────────────────────────────────────
 
 export const STORY_SETTINGS: SettingOption[] = [
-  // Palestine
+  // Palestine (generic — shown in wizard)
+  {
+    id: "palestine",
+    nameAr: "فلسطين",
+    descriptionAr: "بلادنا الجميلة الخضراء",
+    emoji: "🇵🇸",
+    category: "palestine",
+  },
+  // Palestine cities (kept for saved stories / future use)
   {
     id: "jerusalem",
     nameAr: "القدس",
