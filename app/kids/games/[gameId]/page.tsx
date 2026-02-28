@@ -813,8 +813,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   />
                 )}
 
-                {/* Quick reply suggestions — below the last assistant message */}
-                {activeQuickReplies && !isLoading && (
+                {/* Quick reply suggestions — only when no active quiz options */}
+                {activeQuickReplies && !isLoading && !activeOptions && (
                   <QuickReplyChips
                     data={activeQuickReplies}
                     onChipClick={handleChipClick}

@@ -118,14 +118,7 @@ export default function ChatInputArea({
           </button>
         </div>
 
-        {/* Helper text or mascot placement */}
-        <div className="flex justify-center mt-3 h-8">
-          <AnimatedMascot
-            state={isSpeaking ? "speaking" : isLoading ? "thinking" : "idle"}
-            size="sm"
-            className={`transition-all duration-300 ${isLoading || isSpeaking ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}
-          />
-        </div>
+       
       </form>
     </div>
   );

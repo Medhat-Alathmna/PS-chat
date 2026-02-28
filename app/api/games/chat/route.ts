@@ -15,7 +15,6 @@ import { ImageResult } from "@/lib/types";
 import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { logError } from "@/lib/utils/error-handler";
-import { extractChipsFromText } from "@/lib/utils/messageConverter";
 import { buildCacheOptions, formatCacheUsage } from "@/lib/ai/cache";
 
 type GameChatRequest = {
@@ -317,13 +316,6 @@ export async function POST(req: NextRequest) {
         });
 
         writer.merge(result.toUIMessageStream());
-
-        try {
-          const chips = extractChipsFromText(await result.text);
-          if (chips) writer.write({ type: "data-chips", data: chips });
-        } catch {
-          // Chips parse failed — skip gracefully
-        }
       },
     });
 

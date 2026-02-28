@@ -3,7 +3,6 @@ import { z } from "zod";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { geocodeLocation } from "@/lib/services/maps/geocoding";
 import { searchYouTubeVideos } from "@/lib/services/video/youtube";
-import { fetchPalestinianNews } from "@/lib/services/news/rss-parser";
 import { searchTimelineByKeyword, getTimelineEvents } from "@/lib/data/palestinian-history";
 import { ImageResult, Coordinates, VideoResult, NewsItem, TimelineEvent } from "@/lib/types";
 
@@ -271,52 +270,7 @@ export const videoSearchTool = tool({
  * News Search Tool
  * Fetches latest Palestinian news from RSS feeds
  */
-export const newsSearchTool = tool({
-  description:
-    "احصل على أحدث أخبار فلسطين من مصادر إخبارية فلسطينية. استخدم هذه الأداة للأخبار المحلية والثقافية. " +
-    "Get latest Palestinian news from Palestinian news sources. Use this tool for local and cultural news.",
-  inputSchema: z.object({
-    query: z
-      .string()
-      .optional()
-      .describe("Optional search query to filter news (e.g., 'ثقافة', 'رام الله')"),
-    limit: z
-      .number()
-      .min(1)
-      .max(5)
-      .default(3)
-      .describe("Number of news items to return (1-5)"),
-  }),
-  execute: async ({ query, limit = 3 }): Promise<NewsSearchResult> => {
-    try {
-      const result = await fetchPalestinianNews(query, limit);
 
-      if (!result.success || !result.data || result.data.length === 0) {
-        return {
-          success: false,
-          query: query || "",
-          news: [],
-          message: "لم يتم العثور على أخبار",
-        };
-      }
-
-      return {
-        success: true,
-        query: query || "",
-        news: result.data,
-        message: `تم العثور على ${result.data.length} خبر`,
-      };
-    } catch (error) {
-      console.error("[news_search] Error:", error);
-      return {
-        success: false,
-        query: query || "",
-        news: [],
-        message: "حدث خطأ أثناء جلب الأخبار",
-      };
-    }
-  },
-});
 
 /**
  * Timeline Search Tool
@@ -464,7 +418,6 @@ export const allTools = {
   location_search: locationSearchTool,
   web_search: webSearchTool,
   video_search: videoSearchTool,
-  news_search: newsSearchTool,
   timeline_search: timelineSearchTool,
 };
 

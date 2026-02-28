@@ -134,10 +134,8 @@ QUIZ → correct → advance → NEXT CITY QUIZ (all in ONE response, no extra r
 3. Wrong answer → short encouragement (no new options), don't reveal the answer.
 4. General/off-topic message (jokes, questions about you, etc.) → reply briefly (1-2 sentences) + ALWAYS re-call present_options to show the current question's choices again!
 5. Correct → IN ONE RESPONSE: check_answer + advance_round + WRITE riddle for NEXT CITY + present_options (NEXT CITY answer!). No separate round-trip needed.
-6. "السؤال الجاي" (fallback only) → advance_round + WRITE next riddle + present_options (all in ONE response)
 
 CRITICAL: ALWAYS write visible TEXT before/with tool calls! Never send ONLY tool calls without text.
-CRITICAL: Do NOT call give_hint with present_options! Hints are auto-attached to present_options.
 
 ### Critical Rules:
 - Use ONLY City Data facts — never invent facts
@@ -150,7 +148,6 @@ CRITICAL: Do NOT call give_hint with present_options! Hints are auto-attached to
 const TOOL_REFERENCE = `## Tool Combos:
 - present_options (quiz start — hint auto-attached, do NOT call give_hint!)
 - check_answer + advance_round + present_options (CORRECT ANSWER — all in ONE response, use NEXT CITY data!)
-- give_hint ("I don't know" ONLY — text-only, no images)
 - advance_round + present_options ("السؤال الجاي" fallback — all in ONE response)`;
 
 // ── City Selection System (Smart + Region Diverse + Progressive) ────────
@@ -360,16 +357,6 @@ export function getData(excludeIds?: string[], roundSeed?: number): string {
   return formatCityData(city, isReviewMode);
 }
 
-// ── Game Chips Guide ─────────────────────────────────────────────────
-
-const GAME_CHIPS_GUIDE = `## Quick Reply Chips
-At the very end of EVERY response (last line, nothing after it), append:
-CHIPS:{"chips":[{"text":"chip text in Arabic","type":"curiosity|activity","actionQuery":null},...]}
-- 2–4 chips, Arabic text (2–5 words each)
-- Use "curiosity" for follow-up questions, "activity" for actions
-- actionQuery must always be null for game chips
-- Examples: "أعطني تلميح", "أعرف!", "مدينة جديدة 🎉", "كيف تلعب؟"`;
-
 // ── System Prompt Builder (Optimized) ────────────────────────────────
 
 /**
@@ -420,40 +407,36 @@ export function buildSystemPrompt(
     // 5. Game info (static)
     `## Game: مستكشف المدن | Rounds: 5 | Points: 15/correct | Bonus: 25`,
 
-    // 6. Chips output (static)
-    GAME_CHIPS_GUIDE,
-
     // ── SEMI-STATIC / DYNAMIC (changes per session/round) ────────────
 
-    // 7. Difficulty (semi-static — per session)
+    // 6. Difficulty (semi-static — per session)
     buildDifficultySection(difficulty, age),
 
-    // 8. Age adaptation (semi-static — per session)
+    // 7. Age adaptation (semi-static — per session)
     buildAgeAdaptationSection(age),
 
-    // 9. Player name (semi-static — per session)
+    // 8. Player name (semi-static — per session)
     playerName ? `## Player: ${playerName}\nUse their name naturally every 2–3 messages — not every sentence.` : "",
 
-    // 10. Chat context (dynamic)
+    // 9. Chat context (dynamic)
     chatContext?.recentTopics?.length
       ? `## Context: Player was talking about ${chatContext.recentTopics.join(", ")}`
       : "",
 
-    // 11. Target city (dynamic — changes per round)
+    // 10. Target city (dynamic — changes per round)
     `⚠️ TARGET CITY: ${city.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
 
-    // 12. City data current (dynamic)
+    // 11. City data current (dynamic)
     formatCityData(city, isReviewMode),
 
-    // 13. Next city data (dynamic)
+    // 12. Next city data (dynamic)
     formatNextCityData(nextCity),
 
-    // 14. CRITICAL REMINDER at END (LLM pays attention to end)
+    // 13. CRITICAL REMINDER at END (LLM pays attention to end)
     `⚠️ CHECKLIST before responding:
 ✅ Active question about ${city.nameAr}? → present_options uses ${city.nameAr} (hint auto-attached)
 ✅ Correct answer detected? → check_answer + advance_round + riddle for ${nextCity.nameAr} + present_options (${nextCity.nameAr}!) — ALL IN ONE RESPONSE
-✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)
-✅ Last line of response is CHIPS:{...}`,
+✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

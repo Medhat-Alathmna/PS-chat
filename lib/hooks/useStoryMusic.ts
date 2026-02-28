@@ -74,7 +74,7 @@ export function useStoryMusic(
 
         const audio = new Audio(cachedUrl);
         audio.loop = true; // Enable loop
-        audio.volume = 0.25; // Set comfortable volume (25%) - slightly lower than main music
+        audio.volume = 0.5; // Set comfortable volume (25%) - slightly lower than main music
         audio.preload = "auto";
 
         // Handle audio load

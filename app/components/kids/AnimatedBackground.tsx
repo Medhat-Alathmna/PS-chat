@@ -76,7 +76,7 @@ function Clouds() {
           className={`absolute ${cloud.size} animate-cloud-drift`}
           style={{
             top: cloud.top,
-            left: "-100px",
+            right: "-100px",
             animationDelay: cloud.delay,
             animationDuration: cloud.duration,
           }}
@@ -122,7 +122,7 @@ function Birds() {
           className="absolute text-2xl animate-bird-fly"
           style={{
             top: bird.top,
-            left: "-50px",
+            right: "-50px",
             animationDelay: bird.delay,
             animationDuration: bird.duration,
           }}

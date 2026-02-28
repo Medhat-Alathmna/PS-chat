@@ -70,7 +70,7 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
 
         const audio = new Audio(cachedUrl);
         audio.loop = true; // Enable loop
-        audio.volume = 0.3; // Set comfortable volume (30%)
+        audio.volume = 0.03; // Set comfortable volume (15%)
         audio.preload = "auto";
 
         // Handle audio load
