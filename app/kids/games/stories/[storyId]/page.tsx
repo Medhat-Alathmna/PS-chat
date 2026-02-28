@@ -7,8 +7,6 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useStories } from "@/lib/hooks/useStories";
 import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
-import { useStoryMusic } from "@/lib/hooks/useStoryMusic";
-import { useBackgroundMusicContext } from "../../../layout";
 import AnimatedBackground from "../../../../components/kids/AnimatedBackground";
 import StoryReader from "../../../../components/kids/stories/StoryReader";
 import ErrorBoundary from "../../../../components/ErrorBoundary";
@@ -107,47 +105,6 @@ function StorySession({
 }: StorySessionProps) {
   const router = useRouter();
   
-  // Story music management
-  const storyMusic = useStoryMusic();
-  const backgroundMusic = useBackgroundMusicContext();
-  
-  // Track if main music was playing when we entered
-  const wasMainMusicPlaying = useRef(false);
-  
-  // Switch to story music when entering this page
-  useEffect(() => {
-    // Remember if main music was playing
-    wasMainMusicPlaying.current = backgroundMusic.isPlaying;
-    
-    // Pause main background music first
-    if (backgroundMusic.isPlaying) {
-      backgroundMusic.pause();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
-  // Play story music when it's loaded (only if main music was playing)
-  useEffect(() => {
-    if (storyMusic.isLoaded && wasMainMusicPlaying.current) {
-      storyMusic.play();
-    }
-    
-    // Cleanup: stop story music when leaving
-    return () => {
-      storyMusic.pause();
-    };
-  }, [storyMusic.isLoaded]);
-  
-  // Resume main music when leaving the page (only if it was playing before)
-  useEffect(() => {
-    return () => {
-      if (wasMainMusicPlaying.current) {
-        backgroundMusic.play();
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const [livePages, setLivePages] = useState<StoryPage[]>(story.pages);
   const [liveChoicePoints, setLiveChoicePoints] = useState<StoryChoicePoint[]>(
     story.choicePoints

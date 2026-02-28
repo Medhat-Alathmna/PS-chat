@@ -1,11 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useStories } from "@/lib/hooks/useStories";
-import { useStoryMusic } from "@/lib/hooks/useStoryMusic";
-import { useBackgroundMusicContext } from "../../layout";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import StoryBookCover from "../../../components/kids/stories/StoryBookCover";
 import ErrorBoundary from "../../../components/ErrorBoundary";
@@ -24,47 +21,6 @@ function StoriesHome() {
   const profileId = activeProfile?.id;
   const { stories, isLoaded: storiesLoaded, deleteStory } = useStories(profileId);
   
-  // Story music management
-  const storyMusic = useStoryMusic();
-  const backgroundMusic = useBackgroundMusicContext();
-  
-  // Track if main music was playing when we entered
-  const wasMainMusicPlaying = useRef(false);
-  
-  // Switch to story music when entering this page
-  useEffect(() => {
-    // Remember if main music was playing
-    wasMainMusicPlaying.current = backgroundMusic.isPlaying;
-    
-    // Pause main background music first
-    if (backgroundMusic.isPlaying) {
-      backgroundMusic.pause();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
-  // Play story music when it's loaded (only if main music was playing)
-  useEffect(() => {
-    if (storyMusic.isLoaded && wasMainMusicPlaying.current) {
-      storyMusic.play();
-    }
-    
-    // Cleanup: stop story music when leaving
-    return () => {
-      storyMusic.pause();
-    };
-  }, [storyMusic.isLoaded]);
-  
-  // Resume main music when leaving the page (only if it was playing before)
-  useEffect(() => {
-    return () => {
-      if (wasMainMusicPlaying.current) {
-        backgroundMusic.play();
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   if (!isLoaded || !storiesLoaded) return null;
 
   if (!activeProfile) {

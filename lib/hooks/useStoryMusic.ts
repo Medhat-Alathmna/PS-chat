@@ -141,10 +141,6 @@ export function useStoryMusic(
   }, [isLoaded, pendingPlay]);
 
   const play = () => {
-    // Check if main background music is disabled - don't play story music either
-    const mainMusicPref = localStorage.getItem("falastin_music_playing");
-    if (mainMusicPref === "false") return;
-
     if (!audioRef.current) return;
     
     // Don't play if already playing
