@@ -79,122 +79,157 @@ export default function KidsIntroScreen({
         </div>
       )}
 
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-        {/* Music toggle button - Top left */}
-        {onToggleMusic && (
-          <button
-            onClick={onToggleMusic}
-            disabled={!isMusicLoaded}
-            className="absolute top-4 left-4 flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 z-20"
-            aria-label={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
-            title={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
-          >
-            <span className="text-2xl sm:text-3xl">
-              {isMusicPlaying ? "🎵" : "🔇"}
-            </span>
-          </button>
-        )}
-
-        {/* Top right section - Profile Switcher, Map Settings, and Level */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
-          {/* Profile Switcher */}
-          {profiles.length > 0 && activeProfile && onSwitchProfile && onAddNewProfile && onEditProfile && onDeleteProfile && (
-            <div className="shrink-0">
-              <ProfileSwitcher
-                profiles={profiles}
-                activeProfile={activeProfile}
-                onSwitch={onSwitchProfile}
-                onAddNew={onAddNewProfile}
-                onEdit={onEditProfile}
-                onDelete={onDeleteProfile}
-              />
-            </div>
-          )}
-
-          {/* Map settings button */}
-          <button
-            onClick={() => router.push("/settings")}
-            className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl"
-            aria-label="الإعدادات"
-            title="الإعدادات"
-          >
-            <span className="text-2xl sm:text-3xl">{"\u2699\uFE0F"}</span>
-          </button>
-
-          {/* Level indicator (if exists) */}
-          {level && points > 0 && (
-            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
-              <span className="text-2xl">{level.icon}</span>
-              <span className="font-bold text-[var(--kids-orange)]">
-                {points} ⭐
+      <div className="min-h-screen flex flex-col">
+        {/* Header row — music | profile + settings + level */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0 z-20">
+          {/* Left: music toggle */}
+          {onToggleMusic ? (
+            <button
+              onClick={onToggleMusic}
+              disabled={!isMusicLoaded}
+              className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+              aria-label={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+              title={isMusicPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+            >
+              <span className="text-2xl sm:text-3xl">
+                {isMusicPlaying ? "🎵" : "🔇"}
               </span>
-            </div>
+            </button>
+          ) : (
+            <div />
           )}
+
+          {/* Right: profile switcher + settings + level */}
+          <div className="flex items-center gap-2">
+            {profiles.length > 0 && activeProfile && onSwitchProfile && onAddNewProfile && onEditProfile && onDeleteProfile && (
+              <div className="shrink-0">
+                <ProfileSwitcher
+                  profiles={profiles}
+                  activeProfile={activeProfile}
+                  onSwitch={onSwitchProfile}
+                  onAddNew={onAddNewProfile}
+                  onEdit={onEditProfile}
+                  onDelete={onDeleteProfile}
+                />
+              </div>
+            )}
+
+            <button
+              onClick={() => router.push("/settings")}
+              className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              aria-label="الإعدادات"
+              title="الإعدادات"
+            >
+              <span className="text-2xl sm:text-3xl">{"\u2699\uFE0F"}</span>
+            </button>
+
+            {level && points > 0 && (
+              <>
+                {/* Mobile: compact — icon + number only */}
+                <div className="sm:hidden flex items-center gap-1 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-full shadow-md">
+                  <span className="text-lg">{level.icon}</span>
+                  <span className="font-bold text-sm text-[var(--kids-orange)]">{points}</span>
+                </div>
+                {/* Tablet+: full pill */}
+                <div className="hidden sm:flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md">
+                  <span className="text-2xl">{level.icon}</span>
+                  <span className="font-bold text-[var(--kids-orange)]">{points} ⭐</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Main content */}
-        <div className="text-center max-w-2xl mx-auto">
-          {/* Mascot */}
-          <div className="mb-4 sm:mb-6">
-            <div className="sm:hidden">
-              <AnimatedMascot state="waving" size="lg" showName />
-            </div>
-            <div className="hidden sm:block">
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+          <div className="text-center max-w-2xl w-full mx-auto">
+            {/* Mascot — hidden on mobile */}
+            <div className="hidden sm:block mb-8">
               <AnimatedMascot state="waving" size="xl" showName />
             </div>
+
+            {/* Welcome text */}
+            <div className="animate-fade-in-up">
+              <h1 className="text-3xl sm:text-4xl font-bold text-[var(--kids-purple)] mb-2 sm:mb-5 bubble-text">
+                {playerName ? `أهلاً يا ${playerName}! 🌟` : "أهلاً يا بطل! 🌟"}
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 mb-3 sm:mb-8">
+                أنا مدحت، صاحبك من فلسطين!
+                <br />
+                <span className="text-[var(--kids-green)]">
+                  يلا نلعب ونتعلم سوا! 🎮
+                </span>
+              </p>
+            </div>
+
+            {/* Suggestion cards — carousel on mobile, 2×2 grid on tablet+ */}
+
+            {/* Mobile: horizontal scroll carousel */}
+            <div className="sm:hidden w-full overflow-x-auto snap-x snap-mandatory flex gap-3 pb-3 -mx-4 px-4">
+              {prompts.map((prompt, index) => (
+                <div key={prompt.id} className="snap-start shrink-0 w-[80vw] max-w-[300px]">
+                  <PromptCard
+                    prompt={prompt}
+                    delay={index * 100}
+                    isHovered={hoveredCard === prompt.id}
+                    onHover={() => setHoveredCard(prompt.id)}
+                    onLeave={() => setHoveredCard(null)}
+                    onClick={() => onSelect(prompt.textAr)}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Swipe hint — mobile only */}
+            {prompts.length > 0 && (
+              <div className="sm:hidden flex items-center justify-center gap-2 mt-2 mb-1">
+                <div className="flex gap-1.5">
+                  {prompts.map((_, i) => (
+                    <div key={i} className="w-2 h-2 rounded-full bg-[var(--kids-purple)]/40" />
+                  ))}
+                </div>
+                <span className="text-xs text-gray-400">اسحب للمزيد</span>
+              </div>
+            )}
+
+            {/* Tablet+: 2×2 grid */}
+            <div className="hidden sm:grid grid-cols-2 gap-4 max-w-xl mx-auto w-full">
+              {prompts.map((prompt, index) => (
+                <PromptCard
+                  key={prompt.id}
+                  prompt={prompt}
+                  delay={index * 100}
+                  isHovered={hoveredCard === prompt.id}
+                  onHover={() => setHoveredCard(prompt.id)}
+                  onLeave={() => setHoveredCard(null)}
+                  onClick={() => onSelect(prompt.textAr)}
+                />
+              ))}
+            </div>
+
+            {/* Games button */}
+            <button
+              onClick={() => router.push("/kids/games")}
+              className="mt-6 sm:mt-8 w-full max-w-xl mx-auto flex items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white font-bold text-base sm:text-lg shadow-lg hover:scale-105 active:scale-95 transition-all animate-fade-in-up"
+              style={{ animationDelay: "400ms" }}
+            >
+              <span className="text-xl sm:text-2xl">🎮</span>
+              يلا نلعب ألعاب!
+              <span className="text-xl sm:text-2xl">🎯</span>
+            </button>
+
+            {/* Or type your own */}
+            <div className="mt-4 sm:mt-6 text-gray-500 text-sm animate-fade-in delay-500">
+              <p>
+                أو اكتب سؤالك الخاص! ✍️
+              </p>
+            </div>
           </div>
 
-          {/* Welcome text */}
-          <div className="mb-8 animate-fade-in-up">
-            <h1 className="text-3xl sm:text-4xl font-bold text-[var(--kids-purple)] mb-3 bubble-text">
-              {playerName ? `أهلاً يا ${playerName}! 🌟` : "أهلاً يا بطل! 🌟"}
-            </h1>
-            <p className="text-lg sm:text-xl text-gray-600">
-              أنا مدحت، صاحبك من فلسطين!
-              <br />
-              <span className="text-[var(--kids-green)]">
-                يلا نلعب ونتعلم سوا! 🎮
-              </span>
-            </p>
+          {/* Fun decorations - Hidden on mobile */}
+          <div className="hidden sm:block">
+            <FloatingEmojis />
           </div>
-
-          {/* Suggestion cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-xl mx-auto w-full">
-            {prompts.map((prompt, index) => (
-              <PromptCard
-                key={prompt.id}
-                prompt={prompt}
-                delay={index * 100}
-                isHovered={hoveredCard === prompt.id}
-                onHover={() => setHoveredCard(prompt.id)}
-                onLeave={() => setHoveredCard(null)}
-                onClick={() => onSelect(prompt.textAr)}
-              />
-            ))}
-          </div>
-
-          {/* Games button */}
-          <button
-            onClick={() => router.push("/kids/games")}
-            className="mt-6 w-full max-w-xl mx-auto flex items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white font-bold text-base sm:text-lg shadow-lg hover:scale-105 active:scale-95 transition-all animate-fade-in-up"
-            style={{ animationDelay: "400ms" }}
-          >
-            <span className="text-xl sm:text-2xl">🎮</span>
-            يلا نلعب ألعاب!
-            <span className="text-xl sm:text-2xl">🎯</span>
-          </button>
-
-          {/* Or type your own */}
-          <div className="mt-4 text-gray-500 text-sm animate-fade-in delay-500">
-            <p>
-              أو اكتب سؤالك الخاص! ✍️
-            </p>
-          </div>
-        </div>
-
-        {/* Fun decorations - Hidden on mobile */}
-        <div className="hidden sm:block">
-          <FloatingEmojis />
         </div>
       </div>
 
@@ -251,23 +286,25 @@ function PromptCard({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       className={`
-        relative p-4 rounded-2xl text-right
-        bg-white/90 backdrop-blur-sm
-        border-3 transition-all duration-300
+        relative w-full p-5 rounded-2xl text-right
+        border-2 transition-all duration-300
         hover:scale-105 active:scale-95
         shadow-lg hover:shadow-xl
         animate-fade-in-up
       `}
       style={{
         animationDelay: `${delay}ms`,
-        borderColor: isHovered ? prompt.color : "transparent",
-        backgroundColor: isHovered ? `${prompt.color}15` : undefined,
+        background: isHovered
+          ? `linear-gradient(135deg, white 0%, ${prompt.color}22 100%)`
+          : `linear-gradient(135deg, white 0%, ${prompt.color}12 100%)`,
+        borderColor: isHovered ? prompt.color : `${prompt.color}60`,
+        borderWidth: '2px',
       }}
     >
       {/* Emoji badge */}
       <span
         className={`
-          absolute -top-3 -right-3 text-3xl
+          absolute -top-3 -right-3 text-4xl
           ${isHovered ? "animate-bounce-kids" : ""}
         `}
       >
@@ -275,11 +312,11 @@ function PromptCard({
       </span>
 
       {/* Text */}
-      <p className="font-bold text-gray-700 pr-6">{prompt.textAr}</p>
+      <p className="font-bold text-gray-700 pr-8">{prompt.textAr}</p>
 
       {/* Category indicator */}
       <span
-        className="absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded-full"
+        className="absolute bottom-2 left-2 text-sm font-semibold px-2.5 py-1 rounded-full"
         style={{ backgroundColor: `${prompt.color}30`, color: prompt.color }}
       >
         {getCategoryLabel(prompt.category)}
