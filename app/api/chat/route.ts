@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
                 const result = toolResults?.find((r) => r.toolCallId === call.toolCallId);
                 console.log("[main-chat] Tool call", {
                   tool: call.toolName,
-                  args: call.args,
+                  args: (call as any).args,
                   result: result?.result,
                 });
               }

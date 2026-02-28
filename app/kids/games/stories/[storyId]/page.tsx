@@ -1,9 +1,7 @@
 "use client";
 
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useStories } from "@/lib/hooks/useStories";
 import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
@@ -104,105 +102,77 @@ function StorySession({
   completeStory,
 }: StorySessionProps) {
   const router = useRouter();
-  
+
   const [livePages, setLivePages] = useState<StoryPage[]>(story.pages);
   const [liveChoicePoints, setLiveChoicePoints] = useState<StoryChoicePoint[]>(
     story.choicePoints
   );
   const [storyTitle, setStoryTitle] = useState<string | undefined>(story.titleAr);
   const [isComplete, setIsComplete] = useState(story.completed);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const processedTools = useRef(new Set<string>());
-  const latestPageRef = useRef(
-    Math.max(0, ...story.pages.map((p) => p.pageNumber))
-  );
   const startSentRef = useRef(false);
 
-  // Transport is created once — story.config is guaranteed non-null here
-  const { messages: aiMessages, sendMessage, status } = useChat({
-    transport: useMemo(
-      () =>
-        new DefaultChatTransport({
-          api: "/api/stories/chat",
-          body: {
+  const generateNextBatch = useCallback(
+    async (userMessage: string, lastChoiceText?: string) => {
+      setIsLoading(true);
+      try {
+        const res = await fetch("/api/stories/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [{ role: "user", parts: [{ type: "text", text: userMessage }] }],
             storyConfig: story.config,
             kidsProfile: activeProfile,
-          },
-        }),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [] // intentionally stable — config never changes for this story session
-    ),
-  });
+            previousPages: livePages,
+            lastChoiceText,
+          }),
+        });
 
-  const isGenerating = status === "streaming" || status === "submitted";
+        if (!res.ok) {
+          console.error("[stories] API error:", res.status);
+          return;
+        }
 
-  // Auto-send start message for new stories
+        const data = await res.json();
+
+        data.pages?.forEach((page: StoryPage) => {
+          addPage(storyId, page);
+          setLivePages((prev) =>
+            prev.some((p) => p.pageNumber === page.pageNumber) ? prev : [...prev, page]
+          );
+        });
+
+        if (data.choicePoint && data.pages?.length > 0) {
+          const cp: StoryChoicePoint = {
+            ...data.choicePoint,
+            afterPage: Math.max(...(data.pages as StoryPage[]).map((p) => p.pageNumber)),
+          };
+          addChoicePoint(storyId, cp);
+          setLiveChoicePoints((prev) => [...prev, cp]);
+        }
+
+        if (data.ended) {
+          setStoryTitle(data.ended.titleAr);
+          setIsComplete(true);
+          completeStory(storyId, data.ended.titleAr);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [livePages, story.config, activeProfile, storyId, addPage, addChoicePoint, completeStory]
+  );
+
+  // Auto-start for new stories
   useEffect(() => {
     if (isNew && !startSentRef.current && !story.completed) {
       startSentRef.current = true;
-      sendMessage({ text: "ابدأ القصة!" });
+      generateNextBatch("ابدأ القصة!");
     }
-  }, [isNew, story.completed, sendMessage]);
-
-  // Process AI tool outputs
-  useEffect(() => {
-    for (const msg of aiMessages) {
-      if (msg.role !== "assistant") continue;
-      for (const part of msg.parts) {
-        if (!part.type.startsWith("tool-")) continue;
-        const toolPart = part as {
-          type: string;
-          toolCallId: string;
-          state: string;
-          output?: Record<string, unknown>;
-        };
-
-        if (
-          toolPart.state !== "output-available" ||
-          !toolPart.output ||
-          processedTools.current.has(toolPart.toolCallId)
-        ) {
-          continue;
-        }
-
-        processedTools.current.add(toolPart.toolCallId);
-        const toolName = toolPart.type.replace("tool-", "");
-
-        if (toolName === "story_page") {
-          const page: StoryPage = {
-            pageNumber: toolPart.output.pageNumber as number,
-            text: toolPart.output.text as string,
-          };
-          latestPageRef.current = Math.max(latestPageRef.current, page.pageNumber);
-          setLivePages((prev) => {
-            if (prev.some((p) => p.pageNumber === page.pageNumber)) return prev;
-            return [...prev, page];
-          });
-          addPage(storyId, page);
-        } else if (toolName === "story_choice") {
-          const output = toolPart.output as {
-            prompt: string;
-            choices: { id: string; emoji: string; textAr: string }[];
-          };
-          const choicePoint: StoryChoicePoint = {
-            prompt: output.prompt,
-            choices: output.choices,
-            afterPage: latestPageRef.current,
-          };
-          setLiveChoicePoints((prev) => {
-            if (prev.some((cp) => cp.afterPage === choicePoint.afterPage)) return prev;
-            addChoicePoint(storyId, choicePoint);
-            return [...prev, choicePoint];
-          });
-        } else if (toolName === "end_story") {
-          const title = toolPart.output.titleAr as string;
-          setStoryTitle(title);
-          setIsComplete(true);
-          completeStory(storyId, title);
-        }
-      }
-    }
-  }, [aiMessages, storyId, addPage, addChoicePoint, completeStory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle choice selection
   const handleSelectChoice = useCallback(
@@ -215,9 +185,9 @@ function StorySession({
       );
       const cp = liveChoicePoints.find((c) => c.afterPage === afterPage);
       const choice = cp?.choices.find((c) => c.id === choiceId);
-      if (choice) sendMessage({ text: choice.textAr });
+      if (choice) generateNextBatch(choice.textAr, choice.textAr);
     },
-    [storyId, selectChoice, liveChoicePoints, sendMessage]
+    [storyId, selectChoice, liveChoicePoints, generateNextBatch]
   );
 
   const totalPages = { short: 5, medium: 8, long: 12 }[story.config.length];
@@ -250,7 +220,7 @@ function StorySession({
             pages={livePages}
             choicePoints={liveChoicePoints}
             totalPages={totalPages}
-            isGenerating={isGenerating && !isComplete}
+            isGenerating={isLoading && !isComplete}
             onSelectChoice={isNew && !isComplete && story.config.mode !== "continuous" ? handleSelectChoice : undefined}
             textStyle={textStyle}
           />

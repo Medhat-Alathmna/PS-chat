@@ -1,4 +1,4 @@
-import type { StoryConfig } from "@/lib/types/stories";
+import type { StoryConfig, StoryPage } from "@/lib/types/stories";
 import {
   getGenreOption,
   getSettingOption,
@@ -74,7 +74,9 @@ function getSettingGuidance(setting: StoryConfig["setting"]): string {
 export function buildStorySystemPrompt(
   config: StoryConfig,
   playerName?: string,
-  playerAge: number = 8
+  playerAge: number = 8,
+  previousPages?: StoryPage[],
+  lastChoiceText?: string
 ): string {
   const genre = getGenreOption(config.genre);
   const setting = getSettingOption(config.setting);
@@ -121,7 +123,15 @@ ${getGenreGuidance(config.genre)}`,
     `## Setting Guidance: ${setting.nameAr}
 ${getSettingGuidance(config.setting)}`,
 
-    // 6. Tool Flow — differs by mode
+    // 6. Story continuation context (multi-turn interactive mode)
+    previousPages && previousPages.length > 0
+      ? `## Story Already Written (DO NOT repeat — continue from where it left off)
+${previousPages.map((p) => `[صفحة ${p.pageNumber}]: ${p.text}`).join("\n\n")}${lastChoiceText ? `\n\nThe child's last choice: "${lastChoiceText}"` : ""}
+
+Continue from page ${previousPages.length + 1}.`
+      : "",
+
+    // 7. Tool Flow — differs by mode
     isInteractive
       ? `## Tool Flow (CRITICAL — follow exactly!)
 
@@ -175,15 +185,15 @@ Generate ALL ${totalPages} pages in one response, then end the story.
 - After the final story_page, call end_story with a creative Arabic title
 - Generate ALL pages in a single response — do NOT stop partway`,
 
-    // 7. Player Name
+    // 8. Player Name
     playerName
       ? `## Player: ${playerName}\nMention the child's name naturally in the story (as the hero or when addressing them). Use it 1-2 times per page.`
       : "",
 
-    // 8. Safety
+    // 9. Safety
     SAFETY_RULES,
 
-    // 9. Critical Checklist
+    // 10. Critical Checklist
     isInteractive
       ? `## ⚠️ CHECKLIST (read before EVERY response):
 ✅ Writing in MSA (الفصحى), NOT dialect?

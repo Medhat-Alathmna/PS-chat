@@ -823,6 +823,50 @@ code {
   }
 }
 
+/* ── Story card stack ──────────────────────────────────────────────── */
+
+.story-ghost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+}
+.story-ghost-1 {
+  transform: scale(0.96) translateY(8px);
+  opacity: 0.45;
+  z-index: 2;
+}
+.story-ghost-2 {
+  transform: scale(0.91) translateY(16px);
+  opacity: 0.22;
+  z-index: 1;
+}
+.story-card-current {
+  position: relative;
+  z-index: 3;
+}
+
+@keyframes storyCardLeave {
+  0%   { opacity: 1; transform: scale(1) translateY(0); }
+  60%  { transform: scale(0.90) translateY(10px); }
+  100% { opacity: 0; transform: scale(0.84) translateY(18px); }
+}
+
+@keyframes storyCardEnter {
+  0%   { opacity: 0.5; transform: scale(0.93) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.story-card-leave {
+  animation: storyCardLeave 0.28s ease-in forwards;
+}
+.story-card-enter {
+  animation: storyCardEnter 0.30s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-speaking,
@@ -834,7 +878,9 @@ code {
   .city-marker-revealed,
   .animate-slide-in-from-left,
   .animate-slide-in-from-right,
-  .animate-fade-in-reveal {
+  .animate-fade-in-reveal,
+  .story-card-leave,
+  .story-card-enter {
     animation: none;
   }
 }

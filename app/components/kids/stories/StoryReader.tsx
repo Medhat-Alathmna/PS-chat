@@ -18,7 +18,7 @@ type SlideItem =
   | { type: "page"; page: StoryPageType }
   | { type: "choice"; choicePoint: StoryChoicePoint };
 
-type SlideDirection = "next" | "prev" | "none";
+type AnimState = "idle" | "leaving" | "entering";
 
 export default function StoryReader({
   pages,
@@ -29,8 +29,8 @@ export default function StoryReader({
   textStyle,
 }: StoryReaderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [slideDirection, setSlideDirection] = useState<SlideDirection>("none");
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [animState, setAnimState] = useState<AnimState>("idle");
+  const pendingIndex = useRef(0);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,15 +43,44 @@ export default function StoryReader({
   for (const page of sortedPages) {
     slides.push({ type: "page", page });
     const cp = choiceMap.get(page.pageNumber);
-    if (cp) {
-      slides.push({ type: "choice", choicePoint: cp });
-    }
+    if (cp) slides.push({ type: "choice", choicePoint: cp });
   }
 
   const maxIndex = slides.length - 1;
 
-  // Auto-advance: only go to first page when slides first appear,
-  // or advance if user is already on the last slide (following along)
+  // Navigate with card stack animation
+  const goTo = useCallback(
+    (target: number) => {
+      if (animState !== "idle" || target === currentIndex || target < 0 || target > maxIndex) return;
+      pendingIndex.current = target;
+      setAnimState("leaving");
+    },
+    [animState, currentIndex, maxIndex]
+  );
+
+  const goNext = useCallback(() => {
+    if (currentIndex < maxIndex) goTo(currentIndex + 1);
+  }, [currentIndex, maxIndex, goTo]);
+
+  const goPrev = useCallback(() => {
+    if (currentIndex > 0) goTo(currentIndex - 1);
+  }, [currentIndex, goTo]);
+
+  // Animation state machine: leaving → (update index) → entering → idle
+  const handleAnimationEnd = useCallback(
+    (e: React.AnimationEvent) => {
+      if (e.target !== e.currentTarget) return; // ignore bubbled events
+      if (animState === "leaving") {
+        setCurrentIndex(pendingIndex.current);
+        setAnimState("entering");
+      } else if (animState === "entering") {
+        setAnimState("idle");
+      }
+    },
+    [animState]
+  );
+
+  // Auto-advance when new slides arrive
   const prevSlidesLen = useRef(slides.length);
   useEffect(() => {
     if (slides.length > prevSlidesLen.current) {
@@ -59,42 +88,14 @@ export default function StoryReader({
       const wasOnLast = currentIndex >= prevSlidesLen.current - 1;
 
       if (wasEmpty) {
-        // First page arrived — show it immediately (no animation)
         setCurrentIndex(0);
-      } else if (wasOnLast) {
-        // User was on the last slide — auto-advance one step
-        setSlideDirection("next");
-        setIsAnimating(true);
-        setCurrentIndex(prevSlidesLen.current); // one step forward, not the end
+      } else if (wasOnLast && animState === "idle") {
+        goNext();
       }
-      // Otherwise: user is browsing earlier pages — don't move them
     }
     prevSlidesLen.current = slides.length;
-  }, [slides.length, currentIndex]);
-
-  const navigateTo = useCallback(
-    (target: number, direction: SlideDirection) => {
-      if (isAnimating) return;
-      setSlideDirection(direction);
-      setIsAnimating(true);
-      setCurrentIndex(target);
-    },
-    [isAnimating]
-  );
-
-  const goNext = useCallback(() => {
-    if (currentIndex < maxIndex) navigateTo(currentIndex + 1, "next");
-  }, [currentIndex, maxIndex, navigateTo]);
-
-  const goPrev = useCallback(() => {
-    if (currentIndex > 0) navigateTo(currentIndex - 1, "prev");
-  }, [currentIndex, navigateTo]);
-
-  // Clear animation flag after transition ends
-  const handleAnimationEnd = useCallback(() => {
-    setIsAnimating(false);
-    setSlideDirection("none");
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slides.length]);
 
   // Swipe gestures
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -106,7 +107,6 @@ export default function StoryReader({
     (e: React.TouchEvent) => {
       const deltaX = e.changedTouches[0].clientX - touchStartX.current;
       const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-      // Only trigger on horizontal swipes > 50px and mostly horizontal
       if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
         // RTL: swipe left = next, swipe right = prev
         if (deltaX < 0) goNext();
@@ -126,85 +126,104 @@ export default function StoryReader({
     return () => window.removeEventListener("keydown", handleKey);
   }, [goNext, goPrev]);
 
+  // Loading / empty state
   if (slides.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="text-4xl mb-3 animate-pulse">📖</div>
-          <p className="text-white/70 text-sm">القصة تبدأ الآن...</p>
+          <p className="text-white/70 text-sm">
+            {isGenerating ? "يكتب القصة..." : "القصة تبدأ الآن..."}
+          </p>
         </div>
       </div>
     );
   }
 
   const currentSlide = slides[currentIndex];
+  const remaining = slides.length - currentIndex - 1;
 
-  // Animation class based on direction
-  const animationClass =
-    slideDirection === "next"
-      ? "animate-slide-in-from-left"
-      : slideDirection === "prev"
-        ? "animate-slide-in-from-right"
-        : "";
+  const cardClass = [
+    "story-card-current",
+    animState === "leaving" ? "story-card-leave" : "",
+    animState === "entering" ? "story-card-enter" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
       ref={containerRef}
-      className="relative flex-1 flex flex-col overflow-hidden"
+      className="relative flex-1 flex flex-col"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Slide content */}
-      <div
-        key={currentIndex}
-        className={`flex-1 ${animationClass}`}
-        onAnimationEnd={handleAnimationEnd}
-      >
-        {currentSlide.type === "page" ? (
-          <StoryPage
-            text={currentSlide.page.text}
-            pageNumber={currentSlide.page.pageNumber}
-            totalPages={totalPages}
-            textStyle={textStyle}
-          />
-        ) : (
-          <StoryChoiceCards
-            prompt={currentSlide.choicePoint.prompt}
-            choices={currentSlide.choicePoint.choices}
-            selectedId={currentSlide.choicePoint.selectedChoiceId}
-            disabled={!!currentSlide.choicePoint.selectedChoiceId}
-            onSelect={(choiceId) => {
-              if (onSelectChoice) {
-                onSelectChoice(currentSlide.choicePoint.afterPage, choiceId);
-              }
-            }}
-          />
+      {/* Card stack area */}
+      <div className="relative flex-1 pb-4">
+        {/* Ghost cards — blank frosted glass peeking behind */}
+        {remaining >= 2 && (
+          <div className="story-ghost story-ghost-2">
+            <div className="w-full max-w-lg bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 min-h-[60vh]" />
+          </div>
+        )}
+        {remaining >= 1 && (
+          <div className="story-ghost story-ghost-1">
+            <div className="w-full max-w-lg bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 min-h-[60vh]" />
+          </div>
+        )}
+
+        {/* Current card */}
+        <div
+          key={currentIndex}
+          className={cardClass}
+          onAnimationEnd={handleAnimationEnd}
+        >
+          {currentSlide.type === "page" ? (
+            <StoryPage
+              text={currentSlide.page.text}
+              pageNumber={currentSlide.page.pageNumber}
+              totalPages={totalPages}
+              textStyle={textStyle}
+            />
+          ) : (
+            <StoryChoiceCards
+              prompt={currentSlide.choicePoint.prompt}
+              choices={currentSlide.choicePoint.choices}
+              selectedId={currentSlide.choicePoint.selectedChoiceId}
+              disabled={!!currentSlide.choicePoint.selectedChoiceId}
+              onSelect={(choiceId) => {
+                if (onSelectChoice) {
+                  onSelectChoice(currentSlide.choicePoint.afterPage, choiceId);
+                }
+              }}
+            />
+          )}
+        </div>
+
+        {/* Navigation arrows — desktop */}
+        {currentIndex > 0 && (
+          <button
+            onClick={goPrev}
+            className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all z-10"
+            aria-label="الصفحة السابقة"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+        {currentIndex < maxIndex && (
+          <button
+            onClick={goNext}
+            className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all z-10"
+            aria-label="الصفحة التالية"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         )}
       </div>
-
-      {/* Navigation arrows - desktop */}
-      {currentIndex > 0 && (
-        <button
-          onClick={goPrev}
-          className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all"
-          aria-label="الصفحة السابقة"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      )}
-      {currentIndex < maxIndex && (
-        <button
-          onClick={goNext}
-          className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all"
-          aria-label="الصفحة التالية"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-      )}
 
       {/* Progress dots */}
       <div className="flex items-center justify-center gap-1.5 py-3">
@@ -212,39 +231,19 @@ export default function StoryReader({
           <button
             key={i}
             onClick={() => {
-              if (i !== currentIndex) {
-                navigateTo(i, i > currentIndex ? "next" : "prev");
-              }
+              if (i !== currentIndex) goTo(i);
             }}
             className={`w-2 h-2 rounded-full transition-all duration-200 ${
-              i === currentIndex
-                ? "bg-white w-6"
-                : i > currentIndex && i >= prevSlidesLen.current - 1 && isGenerating
-                  ? "bg-white/30 animate-pulse"
-                  : "bg-white/30 hover:bg-white/50"
+              i === currentIndex ? "bg-white w-6" : "bg-white/30 hover:bg-white/50"
             }`}
           />
         ))}
       </div>
 
-      {/* New page indicator — shown when there are unread pages ahead */}
-      {isGenerating && currentIndex < maxIndex && (
+      {/* Loading indicator — shown while generating more pages */}
+      {isGenerating && (
         <div className="text-center pb-2">
-          <button
-            onClick={goNext}
-            className="text-white/70 text-xs animate-pulse hover:text-white transition-colors"
-          >
-            صفحات جديدة ← اسحب للمتابعة
-          </button>
-        </div>
-      )}
-
-      {/* Loading indicator — shown when user is on the last slide */}
-      {isGenerating && currentIndex === maxIndex && (
-        <div className="text-center pb-2">
-          <span className="text-white/50 text-xs animate-pulse">
-            يكتب القصة...
-          </span>
+          <span className="text-white/50 text-xs animate-pulse">يكتب القصة...</span>
         </div>
       )}
     </div>
