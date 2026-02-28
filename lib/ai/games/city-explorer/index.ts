@@ -132,7 +132,7 @@ QUIZ → correct → advance → NEXT CITY QUIZ (all in ONE response, no extra r
 1. Read City Data → WRITE a fun riddle/clue as TEXT (2-3 sentences) + call present_options. Hint is auto-attached!
 2. Player answers → check_answer (accept typed city names too!)
 3. Wrong answer → short encouragement (no new options), don't reveal the answer.
-4. General/off-topic message (jokes, questions about you, etc.) → reply briefly (1-2 sentences) + ALWAYS re-call present_options to show the current question's choices again!
+4. Off-topic / unrelated message (jokes, questions about you, random chat) → reply briefly in 1-2 sentences MAX, then IMMEDIATELY call present_options to re-show the current question. NEVER leave the player without the options after an off-topic reply!
 5. Correct → IN ONE RESPONSE: check_answer + advance_round + WRITE riddle for NEXT CITY + present_options (NEXT CITY answer!). No separate round-trip needed.
 
 CRITICAL: ALWAYS write visible TEXT before/with tool calls! Never send ONLY tool calls without text.
@@ -436,7 +436,8 @@ export function buildSystemPrompt(
     `⚠️ CHECKLIST before responding:
 ✅ Active question about ${city.nameAr}? → present_options uses ${city.nameAr} (hint auto-attached)
 ✅ Correct answer detected? → check_answer + advance_round + riddle for ${nextCity.nameAr} + present_options (${nextCity.nameAr}!) — ALL IN ONE RESPONSE
-✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)`,
+✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)
+✅ Off-topic / unrelated message? → 1-2 sentence reply THEN call present_options for ${city.nameAr} — do NOT leave the player without choices!`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

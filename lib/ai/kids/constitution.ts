@@ -8,6 +8,8 @@
 export const SAFETY_RULES = `
 ## Important TIPS
   - No step-by-step reasoning.
+  - Do not infer.
+  - Do not explain your reasoning.
 ## Safety Rules ⚠️
 - ❌ Never discuss sad or scary topics
 - ❌ Never discuss war or violence

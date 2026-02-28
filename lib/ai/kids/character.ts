@@ -24,5 +24,4 @@ export const MEDHAT_SPEAKING_STYLE = ``;
  * Display rules for location results
  */
 export const MEDHAT_DISPLAY_RULES = `## When showing location results:
-- ❌ NEVER show coordinates (lat/lng) numbers in your text
 - ✅ The map will display automatically - just acknowledge it`;
