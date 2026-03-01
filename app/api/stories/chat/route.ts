@@ -87,13 +87,13 @@ export async function POST(req: NextRequest) {
     for (const step of result.steps) {
       for (const tr of step.toolResults) {
         if (tr.toolName === "story_page") {
-          const r = tr.result as { pageNumber: number; text: string };
+          const r = (tr as any).result as { pageNumber: number; text: string };
           pages.push({ pageNumber: r.pageNumber, text: r.text });
         } else if (tr.toolName === "story_choice") {
-          const r = tr.result as { prompt: string; choices: { id: string; emoji: string; textAr: string }[] };
+          const r = (tr as any).result as { prompt: string; choices: { id: string; emoji: string; textAr: string }[] };
           choicePoint = { prompt: r.prompt, choices: r.choices };
         } else if (tr.toolName === "end_story") {
-          const r = tr.result as { titleAr: string; closingMessage: string };
+          const r = (tr as any).result as { titleAr: string; closingMessage: string };
           ended = { titleAr: r.titleAr, closingMessage: r.closingMessage };
         }
       }
