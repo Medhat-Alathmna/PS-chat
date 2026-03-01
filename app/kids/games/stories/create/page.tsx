@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useStories } from "@/lib/hooks/useStories";
@@ -12,7 +13,9 @@ import { STORY_GENRES } from "@/lib/data/stories/config";
 export default function CreateStoryPage() {
   return (
     <ErrorBoundary>
-      <CreateStory />
+      <Suspense>
+        <CreateStory />
+      </Suspense>
     </ErrorBoundary>
   );
 }
