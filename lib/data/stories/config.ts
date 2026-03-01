@@ -168,7 +168,7 @@ export function getGenreOption(id: StoryGenre): GenreOption {
 }
 
 export function getSettingOption(id: StorySetting): SettingOption {
-  return STORY_SETTINGS.find((s) => s.id === id)!;
+  return STORY_SETTINGS.find((s) => s.id === id) ?? STORY_SETTINGS[0];
 }
 
 export function getLengthConfig(id: StoryLength): StoryLengthConfig {

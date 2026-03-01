@@ -17,7 +17,7 @@ export default function StoriesPage() {
   );
 }
 
-const RANDOM_SETTINGS = ["jerusalem", "nablus", "jaffa", "gaza", "bethlehem", "hebron", "acre", "enchanted-forest", "flying-castle", "underwater-kingdom"] as const;
+const RANDOM_SETTINGS = ["palestine", "enchanted-forest", "flying-castle", "underwater-kingdom"] as const;
 const RANDOM_COMPANIONS = ["medhat", "self"] as const;
 const RANDOM_LENGTHS = ["short", "medium", "long"] as const;
 const RANDOM_MODES = ["interactive", "continuous"] as const;

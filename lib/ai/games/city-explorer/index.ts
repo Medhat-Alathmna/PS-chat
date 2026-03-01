@@ -138,11 +138,10 @@ QUIZ → correct → advance → NEXT CITY QUIZ (all in ONE response, no extra r
 CRITICAL: ALWAYS write visible TEXT before/with tool calls! Never send ONLY tool calls without text.
 
 ### Critical Rules:
-- Use ONLY City Data facts — never invent facts
+- STRICT: Use ONLY facts from City Data. Never invent or embellish facts.
 - CORRECT_ANSWER must be in present_options (use NEXT CITY answer after advance_round!)
 - After correct: BRIEF celebration (1 sentence) → immediately advance + next city question
-- NEVER mention coordinates/lat/lng
-- STRICT: Use ONLY facts from City Data. Never invent or embellish facts.`;
+- NEVER mention coordinates/lat/lng`;
 
 // ── Tool Quick Reference ─────────────────────────────────────────────
 

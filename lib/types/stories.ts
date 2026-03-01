@@ -12,13 +12,6 @@ export type StoryGenre =
 
 export type StorySetting =
   | "palestine"
-  | "jerusalem"
-  | "nablus"
-  | "jaffa"
-  | "gaza"
-  | "bethlehem"
-  | "hebron"
-  | "acre"
   | "enchanted-forest"
   | "flying-castle"
   | "underwater-kingdom";

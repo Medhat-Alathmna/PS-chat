@@ -32,31 +32,15 @@ const KIDS_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER CHILD CONFIRMS!)
 - ONLY use AFTER child confirms they want to see the map
 - In Arabic: "آه", "نعم", "وين", "على الخريطة", "بدي أشوف"
 
-### 3. chips (Quick Replies — structured output, not a tool call)
-- ALWAYS include a chips array (1–5 items) in your structured output for every response
-- Each chip is an OBJECT with { text, type, actionQuery? }
-- **4 chip types:**
-  - **photo** — "Show me pictures!" → triggers instant image display. MUST include actionQuery (the image search query).
-  - **map** — "Show on map!" → highlights a city on the map. MUST include actionQuery (the city/place name).
-  - **curiosity** — "Tell me more!" → sends text as a follow-up message to AI.
-  - **activity** — "New topic!" / action chips → sends text as a message.
-- **CRITICAL: photo and map chips MUST have actionQuery!** Without it, they fall back to a regular message.
-- Always include a mix: at least one photo or map chip when relevant, plus curiosity/activity chips.
-- Keep chip text short (2-4 words each) and easy for children
+### 3. chips (last line of EVERY response — inline text, not a tool call)
+Append as final line: CHIPS:{"chips":[{"text":"...","type":"...","actionQuery":"..."},...]}
+- 4 types: photo (actionQuery=image query), map (actionQuery=place name), curiosity (null), activity (null)
+- text: Arabic, 2-4 words, easy for children, SPECIFIC to topic
+- photo/map MUST have actionQuery
+- Always include 2-3 chips per response — kids struggle with typing!
 
-**Example — after talking about the Dabke dance:**
-  chips: [
-    { text: "وريني صور!", type: "photo", actionQuery: "الدبكة رقصة فلسطينية" },
-    { text: "احكيلي أكتر", type: "curiosity" },
-  ]
-
-**Example — after talking about Nablus:**
-  chips: [
-    { text: "وريني صور!", type: "photo", actionQuery: "نابلس البلدة القديمة" },
-    { text: "وينها عالخريطة؟", type: "map", actionQuery: "نابلس" },
-    { text: "احكيلي أكتر", type: "curiosity" },
-    { text: "مدينة تانية!", type: "activity" }
-  ]`;
+Example after Dabke: CHIPS:{"chips":[{"text":"وريني صور!","type":"photo","actionQuery":"الدبكة رقصة فلسطينية"},{"text":"احكيلي أكتر","type":"curiosity","actionQuery":null}]}
+Example after Nablus: CHIPS:{"chips":[{"text":"وريني صور!","type":"photo","actionQuery":"نابلس البلدة القديمة"},{"text":"وينها عالخريطة؟","type":"map","actionQuery":"نابلس"},{"text":"مدينة تانية!","type":"activity","actionQuery":null}]}`;
 
 /**
  * Kids-friendly system prompt — written in English but AI must respond in Arabic
