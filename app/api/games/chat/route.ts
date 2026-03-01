@@ -298,8 +298,8 @@ export async function POST(req: NextRequest) {
                 const result = toolResults?.find((r) => r.toolCallId === call.toolCallId);
                 console.log("[game-chat] Tool call", {
                   tool: call.toolName,
-                  args: call.args,
-                  result: result?.result,
+                  args: (call as any).args,
+                  result: (result as any)?.result,
                 });
               }
             }
