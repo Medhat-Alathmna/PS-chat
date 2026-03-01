@@ -60,7 +60,7 @@ export function buildStorySystemPrompt(
   const heroDescription =
     config.companion === "self"
       ? `The hero is the child themselves${playerName ? `: "${playerName}"` : ""}. Make them brave and clever.`
-      : `The hero's companion is مدحت (Medhat), a cheerful Palestinian fox 🦊 who loves adventure. Medhat is funny, encouraging, and loyal.${playerName ? ` The child "${playerName}" is the story's hero, accompanied by Medhat.` : ""}`;
+      : `The hero's companion is مدحت (Medhat), a cheerful Palestinian kid 🦊 who loves adventure. Medhat is funny, encouraging, and loyal.${playerName ? ` The child "${playerName}" is the story's hero, accompanied by Medhat.` : ""}`;
 
   const totalPages = lengthConfig.pages;
   const choiceInterval = totalPages <= 5 ? 2 : 3;

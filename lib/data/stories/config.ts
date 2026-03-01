@@ -66,57 +66,7 @@ export const STORY_SETTINGS: SettingOption[] = [
     descriptionAr: "بلادنا الجميلة الخضراء",
     emoji: "🇵🇸",
     category: "palestine",
-  },
-  // Palestine cities (kept for saved stories / future use)
-  {
-    id: "jerusalem",
-    nameAr: "القدس",
-    descriptionAr: "المدينة المقدسة",
-    emoji: "🕌",
-    category: "palestine",
-  },
-  {
-    id: "nablus",
-    nameAr: "نابلس",
-    descriptionAr: "مدينة الكنافة والصابون",
-    emoji: "🍰",
-    category: "palestine",
-  },
-  {
-    id: "jaffa",
-    nameAr: "يافا",
-    descriptionAr: "عروس البحر",
-    emoji: "🍊",
-    category: "palestine",
-  },
-  {
-    id: "gaza",
-    nameAr: "غزة",
-    descriptionAr: "مدينة البحر والصمود",
-    emoji: "🌊",
-    category: "palestine",
-  },
-  {
-    id: "bethlehem",
-    nameAr: "بيت لحم",
-    descriptionAr: "مدينة الميلاد",
-    emoji: "⭐",
-    category: "palestine",
-  },
-  {
-    id: "hebron",
-    nameAr: "الخليل",
-    descriptionAr: "مدينة الخليل إبراهيم",
-    emoji: "🏛️",
-    category: "palestine",
-  },
-  {
-    id: "acre",
-    nameAr: "عكا",
-    descriptionAr: "مدينة الأسوار والبحر",
-    emoji: "⚓",
-    category: "palestine",
-  },
+  }, 
   // Fantasy
   {
     id: "enchanted-forest",
