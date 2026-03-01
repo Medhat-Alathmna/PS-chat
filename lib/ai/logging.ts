@@ -6,20 +6,20 @@ import { formatCacheUsage } from "./cache";
  */
 export function makeStreamingCallbacks(prefix: string, opts?: { logToolResults?: boolean }) {
   return {
-    onStepFinish: ({ toolCalls, toolResults }: any) => {
+    onStepFinish: ({ toolCalls, toolResults }: { toolCalls?: { toolCallId: string; toolName: string; args: unknown }[]; toolResults?: { toolCallId: string; result: unknown }[] }) => {
       if (toolCalls?.length) {
+        const resultMap = new Map(toolResults?.map((r) => [r.toolCallId, r.result]));
         for (const call of toolCalls) {
-          const result = toolResults?.find((r: any) => r.toolCallId === call.toolCallId);
           console.log(`[${prefix}] Tool call`, {
             tool: call.toolName,
             args: call.args,
-            result: result?.result,
+            result: resultMap.get(call.toolCallId),
           });
         }
       }
     },
-    onFinish: async ({ text, toolCalls, toolResults, usage }: any) => {
-      const cache = formatCacheUsage(usage as Record<string, unknown>);
+    onFinish: ({ text, toolCalls, toolResults, usage }: { text: string; toolCalls?: unknown[]; toolResults?: unknown[]; usage: Record<string, unknown> }) => {
+      const cache = formatCacheUsage(usage);
       console.log(`[${prefix}] Stream finished`, {
         textLength: text.length,
         toolCallsCount: toolCalls?.length || 0,
