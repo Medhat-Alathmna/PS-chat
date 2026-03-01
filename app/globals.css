@@ -833,6 +833,7 @@ code {
   align-items: center;
   justify-content: center;
   padding: 0 1rem;
+  overflow: hidden;
 }
 .story-ghost-1 {
   transform: scale(0.96) translateY(8px);
