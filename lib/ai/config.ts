@@ -1,8 +1,9 @@
 import OpenAI from "openai";
+import { createOpenAI } from "@ai-sdk/openai";
 
 /**
  * AI Configuration - Shared Utilities
- * 
+ *
  * This file contains only shared configuration utilities.
  * For system prompts, use the dedicated modules:
  * - Main chat: lib/ai/main
@@ -11,7 +12,7 @@ import OpenAI from "openai";
  */
 
 /**
- * Get or create OpenAI client instance
+ * Get or create OpenAI client instance (native SDK — used by TTS)
  */
 let openaiClient: OpenAI | null = null;
 
@@ -27,6 +28,19 @@ export function getOpenAIClient(): OpenAI {
 
   openaiClient = new OpenAI({ apiKey });
   return openaiClient;
+}
+
+/**
+ * Singleton AI SDK provider (Vercel AI SDK — used by chat, games, stories)
+ */
+let aiProvider: ReturnType<typeof createOpenAI> | null = null;
+
+export function getAIProvider(): ReturnType<typeof createOpenAI> {
+  if (aiProvider) return aiProvider;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+  aiProvider = createOpenAI({ apiKey });
+  return aiProvider;
 }
 
 /**

@@ -8,13 +8,13 @@ import {
   UIMessage,
   convertToModelMessages,
 } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
 import { buildMainSystemPrompt } from "@/lib/ai/main";
-import { getModel } from "@/lib/ai/config";
+import { getModel, getAIProvider } from "@/lib/ai/config";
 import { kidsTools, timelineSearchTool } from "@/lib/ai/tools";
 import { logError } from "@/lib/utils/error-handler";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
-import { buildCacheOptions, formatCacheUsage } from "@/lib/ai/cache";
+import { buildCacheOptions } from "@/lib/ai/cache";
+import { makeStreamingCallbacks } from "@/lib/ai/logging";
 
 const mainTools = {
   ...kidsTools,
@@ -40,22 +40,14 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as KidsChatRequest;
     const { messages = [], config, playerName } = body;
 
-    if (!messages || messages.length === 0) {
+    if (messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Message content is required." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Missing OpenAI API key." }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const openai = createOpenAI({ apiKey });
+    const openai = getAIProvider();
 
     const systemPrompt =
       config?.mode === "localPrompt" && config.systemPrompt?.trim()
@@ -72,26 +64,7 @@ export async function POST(req: NextRequest) {
           messages: convertedMessages,
           tools: mainTools,
           ...buildCacheOptions("main-chat"),
-          onStepFinish: ({ toolCalls, toolResults }) => {
-            if (toolCalls?.length) {
-              for (const call of toolCalls) {
-                const result = toolResults?.find((r) => r.toolCallId === call.toolCallId);
-                console.log("[main-chat] Tool call", {
-                  tool: call.toolName,
-                  args: (call as any).args,
-                  result: (result as any)?.result,
-                });
-              }
-            }
-          },
-          onFinish: async ({ text, toolCalls, usage }) => {
-            const cache = formatCacheUsage(usage as Record<string, unknown>);
-            console.log("[main-chat] Stream finished", {
-              textLength: text.length,
-              toolCallsCount: toolCalls?.length || 0,
-              ...(cache && { cache }),
-            });
-          },
+          ...makeStreamingCallbacks("main-chat"),
         });
 
         writer.merge(result.toUIMessageStream());

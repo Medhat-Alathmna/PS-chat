@@ -7,15 +7,15 @@ import {
   convertToModelMessages,
   stepCountIs,
 } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
-import { getModel } from "@/lib/ai/config";
+import { getModel, getAIProvider } from "@/lib/ai/config";
 import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery } from "@/lib/ai/games/city-explorer";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
 import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { logError } from "@/lib/utils/error-handler";
-import { buildCacheOptions, formatCacheUsage } from "@/lib/ai/cache";
+import { buildCacheOptions } from "@/lib/ai/cache";
+import { makeStreamingCallbacks } from "@/lib/ai/logging";
 
 type GameChatRequest = {
   messages: UIMessage[];
@@ -168,27 +168,19 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as GameChatRequest;
     const { messages = [], difficulty, chatContext, kidsProfile, discoveredCityIds, sessionSeed, currentRound } = body;
 
-    if (!messages || messages.length === 0) {
+    if (messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Message content is required." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Missing OpenAI API key." }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const openai = createOpenAI({ apiKey });
+    const openai = getAIProvider();
 
     // Use client-supplied round (survives client-side message trimming),
     // fall back to counting advance_round calls in the message history.
     const roundNumber = currentRound ?? countAdvanceRounds(messages);
-    const sessionSeedVal = sessionSeed || 0;
+    const sessionSeedVal = sessionSeed ?? 0;
     const playerAge = kidsProfile?.age || 8;
     const gameDifficulty = difficulty || "medium";
 
@@ -292,27 +284,7 @@ export async function POST(req: NextRequest) {
           tools,
           stopWhen: stepCountIs(5),
           ...buildCacheOptions(cacheKey),
-          onStepFinish: ({ toolCalls, toolResults }) => {
-            if (toolCalls?.length) {
-              for (const call of toolCalls) {
-                const result = toolResults?.find((r) => r.toolCallId === call.toolCallId);
-                console.log("[game-chat] Tool call", {
-                  tool: call.toolName,
-                  args: (call as any).args,
-                  result: (result as any)?.result,
-                });
-              }
-            }
-          },
-          onFinish: async ({ text, toolCalls, toolResults, usage }) => {
-            const cache = formatCacheUsage(usage as Record<string, unknown>);
-            console.log("[game-chat] Stream finished", {
-              textLength: text.length,
-              toolCallsCount: toolCalls?.length || 0,
-              toolResultsCount: toolResults?.length || 0,
-              ...(cache && { cache }),
-            });
-          },
+          ...makeStreamingCallbacks("game-chat", { logToolResults: true }),
         });
 
         writer.merge(result.toUIMessageStream());

@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { generateText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
-import { getModel } from "@/lib/ai/config";
+import { getModel, getAIProvider } from "@/lib/ai/config";
 import { buildStoryTools } from "@/lib/ai/stories/tools";
 import { buildStorySystemPrompt } from "@/lib/ai/stories/prompts";
 import { StoryConfig, StoryPage } from "@/lib/types/stories";
@@ -22,7 +21,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as StoryChatRequest;
     const { messages = [], storyConfig, kidsProfile, previousPages, lastChoiceText } = body;
 
-    if (!messages || messages.length === 0) {
+    if (messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "Message content is required." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -36,15 +35,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Missing OpenAI API key." }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const openai = createOpenAI({ apiKey });
+    const openai = getAIProvider();
 
     const systemPrompt = buildStorySystemPrompt(
       storyConfig,
@@ -55,12 +46,6 @@ export async function POST(req: NextRequest) {
     );
 
     const tools = buildStoryTools(storyConfig.mode !== "continuous");
-
-    console.log("[stories] Config:", storyConfig);
-    console.log("[stories] System prompt length:", systemPrompt.length);
-    if (previousPages?.length) {
-      console.log("[stories] Continuing from page", previousPages.length);
-    }
 
     const cacheKey = `story-${storyConfig.genre}-${storyConfig.setting}-${storyConfig.mode}`;
 
