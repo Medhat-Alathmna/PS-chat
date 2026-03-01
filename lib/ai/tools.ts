@@ -28,9 +28,7 @@ export const chipsOutputSchema = z.object({
  */
 export const imageSearchTool = tool({
   description:
-    "ابحث عن صور متعلقة بفلسطين. استخدم هذه الأداة عندما يسأل المستخدم عن مكان أو موضوع ويحتاج صور توضيحية. " +
-    "Search for images related to Palestine. Use this tool when the user asks about a place or topic and needs illustrative images. " +
-    "For games, use SPECIFIC place/landmark names in the query (e.g. 'المسجد الأقصى القدس' not 'مدينة فلسطينية'). Real photos of landmarks and food are naturally kid-friendly!",
+    "Search for Palestinian images. Use SPECIFIC landmark/place names. Only call AFTER user confirms.",
   inputSchema: z.object({
     query: z
       .string()
@@ -86,8 +84,7 @@ export const imageSearchTool = tool({
  */
 export const locationSearchTool = tool({
   description:
-    "Find a Palestinian location and show it on the map. Use ONLY after the user asks to see a place on the map. " +
-    "IMPORTANT: After this tool succeeds, NEVER mention lat/lng numbers or the formattedAddress in your text response — just confirm the place name and that it's shown on the map.",
+    "Show Palestinian location on map. Only call AFTER user confirms. Never mention lat/lng or raw address.",
   inputSchema: z.object({
     location: z
       .string()
@@ -139,8 +136,7 @@ export const locationSearchTool = tool({
  */
 export const webSearchTool = tool({
   description:
-    "ابحث في الإنترنت عن معلومات حديثة عن فلسطين. استخدم هذه الأداة للحصول على أخبار أو معلومات محدثة. " +
-    "Search the web for recent information about Palestine. Use this tool to get news or updated information.",
+    "Search web for recent Palestine-related information or facts.",
   inputSchema: z.object({
     query: z
       .string()
@@ -226,8 +222,7 @@ export const webSearchTool = tool({
  */
 export const videoSearchTool = tool({
   description:
-    "ابحث عن فيديوهات عن فلسطين من YouTube. استخدم هذه الأداة عندما يريد المستخدم مشاهدة فيديو أو وثائقي. " +
-    "Search for YouTube videos about Palestine. Use this tool when the user wants to watch a video or documentary.",
+    "Search YouTube for Palestinian videos. Use when user asks to watch.",
   inputSchema: z.object({
     query: z
       .string()
@@ -267,19 +262,12 @@ export const videoSearchTool = tool({
 });
 
 /**
- * News Search Tool
- * Fetches latest Palestinian news from RSS feeds
- */
-
-
-/**
  * Timeline Search Tool
  * Retrieves Palestinian historical events
  */
 export const timelineSearchTool = tool({
   description:
-    "احصل على جدول زمني للأحداث التاريخية الفلسطينية. استخدم هذه الأداة عندما يسأل المستخدم عن التاريخ أو الأحداث. " +
-    "Get a timeline of Palestinian historical events. Use this tool when the user asks about history or events.",
+    "Get Palestinian historical timeline events. Use for history questions.",
   inputSchema: z.object({
     query: z
       .string()

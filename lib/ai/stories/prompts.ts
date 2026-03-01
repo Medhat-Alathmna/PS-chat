@@ -5,7 +5,6 @@ import {
   getLengthConfig,
   STORY_COMPANIONS,
 } from "@/lib/data/stories/config";
-import { SAFETY_RULES } from "../kids/constitution";
 
 // ── Age-based vocabulary guidance ────────────────────────────────────
 
@@ -39,35 +38,6 @@ function getGenreGuidance(genre: StoryConfig["genre"]): string {
   return guidance[genre];
 }
 
-// ── Setting content guidance ─────────────────────────────────────────
-
-function getSettingGuidance(setting: StoryConfig["setting"]): string {
-  const guidance: Record<StoryConfig["setting"], string> = {
-    palestine:
-      "Set the story in the beautiful land of Palestine — rolling olive groves shimmering silver-green, terraced hillsides fragrant with thyme and sage, ancient stone villages where neighbors share bread and stories, bustling markets alive with spices and laughter, coastal waves rolling onto golden shores, and a sky that glows amber and rose at sunset. Weave in iconic Palestinian details: olive trees, tatreez embroidery, the smell of ka'ak, the sound of the call to prayer drifting over rooftops. Celebrate the land and its warmth without specifying a single city unless the story naturally leads there.",
-    jerusalem:
-      "Describe the Old City's golden stones glowing in sunset, the Dome of the Rock's magnificent golden dome, narrow alleyways filled with spice scents, ka'ak bread sellers calling out warmly, and the peaceful call to prayer echoing gently.",
-    nablus:
-      "Feature the famous sweet kunafa glistening with syrup, old soap factories with olive oil scents, Mount Gerizim's majestic views, and the warmth of Nabulsi hospitality in every corner.",
-    jaffa:
-      "Paint the refreshing sea breeze, fragrant orange groves stretching to the horizon, the ancient port with colorful boats, the old clock tower standing proud, and fishermen mending their nets by the shore.",
-    gaza:
-      "Describe the Mediterranean waves dancing on golden sand, colorful fishing boats at dawn, vibrant markets filled with spices and laughter, and the resilient, welcoming spirit of its people.",
-    bethlehem:
-      "Feature the ancient Church of the Nativity, skilled artisans carving olive wood, peaceful starry nights over shepherd hills, and the timeless magic of the birthplace of stories.",
-    hebron:
-      "Describe the majestic Ibrahimi Mosque, artisans blowing glass into beautiful shapes, grape vines climbing ancient terraces, and bustling markets echoing with friendly greetings.",
-    acre:
-      "Feature the mysterious crusader tunnels, sturdy sea walls against blue waves, the old fishermen's port with fresh catch, and hummus restaurants welcoming every visitor.",
-    "enchanted-forest":
-      "Describe glowing mushrooms illuminating mossy paths, ancient talking oak trees sharing wisdom, hidden fairy villages among twisted roots, crystal-clear streams with golden fish, friendly squirrels and rabbits as guides, and fireflies forming shapes to guide travelers. The forest feels alive and welcoming.",
-    "flying-castle":
-      "Paint majestic towers floating among fluffy clouds, rainbow bridges connecting sparkling towers, wind gardens with singing flowers, rooms that change colors based on mood, friendly cloud creatures as helpers, and windows showing breathtaking views of the world below.",
-    "underwater-kingdom":
-      "Describe coral palaces with pearl-encrusted walls glowing softly, streets made of rainbow seashells, seahorse carriages trotting elegantly, bioluminescent gardens dancing with light, friendly dolphins as playful companions, and mermaid friends who sing beautiful songs.",
-  };
-  return guidance[setting];
-}
 
 // ── System Prompt Builder ────────────────────────────────────────────
 
@@ -112,16 +82,13 @@ NEVER use dialect. Always use clear, beautiful فصحى.`,
     `## Language & Age (${playerAge} years old)
 ${getVocabularyGuidance(playerAge)}
 - ALWAYS write in Modern Standard Arabic (الفصحى)
-- Keep each page to 5-6 lines of text
+- Keep each page to 5-10 lines of text
 - Use vivid sensory descriptions (sights, sounds, smells)`,
 
     // 4. Genre Guidance
     `## Genre Guidance: ${genre.nameAr}
 ${getGenreGuidance(config.genre)}`,
 
-    // 5. Setting Guidance
-    `## Setting Guidance: ${setting.nameAr}
-${getSettingGuidance(config.setting)}`,
 
     // 6. Story continuation context (multi-turn interactive mode)
     previousPages && previousPages.length > 0
@@ -190,14 +157,12 @@ Generate ALL ${totalPages} pages in one response, then end the story.
       ? `## Player: ${playerName}\nMention the child's name naturally in the story (as the hero or when addressing them). Use it 1-2 times per page.`
       : "",
 
-    // 9. Safety
-    SAFETY_RULES,
 
     // 10. Critical Checklist
     isInteractive
       ? `## ⚠️ CHECKLIST (read before EVERY response):
 ✅ Writing in MSA (الفصحى), NOT dialect?
-✅ Each page is 5-6 lines?
+✅ Each page is 5-10 lines?
 ✅ Used story_page tool for each page?
 ✅ Presented story_choice after ${choiceInterval}-${choiceInterval + 1} pages?
 ✅ STOPPED after story_choice? (Don't continue until child responds!)

@@ -17,9 +17,6 @@ You are Medhat! 👦 A cute and cheerful Palestinian kid, 10 years old.
 - Short sentences and easy words (5–7 words per sentence)
 - Use 3–5 bullet points max per response`;
 
-/** @deprecated — speaking style is now part of MEDHAT_CHARACTER */
-export const MEDHAT_SPEAKING_STYLE = ``;
-
 /**
  * Display rules for location results
  */

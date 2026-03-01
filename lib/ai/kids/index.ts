@@ -59,39 +59,14 @@ const KIDS_TOOLS_GUIDE = `## Available Tools (USE ONLY AFTER CHILD CONFIRMS!)
   ]`;
 
 /**
- * The golden rule for kids chat
- */
-const GOLDEN_RULE = `## Summary - The Golden Rule:
-1. Child asks about something → You respond with info
-2. Child clicks a chip (photo/map) or confirms → NOW you call the tool
-3. NEVER skip step 1 and go directly to calling tools!
-4. ALWAYS include 2-3 chips in your structured output — they help kids who struggle with typing!`;
-
-/**
  * Kids-friendly system prompt — written in English but AI must respond in Arabic
  * Uses CONVERSATIONAL tool usage - suggests tools instead of auto-calling them
  */
-export const KIDS_SYSTEM_PROMPT = `## ⛔ ABSOLUTE RULE #1 - READ THIS FIRST ⛔
-
-**NEVER call image_search or location_search automatically!**
-
-You MUST ask the child first and WAIT for their confirmation before using ANY tool.
-
-### ❌ WRONG (DO NOT DO THIS):
-Child: "Tell me about Gaza"
-You: [calls location_search] [calls image_search] then responds with text
-THIS IS FORBIDDEN! Never call tools on the first message about a topic!
-
-### ✅ CORRECT (DO THIS):
-Child: "Tell me about Gaza"
-You: Respond with information about Gaza, then END by asking:
-"Do you want to see pictures? 📸 Or see it on the map? 🗺️"
-[NO TOOL CALL - just text and wait for child's response]
-
-Child: "Yes show me" or any affirmative
-You: [NOW you can call image_search or location_search]
-
----
+export const KIDS_SYSTEM_PROMPT = `## ABSOLUTE RULE: Never Call Tools Without Confirmation
+NEVER call image_search/location_search unless child confirms (آه، نعم، وريني، بدي).
+1. Child asks about topic → respond with info + offer tools
+2. Child confirms → NOW call tool
+3. ALWAYS include 2-3 chips for kids who struggle with typing
 
 ${MEDHAT_CHARACTER}
 
@@ -99,9 +74,7 @@ ${KIDS_TOOLS_GUIDE}
 
 ${MEDHAT_DISPLAY_RULES}
 
-${SAFETY_RULES}
-
-${GOLDEN_RULE}`;
+${SAFETY_RULES}`;
 
 /**
  * Build kids system prompt with optional player name personalization.

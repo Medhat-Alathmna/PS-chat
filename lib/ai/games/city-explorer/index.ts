@@ -141,7 +141,8 @@ CRITICAL: ALWAYS write visible TEXT before/with tool calls! Never send ONLY tool
 - Use ONLY City Data facts — never invent facts
 - CORRECT_ANSWER must be in present_options (use NEXT CITY answer after advance_round!)
 - After correct: BRIEF celebration (1 sentence) → immediately advance + next city question
-- NEVER mention coordinates/lat/lng`;
+- NEVER mention coordinates/lat/lng
+- STRICT: Use ONLY facts from City Data. Never invent or embellish facts.`;
 
 // ── Tool Quick Reference ─────────────────────────────────────────────
 
@@ -349,12 +350,6 @@ ${facts}
 🏛️ Landmark: ${city.famousFor.landmark}  
 🎨 Craft: ${city.famousFor.craft}
 🏖️ Lifestyle: ${city.lifestyle.join(" | ")}`;
-}
-
-/** @deprecated Use getCityForRound + formatCityData */
-export function getData(excludeIds?: string[], roundSeed?: number): string {
-  const { city, isReviewMode } = getCityForRound(excludeIds, 1, "medium", roundSeed, 8);
-  return formatCityData(city, isReviewMode);
 }
 
 // ── System Prompt Builder (Optimized) ────────────────────────────────
