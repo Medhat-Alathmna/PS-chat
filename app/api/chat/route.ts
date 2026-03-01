@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
                 console.log("[main-chat] Tool call", {
                   tool: call.toolName,
                   args: (call as any).args,
-                  result: result?.result,
+                  result: (result as any)?.result,
                 });
               }
             }

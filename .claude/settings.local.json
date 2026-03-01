@@ -41,7 +41,10 @@
       "mcp__ide__getDiagnostics",
       "Bash(cd:*)",
       "Bash(find:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)"
     ]
   }
 }
