@@ -260,10 +260,10 @@ export function useChatPage(): UseChatPageReturn {
   // Chat display settings
   const { settings: chatSettings } = useChatSettings(profileId);
 
-  // System prompt with name
+  // System prompt with name and dialect
   const systemPrompt = useMemo(
-    () => buildKidsSystemPrompt(activeProfile?.name),
-    [activeProfile?.name]
+    () => buildKidsSystemPrompt(activeProfile?.name, chatSettings.dialect),
+    [activeProfile?.name, chatSettings.dialect]
   );
 
   // UI state

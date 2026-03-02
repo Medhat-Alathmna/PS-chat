@@ -1,8 +1,23 @@
 "use client";
 
 import { useChatSettings } from "@/lib/hooks/useChatSettings";
-import type { MessageDisplayMode } from "@/lib/types/chat-settings";
+import type { MessageDisplayMode, ReplyDialect } from "@/lib/types/chat-settings";
 import { SectionHeader } from "./SettingsComponents";
+
+const DIALECT_OPTIONS: { value: ReplyDialect; icon: string; label: string; description: string }[] = [
+  {
+    value: "colloquial",
+    icon: "💬",
+    label: "عامية",
+    description: "اللغة الفلسطينية اليومية",
+  },
+  {
+    value: "formal",
+    icon: "📖",
+    label: "فصحى",
+    description: "العربية الفصحى الرسمية",
+  },
+];
 
 const MODE_OPTIONS: { value: MessageDisplayMode; icon: string; label: string; description: string }[] = [
   {
@@ -20,10 +35,40 @@ const MODE_OPTIONS: { value: MessageDisplayMode; icon: string; label: string; de
 ];
 
 export default function ChatSettingsContent({ profileId }: { profileId?: string }) {
-  const { settings, setDisplayMode, resetToDefaults } = useChatSettings(profileId);
+  const { settings, setDisplayMode, setDialect, resetToDefaults } = useChatSettings(profileId);
 
   return (
     <div className="space-y-6">
+      <section>
+        <SectionHeader icon={"🗣️"} title="لغة الردود" />
+        <div className="grid grid-cols-2 gap-3">
+          {DIALECT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setDialect(opt.value)}
+              className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all hover:scale-105 active:scale-95 ${
+                settings.dialect === opt.value
+                  ? "border-[var(--kids-purple)] bg-purple-50 shadow-lg shadow-purple-200/50"
+                  : "border-gray-200 bg-white/80 hover:border-gray-300"
+              }`}
+            >
+              {settings.dialect === opt.value && (
+                <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-[var(--kids-purple)] rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+              <span className="text-2xl sm:text-3xl">{opt.icon}</span>
+              <span className={`text-sm font-bold ${settings.dialect === opt.value ? "text-[var(--kids-purple)]" : "text-gray-700"}`}>
+                {opt.label}
+              </span>
+              <span className="text-xs text-gray-500 text-center">{opt.description}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section>
         <SectionHeader icon={"\uD83D\uDCAC"} title="طريقة عرض الرسائل" />
         <div className="grid grid-cols-2 gap-3">

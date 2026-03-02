@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { ChatSettings, MessageDisplayMode } from "@/lib/types/chat-settings";
+import type { ChatSettings, MessageDisplayMode, ReplyDialect } from "@/lib/types/chat-settings";
 
 const STORAGE_KEY = "falastin_kids_chat_settings";
 
@@ -11,6 +11,7 @@ function getStorageKey(profileId?: string): string {
 
 export const DEFAULT_CHAT_SETTINGS: ChatSettings = {
   displayMode: "streaming",
+  dialect: "colloquial",
 };
 
 export function useChatSettings(profileId?: string) {
@@ -54,6 +55,17 @@ export function useChatSettings(profileId?: string) {
     [persist]
   );
 
+  const setDialect = useCallback(
+    (dialect: ReplyDialect) => {
+      setSettings((prev) => {
+        const next = { ...prev, dialect };
+        persist(next);
+        return next;
+      });
+    },
+    [persist]
+  );
+
   const resetToDefaults = useCallback(() => {
     setSettings(DEFAULT_CHAT_SETTINGS);
     persist(DEFAULT_CHAT_SETTINGS);
@@ -63,6 +75,7 @@ export function useChatSettings(profileId?: string) {
     settings,
     isLoaded,
     setDisplayMode,
+    setDialect,
     resetToDefaults,
   };
 }
