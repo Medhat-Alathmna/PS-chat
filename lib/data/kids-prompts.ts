@@ -113,7 +113,7 @@ export const KIDS_PROMPTS: KidsPrompt[] = [
   {
     id: "p12",
     text: "Tell me a Palestinian joke!",
-    textAr: "احكيلي نكتة فلسطينية!",
+    textAr: "احكيلي نكتة خليلية!",
     emoji: "😂",
     category: "fun",
     color: "#FFE66D",
@@ -126,14 +126,7 @@ export const KIDS_PROMPTS: KidsPrompt[] = [
     category: "fun",
     color: "#54A0FF",
   },
-  {
-    id: "p14",
-    text: "Sing me a Palestinian song!",
-    textAr: "غنيلي أغنية فلسطينية!",
-    emoji: "🎵",
-    category: "fun",
-    color: "#A55EEA",
-  },
+
 ];
 
 // Get prompts by category

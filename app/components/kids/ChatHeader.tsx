@@ -40,6 +40,7 @@ interface ChatHeaderProps {
   onToggleMusic: () => void;
 
   // Navigation
+  onBack: () => void;
   onOpenMap: () => void;
   onNavigateToSettings: () => void;
   onNavigateToGames: () => void;
@@ -72,6 +73,7 @@ export default function ChatHeader({
   isMusicPlaying,
   isMusicLoaded,
   onToggleMusic,
+  onBack,
   onOpenMap,
   onNavigateToSettings,
   onNavigateToGames,
@@ -100,6 +102,14 @@ export default function ChatHeader({
         {/* Row 2: map button + progress bar */}
         <div className="flex items-center gap-2">
           <button
+            onClick={onBack}
+            className="shrink-0 flex items-center justify-center w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg"
+            aria-label="رجوع"
+            title="رجوع"
+          >
+            <span className="text-lg">←</span>
+          </button>
+          <button
             onClick={onOpenMap}
             className="shrink-0 flex items-center justify-center w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg"
             aria-label="فتح الخريطة"
@@ -115,6 +125,15 @@ export default function ChatHeader({
 
       {/* ── Desktop: single row ── */}
       <div className="hidden md:flex items-center gap-4 max-w-6xl mx-auto">
+        <button
+          onClick={onBack}
+          className="shrink-0 flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+          aria-label="رجوع"
+          title="رجوع"
+        >
+          <span className="text-xl">←</span>
+        </button>
+
         <ProfileSwitcher
           profiles={profiles}
           activeProfile={activeProfile}

@@ -103,6 +103,7 @@ function KidsChatPageInner() {
           isMusicPlaying={music.isPlaying}
           isMusicLoaded={music.isLoaded}
           onToggleMusic={music.toggle}
+          onBack={() => router.back()}
           onOpenMap={() => map.setShowMobileMap(true)}
           onNavigateToSettings={() => router.push("/settings")}
           onNavigateToGames={() => router.push("/kids/games")}

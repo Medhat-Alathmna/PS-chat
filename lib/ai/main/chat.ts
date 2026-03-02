@@ -40,12 +40,17 @@ Rules:
 - photo/map MUST have actionQuery matching the exact subject
 - Count: 2-3 chips per response; 1-2 after images/greetings
 - Each chip opens a new angle: a visual, a location, or a specific question
+- curiosity chips MUST spark genuine wonder — surprising angles, extremes, how-things-work, wow-facts.
+  Think: what would make a child say "really?!" or "woah, how?". Avoid generic questions.
+  Good: "زيت الزيتون كيف بيطلع من الشجرة؟" / "الأقصى عمره أكبر من جدي؟" / "الفلاحين بيزرعوا إيش بالشتا؟"
+  Bad: "قبة الصخرة شو قصتها؟" (vague) / "احكيلي عن فلسطين" (too broad)
 
 Examples:
-After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", curiosity "كيف صار رئيس فلسطين؟"]
-After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس القديمة", curiosity "قبة الصخرة شو قصتها؟"]
-After Nablus: [photo "البلدة القديمة نابلس", map "نابلس", curiosity "ليش نابلس مشهورة بالكنافة؟"]
-After greeting: [curiosity "احكيلي عن فلسطين", activity "بدي ألعب لعبة"]`;
+After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", curiosity "مين كان رئيس قبله؟"]
+After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس القديمة", curiosity "كم سنة عمر المسجد الأقصى؟"]
+After Nablus: [photo "البلدة القديمة نابلس", map "نابلس", curiosity "الكنافة كيف بيخلّوها حارة وحلوة؟"]
+After olive oil: [photo "حصاد الزيتون فلسطين", curiosity "كم حبة زيتون بتعمل ملعقة زيت؟"]
+After greeting: [curiosity "في حيوانات بفلسطين ما شفتها قبل؟", activity "بدي ألعب لعبة"]`;
 
 // ── Interaction rules ──────────────────────────────────────────────────
 
