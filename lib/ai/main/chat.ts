@@ -29,19 +29,22 @@ export const CHIPS_GUIDE = `## Chips (last line of EVERY response)
 Append as final line: CHIPS:{"chips":[{"text":"...","type":"...","actionQuery":"..."},...]}
 
 4 types: photo (actionQuery=image query), map (actionQuery=place name), curiosity (null), activity (null)
-- text: Arabic, 2-5 words — MUST name the specific topic just discussed
+
+IMPORTANT — how chip actions work:
+- photo/map chips do NOT send a message. The app uses actionQuery directly to fetch images or show the map.
+  So the text is a display label only — use CONTENT names, not phrases like "وريني" or "على الخريطة".
+- curiosity/activity chips send their text as a message. Use a specific question the child would actually ask.
+
+Rules:
+- text: Arabic, 2-5 words, names the specific topic (e.g. "صور الأقصى" not "وريني صور!")
 - photo/map MUST have actionQuery matching the exact subject
-- Count: 1-2 after greeting/images, 2-3 normal, 3-5 rich topics
-- Each chip opens a NEW angle: deeper detail, related person/place, or visual
+- Count: 2-3 chips per response; 1-2 after images/greetings
+- Each chip opens a new angle: a visual, a location, or a specific question
 
-FORBIDDEN — NEVER use these generic texts (or anything like them):
-❌ "احكيلي أكتر" ❌ "ورينى صور!" ❌ "وينها عالخريطة؟" ❌ "بدي أعرف أكتر"
-Every chip MUST include the name/subject, e.g. "صور محمود عباس" not "ورينى صور!".
-
-Examples by topic:
-After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", curiosity "عن حركة فتح", curiosity "كيف صار رئيس؟"]
+Examples:
+After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", curiosity "كيف صار رئيس فلسطين؟"]
+After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس القديمة", curiosity "قبة الصخرة شو قصتها؟"]
 After Nablus: [photo "البلدة القديمة نابلس", map "نابلس", curiosity "ليش نابلس مشهورة بالكنافة؟"]
-After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس", curiosity "قبة الصخرة شو قصتها؟"]
 After greeting: [curiosity "احكيلي عن فلسطين", activity "بدي ألعب لعبة"]`;
 
 // ── Interaction rules ──────────────────────────────────────────────────

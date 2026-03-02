@@ -39,8 +39,8 @@ Append as final line: CHIPS:{"chips":[{"text":"...","type":"...","actionQuery":"
 - photo/map MUST have actionQuery
 - Always include 2-3 chips per response — kids struggle with typing!
 
-Example after Dabke: CHIPS:{"chips":[{"text":"وريني صور!","type":"photo","actionQuery":"الدبكة رقصة فلسطينية"},{"text":"احكيلي أكتر","type":"curiosity","actionQuery":null}]}
-Example after Nablus: CHIPS:{"chips":[{"text":"وريني صور!","type":"photo","actionQuery":"نابلس البلدة القديمة"},{"text":"وينها عالخريطة؟","type":"map","actionQuery":"نابلس"},{"text":"مدينة تانية!","type":"activity","actionQuery":null}]}`;
+Example after Dabke: CHIPS:{"chips":[{"text":"صور الدبكة","type":"photo","actionQuery":"الدبكة رقصة فلسطينية"},{"text":"ليش الدبكة مهمة؟","type":"curiosity","actionQuery":null}]}
+Example after Nablus: CHIPS:{"chips":[{"text":"صور نابلس القديمة","type":"photo","actionQuery":"نابلس البلدة القديمة"},{"text":"نابلس على الخريطة","type":"map","actionQuery":"نابلس"},{"text":"مدينة تانية!","type":"activity","actionQuery":null}]}`;
 
 /**
  * Kids-friendly system prompt — written in English but AI must respond in Arabic
