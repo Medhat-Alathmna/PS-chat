@@ -29,13 +29,19 @@ export const CHIPS_GUIDE = `## Chips (last line of EVERY response)
 Append as final line: CHIPS:{"chips":[{"text":"...","type":"...","actionQuery":"..."},...]}
 
 4 types: photo (actionQuery=image query), map (actionQuery=place name), curiosity (null), activity (null)
-- text: Arabic, 2-5 words, SPECIFIC to topic (NEVER generic like "احكيلي أكتر")
-- photo/map MUST have actionQuery
+- text: Arabic, 2-5 words — MUST name the specific topic just discussed
+- photo/map MUST have actionQuery matching the exact subject
 - Count: 1-2 after greeting/images, 2-3 normal, 3-5 rich topics
-- Each chip opens a NEW angle: deeper, related, or visual
+- Each chip opens a NEW angle: deeper detail, related person/place, or visual
 
-Examples:
+FORBIDDEN — NEVER use these generic texts (or anything like them):
+❌ "احكيلي أكتر" ❌ "ورينى صور!" ❌ "وينها عالخريطة؟" ❌ "بدي أعرف أكتر"
+Every chip MUST include the name/subject, e.g. "صور محمود عباس" not "ورينى صور!".
+
+Examples by topic:
+After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", curiosity "عن حركة فتح", curiosity "كيف صار رئيس؟"]
 After Nablus: [photo "البلدة القديمة نابلس", map "نابلس", curiosity "ليش نابلس مشهورة بالكنافة؟"]
+After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس", curiosity "قبة الصخرة شو قصتها؟"]
 After greeting: [curiosity "احكيلي عن فلسطين", activity "بدي ألعب لعبة"]`;
 
 // ── Interaction rules ──────────────────────────────────────────────────

@@ -6,19 +6,21 @@ import { formatCacheUsage } from "./cache";
  */
 export function makeStreamingCallbacks(prefix: string, opts?: { logToolResults?: boolean }) {
   return {
-    onStepFinish: ({ toolCalls, toolResults }: { toolCalls?: { toolCallId: string; toolName: string; args: unknown }[]; toolResults?: { toolCallId: string; result: unknown }[] }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onStepFinish: ({ toolCalls, toolResults }: any) => {
       if (toolCalls?.length) {
-        const resultMap = new Map(toolResults?.map((r) => [r.toolCallId, r.result]));
+        const resultMap = new Map((toolResults ?? []).map((r: any) => [r.toolCallId, r.result]));
         for (const call of toolCalls) {
           console.log(`[${prefix}] Tool call`, {
             tool: call.toolName,
-            args: call.args,
+            args: call.input ?? call.args,
             result: resultMap.get(call.toolCallId),
           });
         }
       }
     },
-    onFinish: ({ text, toolCalls, toolResults, usage }: { text: string; toolCalls?: unknown[]; toolResults?: unknown[]; usage: Record<string, unknown> }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onFinish: ({ text, toolCalls, toolResults, usage }: any) => {
       const cache = formatCacheUsage(usage);
       console.log(`[${prefix}] Stream finished`, {
         textLength: text.length,
