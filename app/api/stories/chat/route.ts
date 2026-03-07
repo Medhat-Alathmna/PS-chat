@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { generateText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
-import { getModel, getAIProvider } from "@/lib/ai/config";
+import { getStoriesModel, getAIProvider } from "@/lib/ai/config";
 import { buildStoryTools } from "@/lib/ai/stories/tools";
 import { buildStorySystemPrompt } from "@/lib/ai/stories/prompts";
 import { StoryConfig, StoryPage } from "@/lib/types/stories";
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const cacheKey = `story-${storyConfig.genre}-${storyConfig.setting}-${storyConfig.mode}`;
 
     const result = await generateText({
-      model: openai(getModel()),
+      model: openai(getStoriesModel()),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools,
