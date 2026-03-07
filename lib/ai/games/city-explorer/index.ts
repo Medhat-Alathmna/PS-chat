@@ -52,9 +52,12 @@ export function buildPrecomputedHint(
 
 /**
  * Build an image search query from city landmark data.
+ * Use English name + Palestine for more accurate image search results.
  */
 export function buildHintImageQuery(city: City): string {
-  return `${city.famousFor.landmark} ${city.nameAr}`;
+  // Take first landmark phrase only (before و) to keep query focused
+  const primaryLandmark = city.famousFor.landmark.split(" و")[0].trim();
+  return `${primaryLandmark} ${city.name} Palestine`;
 }
 
 // ── Opt-in: trim completed-round messages server-side ────────────────
@@ -88,20 +91,29 @@ Exception: end_game responses do NOT need GAME_TURN.
 ### Flow:
 - NEW QUESTION: Write riddle (2-3 sentences) → append GAME_TURN with current city options
 - WRONG ANSWER: Write encouragement (1 sentence) → append GAME_TURN with SAME options
-- CORRECT ANSWER (ONE response): Write celebration (1 sentence) → call advance_round → write riddle for NEXT CITY → append GAME_TURN with NEXT CITY options
+- CORRECT ANSWER (all in ONE response):
+  1. Write celebration (1 sentence)
+  2. Call advance_round tool
+  3. Write ACTUAL RIDDLE for NEXT CITY — 2-3 real clues/facts about it (NOT "get ready" or "next question coming"!)
+  4. Append GAME_TURN with NEXT CITY options
 - OFF-TOPIC: Reply in 1-2 sentences → append GAME_TURN with CURRENT options. NEVER leave player without options!
+
+### After advance_round — WRITE THE RIDDLE IMMEDIATELY:
+- WRONG: "جهز حالك للسؤال الجاي" — this tells the player NOTHING
+- WRONG: "السؤال الجاي جاهز!" — empty, no information
+- RIGHT: Write 2-3 actual clues from Next City Data facts (e.g. "في هذه المدينة كنافة مشهورة وجامع قديم...")
 
 ### Critical Rules:
 - STRICT: Use ONLY facts from City Data. Never invent or embellish facts.
 - GAME_TURN options MUST include the correct city answer
-- After correct: BRIEF celebration → advance_round → next riddle → GAME_TURN (next city)
+- After correct: BRIEF celebration → advance_round → REAL RIDDLE WITH CLUES → GAME_TURN (next city)
 - NEVER mention coordinates/lat/lng
 - NEVER call check_answer, give_hint, or present_options — they do not exist`;
 
 // ── Tool Quick Reference ─────────────────────────────────────────────
 
 const TOOL_REFERENCE = `## Tools:
-- advance_round — call ONLY on correct answer (or "السؤال الجاي" fallback)
+- advance_round({roundCompleted, feedback, pointsEarned: 15}) — call ONLY on correct answer
 - end_game — call when all rounds complete or player quits
 - image_search — optional, for extra visuals`;
 

@@ -10,7 +10,7 @@ export const advanceRoundTool = tool({
   inputSchema: z.object({
     roundCompleted: z.number().describe("The round number just completed"),
     feedback: z.string().describe("Encouraging feedback on the player's contribution"),
-    pointsEarned: z.number().describe("Points earned for this round"),
+    pointsEarned: z.number().default(15).describe("Points earned for this round (default: 15)"),
   }),
   execute: async ({ roundCompleted, feedback, pointsEarned }) => {
     return { roundCompleted, feedback, pointsEarned };

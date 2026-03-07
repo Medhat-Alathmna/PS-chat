@@ -82,9 +82,16 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [mapExpandTrigger, setMapExpandTrigger] = useState(0);
   const [mapUncollapseTrigger, setMapUncollapseTrigger] = useState(0);
 
+  // Track cities discovered in THIS session only (resets on play again)
+  // Used to compute cross-session IDs for server-side city sequence reconstruction
+  const [sessionDiscoveredIds, setSessionDiscoveredIds] = useState<string[]>([]);
+
   // Pending hint state - hint is pre-generated server-side and shown client-side on demand
   const [pendingHint, setPendingHint] = useState<{ hint: string; images?: ImageResult[]; targetCityId?: string } | null>(null);
   const [showPendingHint, setShowPendingHint] = useState(false);
+  // Track the current city being asked — used for reliable map reveal on correct answer
+  const currentTargetCityIdRef = useRef<string | null>(null);
+  const prevHintCityIdRef = useRef<string | null>(null);
 
   // Random seed so each session starts with a different city (not always Jerusalem)
   const [sessionSeed, setSessionSeed] = useState(() => Math.floor(Math.random() * 10000));
@@ -138,6 +145,14 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     }
   }, [isCityExplorer, discoveredCities.isLoaded, discoveredCities.discoveredIds]);
 
+  // Cross-session discovered IDs: persistent list minus current-session cities.
+  // This is what the server needs to reconstruct the round sequence correctly —
+  // including session cities in discoveredCityIds breaks the reconstruction loop.
+  const crossSessionDiscoveredIds = useMemo(
+    () => discoveredCities.discoveredIds.filter(id => !sessionDiscoveredIds.includes(id)),
+    [discoveredCities.discoveredIds, sessionDiscoveredIds]
+  );
+
   // Chat hook
   const {
     messages: aiMessages,
@@ -154,12 +169,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             difficulty: difficulty || "medium",
             chatContext: getContext(),
             kidsProfile: activeProfile,
-            discoveredCityIds: isCityExplorer ? discoveredCities.discoveredIds : undefined,
+            discoveredCityIds: isCityExplorer ? crossSessionDiscoveredIds : undefined,
             sessionSeed,
             currentRound: isCityExplorer ? gameState.state.round - 1 : undefined,
           },
         }),
-      [gameId, difficulty, activeProfile, getContext, isCityExplorer, discoveredCities.discoveredIds, gameState.state.round]
+      [gameId, difficulty, activeProfile, getContext, isCityExplorer, crossSessionDiscoveredIds, sessionSeed, gameState.state.round]
     ),
   });
 
@@ -195,16 +210,20 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               gameRewards.onCorrectAnswer(gameId, config.pointsPerCorrect);
               gameRewards.onRoundComplete(gameId, 0);
               autoAdvancePending.current = true;
-              // Map: reveal city on advance_round
-              if (isCityExplorer && toolPart.output.feedback) {
-                const cityId = detectCityInText(toolPart.output.feedback as string);
-                if (cityId && !revealedCities.includes(cityId)) {
-                  const city = CITIES.find((c) => c.id === cityId);
-                  if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-                    setRevealedCities((prev) => [...prev, cityId]);
-                    setHighlightRegion(null);
-                    setFlyToCity(cityId);
-                    discoveredCities.addCity(cityId);
+              // Map: reveal city on advance_round — use tracked ref, fall back to text detection
+              if (isCityExplorer) {
+                const cityId = currentTargetCityIdRef.current || detectCityInText(toolPart.output.feedback as string || "");
+                if (cityId) {
+                  // Always track in session list so cross-session IDs stay correct
+                  setSessionDiscoveredIds(prev => prev.includes(cityId) ? prev : [...prev, cityId]);
+                  if (!revealedCities.includes(cityId)) {
+                    const city = CITIES.find((c) => c.id === cityId);
+                    if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
+                      setRevealedCities((prev) => [...prev, cityId]);
+                      setHighlightRegion(null);
+                      setFlyToCity(cityId);
+                      discoveredCities.addCity(cityId);
+                    }
                   }
                 }
               }
@@ -369,6 +388,13 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     for (let i = displayMessages.length - 1; i >= 0; i--) {
       const msg = displayMessages[i];
       if (msg.role === "assistant" && msg.gameTurn?.hint) {
+        const newTargetId = msg.gameTurn.targetCityId ?? null;
+        // When the city changes (new round), reset hint visibility
+        if (newTargetId !== prevHintCityIdRef.current) {
+          prevHintCityIdRef.current = newTargetId;
+          currentTargetCityIdRef.current = newTargetId;
+          setShowPendingHint(false);
+        }
         setPendingHint({ hint: msg.gameTurn.hint, images: msg.gameTurn.hintImages, targetCityId: msg.gameTurn.targetCityId });
         return;
       }
@@ -376,6 +402,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
     setPendingHint(null);
     setShowPendingHint(false);
+    currentTargetCityIdRef.current = null;
+    prevHintCityIdRef.current = null;
   }, [displayMessages, status]);
 
   // Auto-read assistant messages when streaming completes
@@ -524,6 +552,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           setGameStarted(false);
           // Reset map state + new random seed for next session
           setSessionSeed(Math.floor(Math.random() * 10000));
+          setSessionDiscoveredIds([]);
           setRevealedCities([]);
           setHighlightRegion(null);
           setFlyToCity(null);

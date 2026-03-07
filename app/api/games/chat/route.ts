@@ -295,41 +295,78 @@ export async function POST(req: NextRequest) {
 
         writer.merge(result.toUIMessageStream());
 
-        try {
-          const [fullText, steps] = await Promise.all([result.text, result.steps]);
+        const steps = await result.steps;
+        const fullText = steps.map((s) => s.text).join("");
 
-          const gameTurn = extractGameTurnFromText(fullText);
-          if (gameTurn) {
-            // Determine which hint to attach: advance_round in this response → next city
-            const hadAdvance = steps.some((step) =>
-              step.toolResults?.some(
-                (tr: { toolName: string }) => tr.toolName === "advance_round"
-              )
-            );
-            const hint = hadAdvance ? nextHint : currentHint;
-
-            // Validate options — auto-inject correct city if missing
-            const correctCity = hadAdvance ? nextCity.nameAr : currentCity.nameAr;
-            if (!gameTurn.options.includes(correctCity)) {
-              const insertIdx = Math.floor(Math.random() * (gameTurn.options.length + 1));
-              gameTurn.options.splice(insertIdx, 0, correctCity);
-              console.warn(`[city-explorer] Auto-injected correct answer: ${correctCity}`);
+          // Log all tool calls from all steps
+          try {
+            for (const step of steps) {
+              for (const tr of step.toolResults ?? []) {
+                const tc = step.toolCalls?.find((c: { toolCallId: string }) => c.toolCallId === (tr as { toolCallId: string }).toolCallId);
+                console.log("[game-tool]", (tr as { toolName: string }).toolName, {
+                  input: tc ? (tc as { args: unknown }).args : undefined,
+                  output: (tr as { result: unknown }).result,
+                });
+              }
             }
-
-            const targetCity = hadAdvance ? nextCity : currentCity;
-            writer.write({
-              type: "data-game-turn",
-              data: {
-                options: gameTurn.options,
-                hint: hint.hint,
-                hintImages: hint.images,
-                targetCityId: targetCity.id,
-              },
-            });
+          } catch (logErr) {
+            console.error("[game-tool] logging error:", logErr);
           }
-        } catch {
-          // GAME_TURN injection failed — skip gracefully
-        }
+
+          // Inject data-game-turn
+          try {
+            const gameTurn = extractGameTurnFromText(fullText);
+            if (gameTurn) {
+              const hadAdvance = steps.some((step) =>
+                step.toolResults?.some(
+                  (tr: { toolName: string }) => tr.toolName === "advance_round"
+                )
+              );
+              const hint = hadAdvance ? nextHint : currentHint;
+
+              // Validate options — auto-inject correct city if missing
+              const correctCity = hadAdvance ? nextCity.nameAr : currentCity.nameAr;
+              if (!gameTurn.options.includes(correctCity)) {
+                const insertIdx = Math.floor(Math.random() * (gameTurn.options.length + 1));
+                gameTurn.options.splice(insertIdx, 0, correctCity);
+                console.warn(`[city-explorer] Auto-injected correct answer: ${correctCity}`);
+              }
+
+              const targetCity = hadAdvance ? nextCity : currentCity;
+
+              // Sanitize before writing to stream
+              const cleanOptions = gameTurn.options
+                .map((o) => o.trim())
+                .filter((o) => o.length > 0);
+              const cleanHint = hint.hint.trim();
+              const cleanImages = hint.images.filter(
+                (img) => (img.thumbnailUrl || img.imageUrl)?.startsWith("http")
+              );
+              const cleanTargetCityId = targetCity.id.trim();
+
+              const gameData = {
+                options: cleanOptions,
+                hint: cleanHint,
+                hintImages: cleanImages.map((img) => img.thumbnailUrl || img.imageUrl),
+                targetCityId: cleanTargetCityId,
+                hadAdvance,
+              };
+              console.log("[game-turn]", JSON.stringify(gameData, null, 2));
+              writer.write({
+                type: "data-game-turn",
+                data: {
+                  options: cleanOptions,
+                  hint: cleanHint,
+                  hintImages: cleanImages,
+                  targetCityId: cleanTargetCityId,
+                },
+              });
+            } else {
+              console.log("[game-turn] null — no GAME_TURN found in response");
+            }
+          } catch (injectErr) {
+            console.error("[game-turn] injection error:", injectErr);
+          }
       },
     });
 
