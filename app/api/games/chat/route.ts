@@ -7,11 +7,11 @@ import {
   convertToModelMessages,
   stepCountIs,
 } from "ai";
-import { getCityExploreModelInstance, getAIProvider } from "@/lib/ai/config";
+import { getCityExploreModelInstance } from "@/lib/ai/config";
 import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery } from "@/lib/ai/games/city-explorer";
-import { CITIES, detectCityInText } from "@/lib/data/cities";
+import { CITIES } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
-import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
+import { KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { logError } from "@/lib/utils/error-handler";
 import { buildCacheOptions } from "@/lib/ai/cache";
@@ -19,35 +19,12 @@ import { makeStreamingCallbacks } from "@/lib/ai/logging";
 
 type GameChatRequest = {
   messages: UIMessage[];
-  difficulty?: GameDifficulty;
   chatContext?: KidsChatContext;
   kidsProfile?: KidsProfile;
   discoveredCityIds?: string[];
-  sessionSeed?: number;
+  currentCityId?: string;
   currentRound?: number;
 };
-
-/**
- * Detect if the user's last message signals "move to next question".
- * When true, the system prompt is pre-built for round N+1 so the AI can
- * present the next city's hint immediately after calling advance_round.
- */
-function isNextRoundSignal(messages: UIMessage[]): boolean {
-  if (messages.length === 0) return false;
-  const lastMsg = messages[messages.length - 1];
-  if (lastMsg.role !== "user") return false;
-  const text = lastMsg.parts
-    .filter((p) => p.type === "text")
-    .map((p) => (p as { type: "text"; text: string }).text)
-    .join(" ");
-  return (
-    text.includes("السؤال الجاي") ||
-    text.includes("السؤال التالي") ||
-    text.includes("مدينة جديدة") ||
-    text.includes("next question") ||
-    text.includes("next city")
-  );
-}
 
 /**
  * Count advance_round tool calls to determine the current round number.
@@ -71,24 +48,6 @@ function countAdvanceRounds(messages: UIMessage[]): number {
     }
   }
   return count;
-}
-
-/**
- * Scan assistant messages for city names already mentioned (via text parts).
- * Returns an array of city IDs so getData() can exclude them.
- */
-function extractUsedCityIds(messages: UIMessage[]): string[] {
-  const ids = new Set<string>();
-  for (const msg of messages) {
-    if (msg.role !== "assistant") continue;
-    for (const part of msg.parts) {
-      if (part.type === "text" && part.text) {
-        const id = detectCityInText(part.text);
-        if (id) ids.add(id);
-      }
-    }
-  }
-  return Array.from(ids);
 }
 
 /**
@@ -172,7 +131,7 @@ function trimWithinRoundMessages(
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as GameChatRequest;
-    const { messages = [], difficulty, chatContext, kidsProfile, discoveredCityIds, sessionSeed, currentRound } = body;
+    const { messages = [], chatContext, kidsProfile, discoveredCityIds, currentCityId, currentRound } = body;
 
     if (messages.length === 0) {
       return new Response(
@@ -181,41 +140,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const openai = getAIProvider();
-
-    // Use client-supplied round (survives client-side message trimming),
-    // fall back to counting advance_round calls in the message history.
     const roundNumber = currentRound ?? countAdvanceRounds(messages);
-    const sessionSeedVal = sessionSeed ?? 0;
     const playerAge = kidsProfile?.age || 8;
-    const gameDifficulty = difficulty || "medium";
 
-    // If the user is asking for the next question, pre-load round N+1 into the
-    // system prompt so the AI can present the new city immediately after
-    // calling advance_round (without needing an extra round-trip).
-    const advanceSignal = isNextRoundSignal(messages);
-    const promptRound = advanceSignal ? roundNumber + 1 : roundNumber;
+    // Exclude list = all cities discovered in previous sessions + current session
+    const excludeIds: string[] = [...(discoveredCityIds || [])];
 
-    // Compute exclude list for the prompt round (excludes all cities before it).
-    // Seed with cross-session discovered cities so they are never repeated.
-    // Pass sessionSeed + proper round numbers for deterministic selection.
-    const previousRoundExcludeIds: string[] = [...(discoveredCityIds || [])];
-    for (let r = 0; r < promptRound; r++) {
-      const { city } = getCityForRound(previousRoundExcludeIds, r + 1, gameDifficulty, sessionSeedVal, playerAge);
-      previousRoundExcludeIds.push(city.id);
+    // Determine current city:
+    // - If client sends currentCityId (round already started), use it directly
+    // - Otherwise pick randomly from the remaining pool (first request)
+    let currentCity = currentCityId
+      ? CITIES.find(c => c.id === currentCityId)
+      : undefined;
+
+    let isReviewMode = false;
+    if (!currentCity) {
+      const result = getCityForRound(excludeIds);
+      currentCity = result.city;
+      isReviewMode = result.isReviewMode;
     }
 
-    // Get the city for the prompt round (for tool validation + system prompt)
-    // Uses same params as buildSystemPrompt to guarantee the same city is selected.
-    const { city: currentCity } = getCityForRound(
-      previousRoundExcludeIds, promptRound + 1, gameDifficulty, sessionSeedVal, playerAge
-    );
-    // Pre-compute the next city so present_options accepts its answer in the combined
-    // correct-answer response (check_answer + advance_round + next city — one round-trip).
-    const nextExcludeIds = [...previousRoundExcludeIds, currentCity.id];
-    const { city: nextCity } = getCityForRound(
-      nextExcludeIds, promptRound + 2, gameDifficulty, sessionSeedVal, playerAge
-    );
+    // Next city: random from remaining pool (excluding current)
+    const nextExcludeIds = [...excludeIds, currentCity.id];
+    const { city: nextCity } = getCityForRound(nextExcludeIds);
 
     // Pre-fetch hint images for BOTH cities in parallel (with 3s timeout)
     const IMAGE_TIMEOUT_MS = 3000;
@@ -231,25 +178,18 @@ export async function POST(req: NextRequest) {
     ]);
 
     // Build pre-computed hints from city data + pre-fetched images
-    const currentHint = buildPrecomputedHint(currentCity, gameDifficulty, currentImages);
-    const nextHint = buildPrecomputedHint(nextCity, gameDifficulty, nextImages);
+    const currentHint = buildPrecomputedHint(currentCity, currentImages);
+    const nextHint = buildPrecomputedHint(nextCity, nextImages);
 
     const tools = buildTools();
 
     const systemPrompt = buildSystemPrompt(
-      gameDifficulty,
       playerAge,
+      currentCity,
+      nextCity,
+      isReviewMode,
       kidsProfile?.name,
       chatContext,
-      previousRoundExcludeIds,
-      promptRound + 1,
-      sessionSeedVal
-    );
-
-    // For display/trimming: include all discovered cities (current + previous)
-    const sessionCityIds = extractUsedCityIds(messages);
-    const allUsedCityIds = Array.from(
-      new Set([...(discoveredCityIds || []), ...sessionCityIds])
     );
 
     console.log("[city-explorer] Round city:", currentCity.nameAr, "→ next:", nextCity.nameAr);
@@ -257,14 +197,14 @@ export async function POST(req: NextRequest) {
     // Trim old-round messages (saves 3k-10k+ tokens per request)
     let aiMessages = messages;
     if (trimCompletedRounds && roundNumber > 0) {
-      const discoveredNames = allUsedCityIds
+      const discoveredNames = excludeIds
         .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
         .filter(Boolean) as string[];
-      aiMessages = trimCompletedRoundMessages(messages, promptRound, discoveredNames);
+      aiMessages = trimCompletedRoundMessages(messages, roundNumber, discoveredNames);
       console.log("[game-chat] Trimmed cross-round messages", {
         original: messages.length,
         trimmed: aiMessages.length,
-        round: promptRound + 1,
+        round: roundNumber + 1,
       });
     }
 
@@ -282,7 +222,7 @@ export async function POST(req: NextRequest) {
 
     const uiStream = createUIMessageStream({
       execute: async ({ writer }) => {
-        const cacheKey = `game-${sessionSeedVal}-d${gameDifficulty}-a${playerAge}`;
+        const cacheKey = `game-a${playerAge}`;
         const result = streamText({
           model: getCityExploreModelInstance(),
           system: systemPrompt,

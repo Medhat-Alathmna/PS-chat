@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { GameId, GameState, GameStatus, GameDifficulty, GameSessionSummary } from "@/lib/types/games";
+// GameDifficulty kept for optional backward-compat fields in GameState/GameSessionSummary
 import { getGameConfig } from "@/lib/data/games";
 
 const STORAGE_KEY_PREFIX = "falastin_game_state_";
@@ -54,33 +55,20 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
     }
   }, [state, gameId, profileId]);
 
-  // Difficulty multiplier
-  const getMultiplier = useCallback((): number => {
-    switch (state.difficulty) {
-      case "easy": return 1;
-      case "medium": return 1.5;
-      case "hard": return 2;
-      default: return 1;
-    }
-  }, [state.difficulty]);
-
   // Process a correct answer
   // advanceRound=false for games that use advance_round tool (avoids double increment)
   const onCorrectAnswer = useCallback((basePoints: number, advanceRound = true) => {
-    setState((prev) => {
-      const points = Math.round(basePoints * getMultiplier());
-      return {
-        ...prev,
-        score: prev.score + points,
-        correctAnswers: prev.correctAnswers + 1,
-        ...(advanceRound ? {
-          round: typeof prev.totalRounds === "number"
-            ? Math.min(prev.round + 1, prev.totalRounds + 1)
-            : prev.round + 1,
-        } : {}),
-      };
-    });
-  }, [getMultiplier]);
+    setState((prev) => ({
+      ...prev,
+      score: prev.score + basePoints,
+      correctAnswers: prev.correctAnswers + 1,
+      ...(advanceRound ? {
+        round: typeof prev.totalRounds === "number"
+          ? Math.min(prev.round + 1, prev.totalRounds + 1)
+          : prev.round + 1,
+      } : {}),
+    }));
+  }, []);
 
   // Process a wrong answer
   // advanceRound=false for games that use advance_round tool (player retries same round)
@@ -153,13 +141,13 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
   }, [gameId, profileId, state.hintsUsed, state.difficulty, state.startedAt]);
 
   // Reset game
-  const resetGame = useCallback((newDifficulty?: GameDifficulty) => {
-    setState(createInitialState(gameId, newDifficulty || difficulty));
+  const resetGame = useCallback(() => {
+    setState(createInitialState(gameId));
     setSummary(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(getStorageKey(gameId, profileId));
     }
-  }, [gameId, difficulty, profileId]);
+  }, [gameId, profileId]);
 
   // city-explorer uses advance_round tool to handle round progression
   // (check_answer should NOT advance the round)
@@ -206,6 +194,5 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
     onGameEnd,
     resetGame,
     processToolResult,
-    getMultiplier,
   };
 }

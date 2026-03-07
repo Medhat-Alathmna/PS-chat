@@ -11,12 +11,12 @@
 
 import { CITIES, REGIONS, City } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
-import { GameDifficulty, KidsChatContext } from "@/lib/types/games";
+import { KidsChatContext } from "@/lib/types/games";
 import {
   MEDHAT_CHARACTER as MEDHAT_BASE,
   SAFETY_RULES,
 } from "../../kids";
-import { buildAgeAdaptationSection, getAgeSettings } from "./age";
+import { buildAgeAdaptationSection } from "./age";
 import {
   advanceRoundTool,
   endGameTool,
@@ -38,7 +38,6 @@ export interface PrecomputedHint {
  */
 export function buildPrecomputedHint(
   city: City,
-  difficulty: GameDifficulty,
   images: ImageResult[]
 ): PrecomputedHint {
   const hintIndex = city.facts.length > 1 ? 1 : 0;
@@ -46,7 +45,7 @@ export function buildPrecomputedHint(
     hint: city.facts[hintIndex],
     images,
     targetCityId: city.id,
-    pointsDeduction: { easy: 0, medium: 1, hard: 2 }[difficulty],
+    pointsDeduction: 0,
   };
 }
 
@@ -90,7 +89,7 @@ Exception: end_game responses do NOT need GAME_TURN.
 
 ### Flow:
 - NEW QUESTION: Write riddle (2-3 sentences) → append GAME_TURN with current city options
-- WRONG ANSWER: Write encouragement (1 sentence) → append GAME_TURN with SAME options
+- WRONG ANSWER: Write encouragement (1 sentence) → REPEAT THE RIDDLE again (1-2 sentences using same clues) → append GAME_TURN with EXACT SAME options
 - CORRECT ANSWER (all in ONE response):
   1. Write celebration (1 sentence)
   2. Call advance_round tool
@@ -108,7 +107,7 @@ Exception: end_game responses do NOT need GAME_TURN.
 - GAME_TURN options MUST include the correct city answer
 - After correct: BRIEF celebration → advance_round → REAL RIDDLE WITH CLUES → GAME_TURN (next city)
 - NEVER mention coordinates/lat/lng
-- NEVER call check_answer, give_hint, or present_options — they do not exist`;
+- NEVER call check_answer, or present_options — they do not exist`;
 
 // ── Tool Quick Reference ─────────────────────────────────────────────
 
@@ -117,178 +116,46 @@ const TOOL_REFERENCE = `## Tools:
 - end_game — call when all rounds complete or player quits
 - image_search — optional, for extra visuals`;
 
-// ── City Selection System (Smart + Region Diverse + Progressive) ────────
+// ── City Selection System (Random + Region Diverse) ──────────────────
+
+const REGION_PRIORITY = [
+  "west-bank",
+  "galilee",
+  "coast",
+  "gaza",
+  "interior",
+  "negev",
+] as const;
 
 /**
- * City fame levels for progressive difficulty
- * Cities are ranked by how well-known they are to Palestinian children
- */
-const CITY_FAME_LEVELS = {
-  // Tier 1: Most famous - every Palestinian kid knows these
-  famous: [
-    "jerusalem", "nablus", "gaza", "haifa", "jaffa", "hebron", 
-    "bethlehem", "ramallah", "jericho", "nazareth"
-  ],
-  // Tier 2: Well known - most kids would recognize
-  known: [
-    "acre", "tulkarm", "jenin", "qalqilya", "salfit", "tubas",
-    "khan-yunis", "rafah", "deir-al-balah", "beersheba", "safad", "tiberias"
-  ],
-  // Tier 3: Less known - require more knowledge
-  lessKnown: [
-    "beisan", "ramla", "lod", "ashkelon", "ashdod", "um-al-fahm",
-    "shefa-amr", "tayibe", "baqa-al-gharbiyye", "sakhnin", "arraba",
-    "tamra", "maghar", "kafr-qasim", "rahat", "sebastia", "yibna",
-    "majdal-krum", "umm-rashrash", "ras-al-naqoura", "al-bireh",
-    "beit-jala", "beit-sahour", "qalansawe"
-  ]
-} as const;
-
-/**
- * Preferred region order for diverse gameplay
- * Each round should ideally be from a different region
- */
-const REGION_PRIORITY: CityRegion[] = [
-  "west-bank",  // Start with heart of Palestine
-  "galilee",    // Then north
-  "coast",      // Then coast
-  "gaza",       // Then Gaza
-  "interior",   // Then 1948 territories
-  "negev"       // Finally south
-];
-
-type CityRegion = "west-bank" | "gaza" | "interior" | "galilee" | "negev" | "coast";
-
-/**
- * Get fame tier for a city
- */
-function getCityFameTier(cityId: string): "famous" | "known" | "lessKnown" {
-  if (CITY_FAME_LEVELS.famous.includes(cityId as typeof CITY_FAME_LEVELS.famous[number])) return "famous";
-  if (CITY_FAME_LEVELS.known.includes(cityId as typeof CITY_FAME_LEVELS.known[number])) return "known";
-  return "lessKnown";
-}
-
-/**
- * Smart city selection with:
- * 1. Age-aware difficulty (younger kids = famous cities)
- * 2. Progressive difficulty (famous cities first)
- * 3. Regional diversity (different regions each round)
- * 4. Deterministic seed for consistent sessions
+ * Pick a random city, preferring regions not yet visited for diversity.
  */
 export function getCityForRound(
-  excludeIds?: string[],
-  roundNumber: number = 1,
-  difficulty: GameDifficulty = "medium",
-  sessionSeed?: number,
-  age: number = 8
+  excludeIds?: string[]
 ): { city: City; isReviewMode: boolean } {
-  // Get available cities
   const pool = excludeIds?.length
     ? CITIES.filter((c) => !excludeIds.includes(c.id))
     : CITIES;
 
   const isReviewMode = pool.length === 0;
   if (isReviewMode) {
-    // All cities discovered - random pick from all
-    const index = sessionSeed !== undefined 
-      ? Math.abs(sessionSeed + roundNumber) % CITIES.length 
-      : Math.floor(Math.random() * CITIES.length);
-    return { city: CITIES[index], isReviewMode };
+    return { city: CITIES[Math.floor(Math.random() * CITIES.length)], isReviewMode };
   }
 
-  // Determine fame tier based on age, round number, and difficulty
-  let fameTier: "famous" | "known" | "lessKnown";
-  
-  // Age-based adjustments
-  const isYoungChild = age <= 6;
-  const isOlderChild = age >= 10;
-  
-  if (difficulty === "easy" || isYoungChild) {
-    // Easy or young child: always famous cities
-    fameTier = "famous";
-  } else if (difficulty === "hard" && isOlderChild) {
-    // Hard + older child: can start with less known
-    fameTier = roundNumber <= 2 ? "lessKnown" : "known";
-  } else if (difficulty === "hard") {
-    // Hard (normal age): less known then known
-    fameTier = roundNumber <= 2 ? "lessKnown" : "known";
-  } else {
-    // Medium: famous first, then known
-    fameTier = roundNumber <= 2 ? "famous" : "known";
-  }
-
-  // Get cities from the appropriate fame tier
-  const tierCityIds = CITY_FAME_LEVELS[fameTier] as readonly string[];
-  const tierCities = pool.filter(c => tierCityIds.includes(c.id));
-
-  // If no cities in this tier, fall back to available pool
-  const candidates = tierCities.length > 0 ? tierCities : pool;
-
-  // Try to pick from a different region than previous rounds
   const usedRegions = excludeIds
-    ? CITIES.filter(c => excludeIds.includes(c.id)).map(c => c.region)
+    ? CITIES.filter((c) => excludeIds.includes(c.id)).map((c) => c.region)
     : [];
 
-  // Find a city from an unused region if possible
-  const regionOrder = REGION_PRIORITY.filter(r => !usedRegions.includes(r));
-  for (const region of regionOrder) {
-    const regionCities = candidates.filter(c => c.region === region);
-    if (regionCities.length > 0) {
-      // Use session seed for deterministic selection, or random
-      const index = sessionSeed !== undefined
-        ? Math.abs(sessionSeed * roundNumber) % regionCities.length
-        : Math.floor(Math.random() * regionCities.length);
-      return { city: regionCities[index], isReviewMode: false };
+  for (const region of REGION_PRIORITY) {
+    if (!usedRegions.includes(region)) {
+      const regionCities = pool.filter((c) => c.region === region);
+      if (regionCities.length > 0) {
+        return { city: regionCities[Math.floor(Math.random() * regionCities.length)], isReviewMode: false };
+      }
     }
   }
 
-  // Fall back to any available city
-  const index = sessionSeed !== undefined
-    ? Math.abs(sessionSeed + roundNumber) % candidates.length
-    : Math.floor(Math.random() * candidates.length);
-  
-  return { city: candidates[index], isReviewMode: false };
-}
-
-/**
- * Get next regions for hint context
- */
-export function getNextRegionHint(currentRegion: CityRegion): string {
-  const hints: Record<CityRegion, string> = {
-    "west-bank": "بالضفة الغربية",
-    "gaza": "بقطاع غزة",
-    "interior": "بالداخل المحتل",
-    "galilee": "بالجليل",
-    "negev": "بالنقب",
-    "coast": "على الساحل"
-  };
-  return hints[currentRegion] || "";
-}
-
-// ── Complexity System ─────────────────────────────────────────────────
-
-function getContentComplexity(age: number, difficulty: GameDifficulty): number {
-  const clamped = Math.max(4, Math.min(12, age));
-  const ageBase = 1 + ((clamped - 4) / 8) * 5;
-  const offset: Record<GameDifficulty, number> = { easy: 0, medium: 1.5, hard: 3 };
-  return Math.max(1, Math.min(10, Math.round(ageBase + offset[difficulty])));
-}
-
-function getComplexityGuidance(level: number): string {
-  if (level <= 3) return `Complexity ${level}/10: Obvious clues (e.g. "بحر وبرتقال 🍊" → يافا)`;
-  if (level <= 5) return `Complexity ${level}/10: Known features (e.g. "كنافة مشهورة 🍰" → نابلس)`;
-  if (level <= 7) return `Complexity ${level}/10: Regional + cultural (e.g. "شمال + زيتون" → جنين)`;
-  return `Complexity ${level}/10: Historical context (e.g. "مركز تجارة قديم" → عكا)`;
-}
-
-function buildDifficultySection(difficulty: GameDifficulty, age: number): string {
-  const level = getContentComplexity(age, difficulty);
-  const options = { easy: 2, medium: 3, hard: 4 }[difficulty];
-  const hintCost = { easy: "FREE", medium: "1 pt", hard: "2 pts" }[difficulty];
-  
-  return `## Difficulty: ${difficulty.toUpperCase()} (Level ${level}/10)
-${getComplexityGuidance(level)}
-- Options: ${options} | Hint cost: ${hintCost}`;
+  return { city: pool[Math.floor(Math.random() * pool.length)], isReviewMode: false };
 }
 
 /**
@@ -335,20 +202,14 @@ function formatNextCityData(city: City): string {
 }
 
 export function buildSystemPrompt(
-  difficulty: GameDifficulty,
   age: number,
+  currentCity: City,
+  nextCity: City,
+  isReviewMode: boolean = false,
   playerName?: string,
   chatContext?: KidsChatContext,
-  excludeIds?: string[],
-  roundNumber: number = 1,
-  sessionSeed?: number
 ): string {
-  const { city, isReviewMode } = getCityForRound(excludeIds, roundNumber, difficulty, sessionSeed, age);
-  const regionInfo = REGIONS[city.region];
-
-  // Pre-load next city so the AI can present it immediately after a correct answer
-  const nextExcludeIds = [...(excludeIds || []), city.id];
-  const { city: nextCity } = getCityForRound(nextExcludeIds, roundNumber + 1, difficulty, sessionSeed, age);
+  const regionInfo = REGIONS[currentCity.region];
 
   const parts: string[] = [
     // ── STATIC PREFIX (cacheable ~1200-1500 tokens) ──────────────────
@@ -370,13 +231,10 @@ export function buildSystemPrompt(
 
     // ── SEMI-STATIC / DYNAMIC (changes per session/round) ────────────
 
-    // 6. Difficulty (semi-static — per session)
-    buildDifficultySection(difficulty, age),
-
-    // 7. Age adaptation (semi-static — per session)
+    // 6. Age adaptation (semi-static — per session)
     buildAgeAdaptationSection(age),
 
-    // 8. Player name (semi-static — per session)
+    // 7. Player name (semi-static — per session)
     playerName ? `## Player: ${playerName}\nUse their name naturally every 2–3 messages — not every sentence.` : "",
 
     // 9. Chat context (dynamic)
@@ -385,10 +243,10 @@ export function buildSystemPrompt(
       : "",
 
     // 10. Target city (dynamic — changes per round)
-    `⚠️ TARGET CITY: ${city.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
+    `⚠️ TARGET CITY: ${currentCity.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
 
     // 11. City data current (dynamic)
-    formatCityData(city, isReviewMode),
+    formatCityData(currentCity, isReviewMode),
 
     // 12. Next city data (dynamic)
     formatNextCityData(nextCity),
@@ -396,9 +254,9 @@ export function buildSystemPrompt(
     // 13. CRITICAL REMINDER at END (LLM pays attention to end)
     `⚠️ CHECKLIST before responding:
 ✅ Every response ends with GAME_TURN:{"options":[...]} (except end_game)
-✅ Current question: GAME_TURN options include "${city.nameAr}"
+✅ Current question: GAME_TURN options include "${currentCity.nameAr}"
 ✅ Correct answer? → advance_round + new riddle for ${nextCity.nameAr} + GAME_TURN with "${nextCity.nameAr}"
-✅ Wrong answer? → encouragement + GAME_TURN with SAME options (${city.nameAr} still in list)
+✅ Wrong answer? → encouragement + REPEAT riddle clues + GAME_TURN with SAME options (${currentCity.nameAr} still in list)
 ✅ Off-topic? → 1-2 sentence reply + GAME_TURN with current options`,
   ];
 

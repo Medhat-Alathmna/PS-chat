@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useState, useEffect, useRef, useMemo, FormEvent, KeyboardEvent, useCallback } from "react";
-import { GameId, GameDifficulty, GameConfig } from "@/lib/types/games";
+import { GameId, GameConfig } from "@/lib/types/games";
 import { ImageResult } from "@/lib/types";
 import { GAME_CONFIGS } from "@/lib/data/games";
 import { useProfiles } from "@/lib/hooks/useProfiles";
@@ -20,7 +20,6 @@ import { useStaticReveal } from "@/lib/hooks/useStaticReveal";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import ProfileSetup from "../../../components/kids/ProfileSetup";
-import DifficultySelector from "../../../components/kids/games/DifficultySelector";
 import GameHeader from "../../../components/kids/games/GameHeader";
 import GameChatBubble, { GameTypingBubble } from "../../../components/kids/games/GameChatBubble";
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
@@ -67,9 +66,6 @@ function GamePageInner() {
 
 function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig }) {
   const router = useRouter();
-  const [difficulty, setDifficulty] = useState<GameDifficulty | null>(
-    config.hasDifficulty ? null : "medium"
-  );
   const [gameStarted, setGameStarted] = useState(false);
   const [input, setInput] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -82,9 +78,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [mapExpandTrigger, setMapExpandTrigger] = useState(0);
   const [mapUncollapseTrigger, setMapUncollapseTrigger] = useState(0);
 
-  // Track cities discovered in THIS session only (resets on play again)
-  // Used to compute cross-session IDs for server-side city sequence reconstruction
-  const [sessionDiscoveredIds, setSessionDiscoveredIds] = useState<string[]>([]);
+  // Current city being asked — sent to server so it can use it directly (no seed reconstruction)
+  const [currentCityId, setCurrentCityId] = useState<string | null>(null);
 
   // Pending hint state - hint is pre-generated server-side and shown client-side on demand
   const [pendingHint, setPendingHint] = useState<{ hint: string; images?: ImageResult[]; targetCityId?: string } | null>(null);
@@ -92,9 +87,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   // Track the current city being asked — used for reliable map reveal on correct answer
   const currentTargetCityIdRef = useRef<string | null>(null);
   const prevHintCityIdRef = useRef<string | null>(null);
-
-  // Random seed so each session starts with a different city (not always Jerusalem)
-  const [sessionSeed, setSessionSeed] = useState(() => Math.floor(Math.random() * 10000));
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -131,7 +123,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const { settings: textSettings } = useTextSettings(profileId);
   const textStyle = getTextStyleValues(textSettings);
   const { settings: chatSettings } = useChatSettings(profileId);
-  const gameState = useGameState(gameId, difficulty || undefined, profileId);
+  const gameState = useGameState(gameId, undefined, profileId);
   const gameRewards = useGameRewards(profileId);
   const discoveredCities = useDiscoveredCities(profileId);
 
@@ -144,14 +136,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       });
     }
   }, [isCityExplorer, discoveredCities.isLoaded, discoveredCities.discoveredIds]);
-
-  // Cross-session discovered IDs: persistent list minus current-session cities.
-  // This is what the server needs to reconstruct the round sequence correctly —
-  // including session cities in discoveredCityIds breaks the reconstruction loop.
-  const crossSessionDiscoveredIds = useMemo(
-    () => discoveredCities.discoveredIds.filter(id => !sessionDiscoveredIds.includes(id)),
-    [discoveredCities.discoveredIds, sessionDiscoveredIds]
-  );
 
   // Chat hook
   const {
@@ -166,15 +150,14 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           api: "/api/games/chat",
           body: {
             gameId,
-            difficulty: difficulty || "medium",
             chatContext: getContext(),
             kidsProfile: activeProfile,
-            discoveredCityIds: isCityExplorer ? crossSessionDiscoveredIds : undefined,
-            sessionSeed,
+            discoveredCityIds: isCityExplorer ? discoveredCities.discoveredIds : undefined,
+            currentCityId: isCityExplorer ? currentCityId : undefined,
             currentRound: isCityExplorer ? gameState.state.round - 1 : undefined,
           },
         }),
-      [gameId, difficulty, activeProfile, getContext, isCityExplorer, crossSessionDiscoveredIds, sessionSeed, gameState.state.round]
+      [gameId, activeProfile, getContext, isCityExplorer, discoveredCities.discoveredIds, currentCityId, gameState.state.round]
     ),
   });
 
@@ -214,8 +197,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               if (isCityExplorer) {
                 const cityId = currentTargetCityIdRef.current || detectCityInText(toolPart.output.feedback as string || "");
                 if (cityId) {
-                  // Always track in session list so cross-session IDs stay correct
-                  setSessionDiscoveredIds(prev => prev.includes(cityId) ? prev : [...prev, cityId]);
                   if (!revealedCities.includes(cityId)) {
                     const city = CITIES.find((c) => c.id === cityId);
                     if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
@@ -242,12 +223,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   // Auto-send "Start!" message
   useEffect(() => {
-    if (gameStarted && difficulty && !startSentRef.current) {
+    if (gameStarted && !startSentRef.current) {
       startSentRef.current = true;
       playSound("gameStart" as any);
       sendMessage({ text: "ابدأ!" });
     }
-  }, [gameStarted, difficulty, sendMessage, playSound]);
+  }, [gameStarted, sendMessage, playSound]);
 
   // Auto-scroll
   useEffect(() => {
@@ -393,6 +374,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         if (newTargetId !== prevHintCityIdRef.current) {
           prevHintCityIdRef.current = newTargetId;
           currentTargetCityIdRef.current = newTargetId;
+          setCurrentCityId(newTargetId);
           setShowPendingHint(false);
         }
         setPendingHint({ hint: msg.gameTurn.hint, images: msg.gameTurn.hintImages, targetCityId: msg.gameTurn.targetCityId });
@@ -402,6 +384,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
     setPendingHint(null);
     setShowPendingHint(false);
+    setCurrentCityId(null);
     currentTargetCityIdRef.current = null;
     prevHintCityIdRef.current = null;
   }, [displayMessages, status]);
@@ -518,22 +501,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   if (!activeProfile) return null;
 
-  // Difficulty selection
-  if (config.hasDifficulty && !difficulty) {
-    return (
-      <AnimatedBackground variant="sky" showClouds>
-        <DifficultySelector
-          onSelect={(d) => {
-            setDifficulty(d);
-            setGameStarted(true);
-          }}
-        />
-      </AnimatedBackground>
-    );
-  }
-
-  // Auto-start for games without difficulty
-  if (!gameStarted && difficulty) {
+  // Auto-start
+  if (!gameStarted) {
     setGameStarted(true);
   }
 
@@ -548,19 +517,15 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           trimPending.current = false;
           prevMsgCountRef.current = 0;
           setMessages([]); // Clear chat history so AI starts fresh
-          gameState.resetGame(difficulty || undefined);
+          gameState.resetGame();
           setGameStarted(false);
-          // Reset map state + new random seed for next session
-          setSessionSeed(Math.floor(Math.random() * 10000));
-          setSessionDiscoveredIds([]);
+          // Reset city tracking for new session
+          setCurrentCityId(null);
+          currentTargetCityIdRef.current = null;
+          prevHintCityIdRef.current = null;
           setRevealedCities([]);
           setHighlightRegion(null);
           setFlyToCity(null);
-          if (config.hasDifficulty) {
-            setDifficulty(null);
-          } else {
-            setGameStarted(true);
-          }
         }}
         onChooseAnother={() => router.push("/kids/games")}
       />

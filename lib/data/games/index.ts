@@ -11,7 +11,7 @@ export const GAME_CONFIGS: Record<GameId, GameConfig> = {
     description: "Discover Palestinian cities from clues!",
     descriptionAr: "اكتشف مدن فلسطين من التلميحات!",
     rounds: 5,
-    hasDifficulty: true,
+    hasDifficulty: false,
     pointsPerCorrect: 15,
     bonusPoints: 25,
   },
