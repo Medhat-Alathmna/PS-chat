@@ -43,6 +43,8 @@ export type StoryConfig = {
 export type StoryPage = {
   pageNumber: number;
   text: string;
+  imagePrompt?: string;
+  heroDescription?: string;
 };
 
 export type StoryChoice = {

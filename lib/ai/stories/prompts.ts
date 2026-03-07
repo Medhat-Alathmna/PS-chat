@@ -25,7 +25,7 @@ function getGenreGuidance(genre: StoryConfig["genre"]): string {
     fantasy:
       "Include magical elements: spells, enchanted objects, mythical creatures. Build wonder and amazement.",
     "palestinian-folklore":
-      "Weave in Palestinian cultural motifs: olive trees, embroidery (tatreez), traditional food, hospitality, village life. Use phrases like 'كان يا ما كان'. Celebrate heritage proudly.",
+      "Weave in Palestinian cultural motifs: olive trees, embroidery (tatreez), traditional food, hospitality, village life. Celebrate heritage proudly.",
     adventure:
       "Create exciting journeys with obstacles, discoveries, and brave decisions. Build tension and triumph.",
     animal:
@@ -37,6 +37,88 @@ function getGenreGuidance(genre: StoryConfig["genre"]): string {
   };
   return guidance[genre];
 }
+
+// ── 5-part story structure ───────────────────────────────────────────
+
+function getStructureGuidance(totalPages: number): string {
+  const p = (frac: number) => Math.max(1, Math.ceil(totalPages * frac));
+  const hook = 1;
+  const physical = p(0.25);
+  const emotional = p(0.5);
+  const climax = p(0.75);
+
+  return `## Story Structure (5 Parts)
+1. المقدمة — The Hook (page ${hook}): Mystery, surprise, or funny situation. First 2 sentences MUST grab attention immediately. Do NOT open with a slow scene description.
+2. العقبة الأولى — Physical Challenge (pages ${hook + 1}–${physical}): An action/physical obstacle. The hero FAILS this first attempt — failure is important.
+3. العقبة الثانية — Emotional Challenge (pages ${physical + 1}–${emotional}): A moral/ethical decision — make doing the right thing feel genuinely hard (gray morality, not black-and-white).
+4. الذروة — The Climax (pages ${emotional + 1}–${climax}): The "aha!" moment — hero solves the problem using what they learned from earlier failures. Include an unexpected twist.
+5. الخاتمة — The Warm Down (pages ${climax + 1}–${totalPages}): Resolve gently. Connect the story to the child's daily life.`;
+}
+
+// ── Storytelling craft rules ─────────────────────────────────────────
+
+function getStorytellingCraftRules(playerAge: number): string {
+  const fourthWallRule =
+    playerAge <= 7
+      ? `### 4th Wall Breaking
+Include 1-2 interactive sensory moments where the hero asks the child for help: "هل تساعدني؟ صفّق بيديك ثلاث مرات!" or "انفخ على الشاشة لتطير الريشة!". These make young children feel part of the story.`
+      : `### 4th Wall Breaking (optional)
+You MAY include 1 interactive moment where the hero asks the child for help. Only add if it fits naturally — do not force it.`;
+
+  return `## Storytelling Craft Rules
+
+### Hook
+First 2 sentences: mystery, surprise, or funny situation. Examples: "استيقظت على صوت غريب آتٍ من تحت السرير..." / "في الصباح، وجدت باباً صغيراً لم يكن هناك أمس!"
+NEVER open with static scene-setting like "في مدينة جميلة عاش...".
+
+### Relatable Hero
+The hero must have ONE flaw or fear (fear of darkness, forgetfulness, shyness, clumsiness). The story is about growth — not power.
+Give the hero a quirky habit (e.g., always wears mismatched socks, talks to plants, hums when nervous, counts things compulsively). This makes them memorable and lovable.
+
+### Rule of Three
+Hero faces 3 challenges: FAILS the first → LEARNS from the second → SUCCEEDS in the third.
+For short stories (≤ 5 pages), challenges can be brief (a sentence or two each). The fail-learn-succeed rhythm matters more than the length.
+
+### Show Don't Tell
+NEVER state the moral directly. No "تعلّم أن الصدق مهم". Instead, show consequences.
+Use gray morality: place the hero in a situation where the right choice is difficult or costly — then let the child see why it was still worth it.
+
+### Rhythmic Repetition 
+Invent a short catchphrase the hero repeats at each challenge (e.g., "قلب شجاع، وعقل لماح، دائماً أجد المفتاح!").
+Repeat this phrase at least 3 times. Children love predictable refrains they can anticipate and mentally say along.
+
+### Character Consistency 
+On page 1 ONLY: auto-generate a detailed physical description of the hero (hair, eyes, clothing, height, one distinguishing feature, and the quirky habit). Output this in the heroDescription field.
+Maintain EXACTLY this description in all subsequent pages and in every imagePrompt.
+
+### Sensory Writing
+Every page must engage at least 2 senses using child-relatable similes:
+- Smell: "رائحة الغابة تشبه كعكة القرفة الدافئة"
+- Touch: "كان العشب ناعماً كفراء القطة"
+- Sound: "سمع صوت الماء يغني بين الصخور"
+- Taste: "الهواء كان طعمه حلواً كغزل البنات"
+Never say "كان المكان جميلاً" — always show the beauty through the senses.
+
+### Pacing Control
+Action/danger scenes: SHORT sentences (3-5 words). "ركض. التفت. قفز!"
+Calm/descriptive scenes: longer, flowing sentences with rich imagery.
+Switch consciously between fast and slow pacing.
+
+### Surprise Twist 
+On the second-to-last page: include an unexpected twist — the solution comes from an unexpected direction, or something the reader assumed was a problem turns out to be an advantage. Always end happily.
+
+${fourthWallRule}`;
+}
+
+// ── Image & illustration guidance ───────────────────────────────────
+
+const IMAGE_GUIDANCE = `## Image & Illustration
+On EVERY story_page call, include an imagePrompt field:
+- Write in English, DALL-E/Midjourney compatible
+- Format: "[hero description], [action in this scene], [setting details], [lighting/mood], children's book watercolor illustration style"
+- ALWAYS reuse the same hero physical details from heroDescription to keep the character consistent
+- On page 1 only: also include heroDescription (detailed Arabic physical description of the hero)
+- On continuation turns (when continuing a multi-turn story): do NOT include heroDescription again — it was already set on page 1`;
 
 
 // ── System Prompt Builder ────────────────────────────────────────────
@@ -82,15 +164,22 @@ NEVER use dialect. Always use clear, beautiful فصحى.`,
     `## Language & Age (${playerAge} years old)
 ${getVocabularyGuidance(playerAge)}
 - ALWAYS write in Modern Standard Arabic (الفصحى)
-- Keep each page to 5-10 lines of text
-- Use vivid sensory descriptions (sights, sounds, smells)`,
+- Keep each page to 5-10 lines of text`,
 
     // 4. Genre Guidance
     `## Genre Guidance: ${genre.nameAr}
 ${getGenreGuidance(config.genre)}`,
 
+    // 5. Story structure
+    getStructureGuidance(totalPages),
 
-    // 6. Story continuation context (multi-turn interactive mode)
+    // 6. Craft rules
+    getStorytellingCraftRules(playerAge),
+
+    // 7. Image guidance
+    IMAGE_GUIDANCE,
+
+    // 8. Story continuation context (multi-turn interactive mode)
     previousPages && previousPages.length > 0
       ? `## Story Already Written (DO NOT repeat — continue from where it left off)
 ${previousPages.map((p) => `[صفحة ${p.pageNumber}]: ${p.text}`).join("\n\n")}${lastChoiceText ? `\n\nThe child's last choice: "${lastChoiceText}"` : ""}
@@ -116,7 +205,7 @@ Your tools: story_page, story_choice, end_story
 - Each story_page has 5-6 lines of Arabic text
 - story_choice has 2-3 options with emoji + short Arabic text
 - The story_choice prompt should be exciting: "ماذا يفعل البطل الآن؟"
-- end_story generates a creative Arabic title automatically
+- end_story generates a creative Arabic title + moralLesson automatically
 - Total pages should be approximately ${totalPages}
 
 ### Choice Impact Guidelines:
@@ -132,8 +221,8 @@ Your tools: story_page, story_choice, end_story
 On the FIRST message, output ${Math.min(choiceInterval, 2)} story_page calls to begin the story, then a story_choice to let the child decide what happens next. Start with an exciting opening!
 
 ### Example Output Pattern:
-[story_page page 1]: "كان يا ما كان في قديم الزمان..."
-[story_page page 2]: "وصل البطل إلى الغابة المسحورة..."
+[story_page page 1]: "استيقظ البطل على صوت غريب آتٍ من تحت السرير..." (with heroDescription + imagePrompt)
+[story_page page 2]: "وصل إلى باب غريب لم يره أحد من قبل..." (with imagePrompt)
 [story_choice]: { prompt: "ماذا يفعل البطل الآن؟", choices: [...] }
 [STOP — wait for child's response!]`
       : `## Tool Flow (CRITICAL — follow exactly!)
@@ -148,8 +237,8 @@ Generate ALL ${totalPages} pages in one response, then end the story.
 ### Rules:
 - Each story_page has 5-6 lines of Arabic text
 - Call story_page once for each page, in order (page 1 through ${totalPages})
-- Build a complete story arc: introduction → rising action → climax → resolution
-- After the final story_page, call end_story with a creative Arabic title
+- Follow the 5-part story structure defined above
+- After the final story_page, call end_story with a creative Arabic title and moralLesson
 - Generate ALL pages in a single response — do NOT stop partway`,
 
     // 8. Player Name
@@ -167,14 +256,22 @@ Generate ALL ${totalPages} pages in one response, then end the story.
 ✅ Presented story_choice after ${choiceInterval}-${choiceInterval + 1} pages?
 ✅ STOPPED after story_choice? (Don't continue until child responds!)
 ✅ Story matches genre (${genre.nameAr}) and setting (${setting.nameAr})?
-✅ On last page, called end_story with a creative title?`
+✅ On last page, called end_story with a creative title + moralLesson?
+✅ Hero has a flaw/fear AND a quirky habit?
+✅ Catchphrase repeated at least 3 times?
+✅ Every page has imagePrompt? Page 1 has heroDescription?
+✅ At least 2 senses per page?`
       : `## ⚠️ CHECKLIST (read before responding):
 ✅ Writing in MSA (الفصحى), NOT dialect?
 ✅ Each page is 5-6 lines?
 ✅ Used story_page tool for each page?
 ✅ Generated ALL ${totalPages} pages in this response?
 ✅ Story matches genre (${genre.nameAr}) and setting (${setting.nameAr})?
-✅ Called end_story with a creative title after the last page?`,
+✅ Called end_story with a creative title + moralLesson after the last page?
+✅ Hero has a flaw/fear AND a quirky habit?
+✅ Catchphrase repeated at least 3 times?
+✅ Every page has imagePrompt? Page 1 has heroDescription?
+✅ At least 2 senses per page?`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

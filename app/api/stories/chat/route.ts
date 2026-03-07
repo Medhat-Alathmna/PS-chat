@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { generateText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
-import { getStoriesModel, getAIProvider } from "@/lib/ai/config";
+import { getStoriesModelInstance } from "@/lib/ai/config";
 import { buildStoryTools } from "@/lib/ai/stories/tools";
 import { buildStorySystemPrompt } from "@/lib/ai/stories/prompts";
 import { StoryConfig, StoryPage } from "@/lib/types/stories";
@@ -35,8 +35,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const openai = getAIProvider();
-
     const systemPrompt = buildStorySystemPrompt(
       storyConfig,
       kidsProfile?.name,
@@ -50,7 +48,7 @@ export async function POST(req: NextRequest) {
     const cacheKey = `story-${storyConfig.genre}-${storyConfig.setting}-${storyConfig.mode}`;
 
     const result = await generateText({
-      model: openai(getStoriesModel()),
+      model: getStoriesModelInstance(),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools,
@@ -67,19 +65,19 @@ export async function POST(req: NextRequest) {
     // Collect all tool results across all steps
     const pages: StoryPage[] = [];
     let choicePoint: { prompt: string; choices: { id: string; emoji: string; textAr: string }[] } | null = null;
-    let ended: { titleAr: string; closingMessage: string } | null = null;
+    let ended: { titleAr: string; closingMessage: string; moralLesson?: string } | null = null;
 
     for (const step of result.steps) {
       for (const tr of step.toolResults) {
         if (tr.toolName === "story_page") {
-          const r = (tr as any).result as { pageNumber: number; text: string };
-          pages.push({ pageNumber: r.pageNumber, text: r.text });
+          const r = (tr as any).output as { pageNumber: number; text: string; imagePrompt?: string; heroDescription?: string };
+          pages.push({ pageNumber: r.pageNumber, text: r.text, imagePrompt: r.imagePrompt, heroDescription: r.heroDescription });
         } else if (tr.toolName === "story_choice") {
-          const r = (tr as any).result as { prompt: string; choices: { id: string; emoji: string; textAr: string }[] };
+          const r = (tr as any).output as { prompt: string; choices: { id: string; emoji: string; textAr: string }[] };
           choicePoint = { prompt: r.prompt, choices: r.choices };
         } else if (tr.toolName === "end_story") {
-          const r = (tr as any).result as { titleAr: string; closingMessage: string };
-          ended = { titleAr: r.titleAr, closingMessage: r.closingMessage };
+          const r = (tr as any).output as { titleAr: string; closingMessage: string; moralLesson?: string };
+          ended = { titleAr: r.titleAr, closingMessage: r.closingMessage, moralLesson: r.moralLesson };
         }
       }
     }
@@ -87,9 +85,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ pages, choicePoint, ended });
   } catch (error) {
     logError("stories-chat-route", error);
+    const isDev = process.env.NODE_ENV === "development";
     return new Response(
       JSON.stringify({
-        error: "حدث خطأ. يرجى المحاولة مرة أخرى.",
+        error: isDev && error instanceof Error ? error.message : "حدث خطأ. يرجى المحاولة مرة أخرى.",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

@@ -11,9 +11,15 @@ export const storyPageTool = tool({
     pageNumber: z.number().describe("The page number (starting from 1)"),
     text: z.string().describe("The story text for this page in MSA Arabic (5-6 lines)"),
     isLastPage: z.boolean().describe("Whether this is the final page of the story"),
+    imagePrompt: z.string().optional().describe(
+      "English scene description for illustration (DALL-E/Midjourney compatible). Format: '[character], [action], [setting], [mood], children's book illustration style'. Include consistent hero appearance in every prompt."
+    ),
+    heroDescription: z.string().optional().describe(
+      "Detailed physical description of the hero — ONLY on page 1. Include: hair, eyes, clothing, height, distinguishing features, and quirky habit. Used to keep character appearance consistent across all pages."
+    ),
   }),
-  execute: async ({ pageNumber, text, isLastPage }) => {
-    return { pageNumber, text, isLastPage };
+  execute: async ({ pageNumber, text, isLastPage, imagePrompt, heroDescription }) => {
+    return { pageNumber, text, isLastPage, imagePrompt, heroDescription };
   },
 });
 
@@ -56,9 +62,12 @@ export const endStoryTool = tool({
       .string()
       .describe("A warm closing message for the child in MSA Arabic"),
     totalPages: z.number().describe("Total number of pages in the story"),
+    moralLesson: z.string().optional().describe(
+      "The implicit moral/lesson of the story in Arabic (for parents/teachers — NOT shown to the child)"
+    ),
   }),
-  execute: async ({ titleAr, closingMessage, totalPages }) => {
-    return { titleAr, closingMessage, totalPages };
+  execute: async ({ titleAr, closingMessage, totalPages, moralLesson }) => {
+    return { titleAr, closingMessage, totalPages, moralLesson };
   },
 });
 

@@ -110,12 +110,14 @@ function StorySession({
   const [storyTitle, setStoryTitle] = useState<string | undefined>(story.titleAr);
   const [isComplete, setIsComplete] = useState(story.completed);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const startSentRef = useRef(false);
 
   const generateNextBatch = useCallback(
     async (userMessage: string, lastChoiceText?: string) => {
       setIsLoading(true);
+      setErrorMessage(null);
       try {
         const res = await fetch("/api/stories/chat", {
           method: "POST",
@@ -130,7 +132,10 @@ function StorySession({
         });
 
         if (!res.ok) {
-          console.error("[stories] API error:", res.status);
+          const body = await res.json().catch(() => ({}));
+          const msg = body?.error || "حدث خطأ أثناء توليد القصة";
+          console?.error("[stories] API error:", res.status, msg);
+          setErrorMessage(msg);
           return;
         }
 
@@ -213,6 +218,19 @@ function StorySession({
             <div className="w-12" />
           </div>
         </header>
+
+        {/* Error banner */}
+        {errorMessage && (
+          <div className="shrink-0 mx-4 mt-2 px-4 py-3 rounded-2xl bg-red-500/20 border border-red-400/30 text-center" dir="rtl">
+            <p className="text-white text-sm">{errorMessage}</p>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="mt-2 text-xs text-white/60 hover:text-white transition-colors underline"
+            >
+              حاول مرة أخرى
+            </button>
+          </div>
+        )}
 
         {/* Story reader */}
         <div className="flex-1 min-h-0">

@@ -71,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} ${cairo.variable} ${tajawal.variable} ${changa.variable} antialiased font-[family-name:var(--font-arabic)]`}
+        suppressHydrationWarning
       >
         <BackgroundMusicContext.Provider value={music}>
           <div className="min-h-screen bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
