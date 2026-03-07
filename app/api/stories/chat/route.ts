@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const tools = buildStoryTools(storyConfig.mode !== "continuous");
 
-    const cacheKey = `story-${storyConfig.genre}-${storyConfig.setting}-${storyConfig.mode}`;
+    const cacheKey = `story-${storyConfig.genre}-${storyConfig.mode}`;
 
     const result = await generateText({
       model: getStoriesModelInstance(),

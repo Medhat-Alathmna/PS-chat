@@ -7,7 +7,7 @@ import {
   convertToModelMessages,
   stepCountIs,
 } from "ai";
-import { getCityExploreModel, getAIProvider } from "@/lib/ai/config";
+import { getCityExploreModelInstance, getAIProvider } from "@/lib/ai/config";
 import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery } from "@/lib/ai/games/city-explorer";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
@@ -279,7 +279,7 @@ export async function POST(req: NextRequest) {
       execute: async ({ writer }) => {
         const cacheKey = `game-${sessionSeedVal}-d${gameDifficulty}-a${playerAge}`;
         const result = streamText({
-          model: openai(getCityExploreModel()),
+          model: getCityExploreModelInstance(),
           system: systemPrompt,
           messages: convertedMessages,
           tools,
