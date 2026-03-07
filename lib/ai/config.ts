@@ -44,7 +44,6 @@ function getOpenRouterProvider(): ReturnType<typeof createOpenAI> {
   openrouterProvider = createOpenAI({
     apiKey,
     baseURL: "https://openrouter.ai/api/v1",
-    compatibility: "compatible",
   });
   return openrouterProvider;
 }
