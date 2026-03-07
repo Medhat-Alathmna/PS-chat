@@ -9,8 +9,6 @@
  * 5. Critical checklist at END (recency bias)
  */
 
-import { tool } from "ai";
-import { z } from "zod";
 import { CITIES, REGIONS, City } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
 import { GameDifficulty, KidsChatContext } from "@/lib/types/games";
@@ -20,7 +18,6 @@ import {
 } from "../../kids";
 import { buildAgeAdaptationSection, getAgeSettings } from "./age";
 import {
-  checkAnswerTool,
   advanceRoundTool,
   endGameTool,
 } from "../../game-tools";
@@ -66,89 +63,47 @@ export const trimCompletedRounds = true;
 // ── Tool collection ──────────────────────────────────────────────────
 
 /**
- * Build game tools with validated present_options + embedded pre-computed hints.
- * Hints are generated server-side from city data — no LLM tool call needed.
- * give_hint is kept only for "I don't know" (text-only, no image search).
+ * Build game tools — only advance_round, end_game, image_search.
+ * Options/hints are now delivered via GAME_TURN JSON suffix injected server-side.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildTools(
-  correctCityNameAr: string,
-  correctCityId: string,
-  nextCityNameAr: string,
-  currentHint: PrecomputedHint,
-  nextHint: PrecomputedHint | null
-): Record<string, any> {
-  // Simplified give_hint: text-only, for "I don't know" case only
-  const textOnlyGiveHint = tool({
-    description: "Text-only hint when player says 'I don't know'. No images. Deduction: Easy=0, Medium=1, Hard=2. Do NOT call this with present_options — hints are auto-attached to options!",
-    inputSchema: z.object({
-      hint: z.string().describe("Hint in Palestinian Arabic"),
-      pointsDeduction: z.number().describe("Easy=0, Medium=1, Hard=2"),
-    }),
-    execute: async ({ hint, pointsDeduction }) => {
-      return { hint, pointsDeduction, targetCityId: correctCityId };
-    },
-  });
-
+export function buildTools(): Record<string, any> {
   return {
-    check_answer: checkAnswerTool,
-    give_hint: textOnlyGiveHint,
     advance_round: advanceRoundTool,
-    present_options: tool({
-      description: "Show clickable options with auto-attached hint. CORRECT ANSWER MUST BE INCLUDED! Do NOT call give_hint alongside this — hint is auto-embedded.",
-      inputSchema: z.object({
-        options: z.array(z.string()).min(2).max(6).describe("Option texts. MUST include correct city!"),
-        allowHint: z.boolean().describe("Show hint button?"),
-      }),
-      execute: async ({ options, allowHint }) => {
-        let validatedOptions = [...options];
-        const hasCurrentCity = validatedOptions.includes(correctCityNameAr);
-        const hasNextCity = nextCityNameAr && validatedOptions.includes(nextCityNameAr);
-        // Auto-inject only if neither the current nor the next city answer is present
-        if (!hasCurrentCity && !hasNextCity) {
-          const insertIdx = Math.floor(Math.random() * (validatedOptions.length + 1));
-          validatedOptions.splice(insertIdx, 0, correctCityNameAr);
-          console.warn(`[city-explorer] Auto-injected correct answer: ${correctCityNameAr}`);
-        }
-        // Determine which pre-computed hint to attach:
-        // If options contain the NEXT city answer → post-advance question → use nextHint
-        const hintForThisQuestion = (hasNextCity && nextHint) ? nextHint : currentHint;
-        return { options: validatedOptions, allowHint, displayed: true, hintData: hintForThisQuestion };
-      },
-    }),
     end_game: endGameTool,
     image_search: imageSearchTool,
   };
 }
 
-// ── Core Rules (Optimized ~1500 chars vs ~6000 before) ────────────────
+// ── Core Rules ────────────────────────────────────────────────────────
 
 const CORE_RULES = `## Game: City Explorer
 
-### Flow (State Machine):
-QUIZ → correct → advance → NEXT CITY QUIZ (all in ONE response, no extra round-trip!)
+### Response Format (MANDATORY):
+Every response MUST end with this JSON on its own line:
+GAME_TURN:{"options":["مدينة أ","مدينة ب","مدينة ج"]}
 
-### QUIZ Phase:
-1. Read City Data → WRITE a fun riddle/clue as TEXT (2-3 sentences) + call present_options. Hint is auto-attached!
-2. Player answers → check_answer (accept typed city names too!)
-3. Wrong answer → short encouragement (no new options), don't reveal the answer.
-4. Off-topic / unrelated message (jokes, questions about you, random chat) → reply briefly in 1-2 sentences MAX, then IMMEDIATELY call present_options to re-show the current question. NEVER leave the player without the options after an off-topic reply!
-5. Correct → IN ONE RESPONSE: check_answer + advance_round + WRITE riddle for NEXT CITY + present_options (NEXT CITY answer!). No separate round-trip needed.
+Exception: end_game responses do NOT need GAME_TURN.
 
-CRITICAL: ALWAYS write visible TEXT before/with tool calls! Never send ONLY tool calls without text.
+### Flow:
+- NEW QUESTION: Write riddle (2-3 sentences) → append GAME_TURN with current city options
+- WRONG ANSWER: Write encouragement (1 sentence) → append GAME_TURN with SAME options
+- CORRECT ANSWER (ONE response): Write celebration (1 sentence) → call advance_round → write riddle for NEXT CITY → append GAME_TURN with NEXT CITY options
+- OFF-TOPIC: Reply in 1-2 sentences → append GAME_TURN with CURRENT options. NEVER leave player without options!
 
 ### Critical Rules:
 - STRICT: Use ONLY facts from City Data. Never invent or embellish facts.
-- CORRECT_ANSWER must be in present_options (use NEXT CITY answer after advance_round!)
-- After correct: BRIEF celebration (1 sentence) → immediately advance + next city question
-- NEVER mention coordinates/lat/lng`;
+- GAME_TURN options MUST include the correct city answer
+- After correct: BRIEF celebration → advance_round → next riddle → GAME_TURN (next city)
+- NEVER mention coordinates/lat/lng
+- NEVER call check_answer, give_hint, or present_options — they do not exist`;
 
 // ── Tool Quick Reference ─────────────────────────────────────────────
 
-const TOOL_REFERENCE = `## Tool Combos:
-- present_options (quiz start — hint auto-attached, do NOT call give_hint!)
-- check_answer + advance_round + present_options (CORRECT ANSWER — all in ONE response, use NEXT CITY data!)
-- advance_round + present_options ("السؤال الجاي" fallback — all in ONE response)`;
+const TOOL_REFERENCE = `## Tools:
+- advance_round — call ONLY on correct answer (or "السؤال الجاي" fallback)
+- end_game — call when all rounds complete or player quits
+- image_search — optional, for extra visuals`;
 
 // ── City Selection System (Smart + Region Diverse + Progressive) ────────
 
@@ -428,10 +383,11 @@ export function buildSystemPrompt(
 
     // 13. CRITICAL REMINDER at END (LLM pays attention to end)
     `⚠️ CHECKLIST before responding:
-✅ Active question about ${city.nameAr}? → present_options uses ${city.nameAr} (hint auto-attached)
-✅ Correct answer detected? → check_answer + advance_round + riddle for ${nextCity.nameAr} + present_options (${nextCity.nameAr}!) — ALL IN ONE RESPONSE
-✅ After advance: ${nextCity.nameAr} in present_options? (player must win!)
-✅ Off-topic / unrelated message? → 1-2 sentence reply THEN call present_options for ${city.nameAr} — do NOT leave the player without choices!`,
+✅ Every response ends with GAME_TURN:{"options":[...]} (except end_game)
+✅ Current question: GAME_TURN options include "${city.nameAr}"
+✅ Correct answer? → advance_round + new riddle for ${nextCity.nameAr} + GAME_TURN with "${nextCity.nameAr}"
+✅ Wrong answer? → encouragement + GAME_TURN with SAME options (${city.nameAr} still in list)
+✅ Off-topic? → 1-2 sentence reply + GAME_TURN with current options`,
   ];
 
   return parts.filter(Boolean).join("\n\n");

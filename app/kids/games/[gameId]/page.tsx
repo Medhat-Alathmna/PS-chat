@@ -22,12 +22,10 @@ import ErrorBoundary from "../../../components/ErrorBoundary";
 import ProfileSetup from "../../../components/kids/ProfileSetup";
 import DifficultySelector from "../../../components/kids/games/DifficultySelector";
 import GameHeader from "../../../components/kids/games/GameHeader";
-import GameChatBubble, { GameTypingBubble, OptionsData } from "../../../components/kids/games/GameChatBubble";
+import GameChatBubble, { GameTypingBubble } from "../../../components/kids/games/GameChatBubble";
 import GameOverScreen from "../../../components/kids/games/GameOverScreen";
 import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
-import QuickReplyChips, { QuickReplyData, normalizeSuggestions } from "../../../components/kids/games/QuickReplyChips";
-import type { SuggestionChip } from "../../../components/kids/games/QuickReplyChips";
 import { CITIES, detectCityInText } from "@/lib/data/cities";
 import ExpandableMap from "../../../components/kids/ExpandableMap";
 import { extractTextAndImages, getToolOutput } from "@/lib/utils/messageConverter";
@@ -84,7 +82,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [mapExpandTrigger, setMapExpandTrigger] = useState(0);
   const [mapUncollapseTrigger, setMapUncollapseTrigger] = useState(0);
 
-  // Pending hint state - hint is pre-generated with options but hidden until requested
+  // Pending hint state - hint is pre-generated server-side and shown client-side on demand
   const [pendingHint, setPendingHint] = useState<{ hint: string; images?: ImageResult[]; targetCityId?: string } | null>(null);
   const [showPendingHint, setShowPendingHint] = useState(false);
 
@@ -189,82 +187,15 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             const toolName = toolPart.type.replace("tool-", "");
             gameState.processToolResult(toolName, toolPart.output);
 
-            // Play sounds
-            if (toolName === "check_answer") {
-              if (toolPart.output.correct) {
-                playSound("correct" as any);
-                setShowConfetti(true);
-                setTimeout(() => setShowConfetti(false), 2000);
-                gameRewards.onCorrectAnswer(
-                  gameId,
-                  (toolPart.output.pointsEarned as number) || config.pointsPerCorrect
-                );
-                // Mark that a correct answer happened. The auto-advance effect
-                // (which runs only when status==="ready") will check whether the
-                // AI already called advance_round before sending "السؤال الجاي".
-                autoAdvancePending.current = true;
-                // Map: reveal city on correct answer and auto-zoom to it
-                if (isCityExplorer && toolPart.output.explanation) {
-                  const cityId = detectCityInText(toolPart.output.explanation as string);
-                  if (cityId && !revealedCities.includes(cityId)) {
-                    // Verify city has valid coordinates
-                    const city = CITIES.find((c) => c.id === cityId);
-                    if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-                      setRevealedCities((prev) => [...prev, cityId]);
-                      setHighlightRegion(null);
-                      setFlyToCity(cityId); // auto-zoom map to this city
-                      discoveredCities.addCity(cityId); // persist across sessions
-                    }
-                  }
-                }
-              } else {
-                playSound("wrong" as any);
-                // Map: on wrong answer, do NOT reveal the city — let them keep trying!
-                // Only reveal when answer is explicitly given up (handled by advance_round)
-              }
-            } else if (toolName === "give_hint") {
-              playSound("hint" as any);
-              if (isCityExplorer) {
-                // Map: highlight region on hint
-                if (toolPart.output.hint) {
-                  const cityId = detectCityInText(toolPart.output.hint as string);
-                  if (cityId) {
-                    const city = CITIES.find((c) => c.id === cityId);
-                    if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-                      setHighlightRegion(cityId);
-                    }
-                  }
-                }
-                // On first hint: zoom map to target city
-                if (toolPart.output.hintNumber === 1 && toolPart.output.targetCityId) {
-                  const targetId = toolPart.output.targetCityId as string;
-                  const city = CITIES.find((c) => c.id === targetId);
-                  if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-                    // Mobile: uncollapse map (without fullscreen)
-                    setMapUncollapseTrigger((c) => c + 1);
-                    // Zoom to the target city (both desktop & mobile)
-                    setFlyToCity("");
-                    setTimeout(() => setFlyToCity(targetId), 150);
-                  }
-                }
-              }
-            } else if (toolName === "advance_round") {
-              // Check if check_answer(correct) already fired in the same message (avoids double sound/points)
-              const hadCorrectAnswer = msg.parts.some((p) => {
-                if (!p.type.startsWith("tool-")) return false;
-                const tp = p as { type: string; output?: Record<string, unknown> };
-                return tp.type.replace("tool-", "") === "check_answer" && tp.output?.correct === true;
-              });
-
-              if (!hadCorrectAnswer) {
-                // Only play sound + award points if check_answer didn't already do it
-                playSound("correct" as any);
-              }
-              gameRewards.onRoundComplete(
-                gameId,
-                hadCorrectAnswer ? 0 : ((toolPart.output.pointsEarned as number) || config.pointsPerCorrect)
-              );
-              // Map: also reveal city when advancing round (covers give-up case)
+            // advance_round is now the correct-answer signal (check_answer removed)
+            if (toolName === "advance_round") {
+              playSound("correct" as any);
+              setShowConfetti(true);
+              setTimeout(() => setShowConfetti(false), 2000);
+              gameRewards.onCorrectAnswer(gameId, config.pointsPerCorrect);
+              gameRewards.onRoundComplete(gameId, 0);
+              autoAdvancePending.current = true;
+              // Map: reveal city on advance_round
               if (isCityExplorer && toolPart.output.feedback) {
                 const cityId = detectCityInText(toolPart.output.feedback as string);
                 if (cityId && !revealedCities.includes(cityId)) {
@@ -277,7 +208,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   }
                 }
               }
-              // Mark for post-advance trim (clear old messages once new round starts)
               trimPending.current = true;
             } else if (toolName === "end_game") {
               playSound("gameOver" as any);
@@ -352,12 +282,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     const lastAssistant = [...aiMessages].reverse().find(m => m.role === "assistant");
     if (!lastAssistant) return;
 
-    // Only trim once the new round actually started (has present_options)
-    const hasOptions = lastAssistant.parts.some(p => {
-      const tp = p as { type: string };
-      return tp.type === "tool-present_options";
+    // Only trim once the new round actually started (has data-game-turn)
+    const hasGameTurn = lastAssistant.parts.some(p => {
+      const tp = p as { type?: string };
+      return tp.type === "data-game-turn";
     });
-    if (!hasOptions) return;
+    if (!hasGameTurn) return;
 
     trimPending.current = false;
 
@@ -392,8 +322,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   }, [input]);
 
   // Convert messages for display
-  // NOTE: give_hint data is extracted but NOT displayed in the message
-  // Instead, it's stored as pendingHint and shown when the player taps the hint button
   const displayMessages = useMemo(() => {
     return aiMessages.filter((msg) => {
       // Hide auto-advance "next question" messages from display
@@ -403,38 +331,26 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       }
       return true;
     }).map((msg) => {
-      const { textContent, inlineChips } = extractTextAndImages(msg.parts);
-
-      // Use getToolOutput for cleaner tool extraction
-      const answerOutput = getToolOutput<{ correct: boolean; explanation: string }>(msg.parts, "check_answer");
-      const hintOutput = getToolOutput<{ hint: string; images?: ImageResult[]; targetCityId?: string }>(msg.parts, "give_hint");
-      const optionsOutput = getToolOutput<{ options: string[]; allowHint: boolean; hintData?: { hint: string; images?: ImageResult[]; targetCityId?: string } }>(msg.parts, "present_options");
+      const { textContent } = extractTextAndImages(msg.parts);
       const imageOutput = getToolOutput<{ images: ImageResult[] }>(msg.parts, "image_search");
 
-      // Prefer pre-computed hintData from present_options, fall back to give_hint
-      const embeddedHint = optionsOutput?.hintData;
-      const resolvedHint = embeddedHint
-        ? { hint: embeddedHint.hint, images: embeddedHint.images, targetCityId: embeddedHint.targetCityId }
-        : hintOutput
-          ? { hint: hintOutput.hint, images: hintOutput.images, targetCityId: hintOutput.targetCityId }
-          : null;
+      // Read data-game-turn part (injected server-side after streaming)
+      const gameTurnPart = (msg.parts as Array<{ type?: string; data?: unknown }>)
+        .find((p) => p?.type === "data-game-turn");
+      const gameTurn = (gameTurnPart?.data as { options: string[]; hint: string; hintImages?: ImageResult[]; targetCityId?: string } | undefined) ?? null;
 
-      // Chips: prefer inline CHIPS: from text, fall back to data-chips part
-      const chipsSource = inlineChips?.chips?.length
-        ? inlineChips.chips
-        : (msg.parts as Array<{ type?: string; data?: { chips?: unknown[] } }>)
-            ?.find((p) => p?.type === "data-chips")?.data?.chips;
+      // Check if this message had advance_round (correct-answer signal)
+      const hadAdvance = msg.role === "assistant" && msg.parts.some((p) => {
+        const tp = p as { type: string };
+        return tp.type === "tool-advance_round";
+      });
 
       return {
         id: msg.id,
         role: msg.role as "user" | "assistant",
         content: textContent,
-        answerResult: answerOutput ? { correct: answerOutput.correct, explanation: answerOutput.explanation } : null,
-        hiddenHintData: resolvedHint,
-        optionsData: optionsOutput ? { options: optionsOutput.options, allowHint: optionsOutput.allowHint } : null,
-        suggestRepliesData: chipsSource?.length
-          ? { suggestions: normalizeSuggestions(chipsSource) }
-          : null,
+        gameTurn,
+        hadAdvance,
         imageResults: imageOutput?.images || null,
       };
     });
@@ -443,30 +359,21 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   // Static reveal for display mode
   const { shouldHide: shouldHideMsg, revealClass: getRevealClass, showTypingBubble } = useStaticReveal(status, displayMessages, chatSettings.displayMode);
 
-  // Extract pending hint from the last assistant message with options
-  // The hint is pre-generated with give_hint but hidden until the player requests it
+  // Extract pending hint from the last assistant message with a gameTurn
   useEffect(() => {
     if (status === "streaming") {
-      // Clear pending hint when streaming new content
-      setPendingHint(null);
       setShowPendingHint(false);
       return;
     }
 
-    // Find the last assistant message with optionsData
     for (let i = displayMessages.length - 1; i >= 0; i--) {
       const msg = displayMessages[i];
-      if (msg.role === "assistant" && msg.optionsData) {
-        // Check if this message also has hidden hint data
-        const hintMsg = msg as typeof msg & { hiddenHintData?: { hint: string; images?: ImageResult[]; targetCityId?: string } | null };
-        if (hintMsg.hiddenHintData) {
-          setPendingHint(hintMsg.hiddenHintData);
-          return;
-        }
+      if (msg.role === "assistant" && msg.gameTurn?.hint) {
+        setPendingHint({ hint: msg.gameTurn.hint, images: msg.gameTurn.hintImages, targetCityId: msg.gameTurn.targetCityId });
+        return;
       }
     }
 
-    // No pending hint found
     setPendingHint(null);
     setShowPendingHint(false);
   }, [displayMessages, status]);
@@ -483,47 +390,18 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     prevMsgCountRef.current = displayMessages.length;
   }, [isLoading, displayMessages, autoReadMessage]);
 
-  // Find the active options data (from the last unanswered question)
-  // Also keeps options active after wrong answers (check_answer correct:false)
-  const activeOptions = useMemo<{ messageId: string; data: OptionsData; hasHint: boolean } | null>(() => {
+  // Find the active options (last assistant message with a gameTurn)
+  const activeOptions = useMemo<{ messageId: string; gameTurn: { options: string[]; hint: string; hintImages?: ImageResult[]; targetCityId?: string }; hasHint: boolean } | null>(() => {
     if (status === "streaming") return null;
     for (let i = displayMessages.length - 1; i >= 0; i--) {
       const msg = displayMessages[i];
-      if (msg.role === "user") {
-        // Check if this answer was wrong — if so, keep options active for retry
-        const nextMsg = i + 1 < displayMessages.length ? displayMessages[i + 1] : null;
-        if (nextMsg?.role === "assistant" && nextMsg.answerResult && !nextMsg.answerResult.correct) {
-          continue; // wrong answer — keep looking back for options
-        }
-        // Conversational response (no check_answer) — keep looking back for active options
-        if (nextMsg?.role === "assistant" && !nextMsg.answerResult) {
-          continue;
-        }
-        return null; // correct answer — disable options
-      }
-      if (msg.role === "assistant") {
-        if (msg.optionsData) {
-          const hintMsg = msg as typeof msg & { hiddenHintData?: { hint: string; images?: ImageResult[]; targetCityId?: string } | null };
-          return {
-            messageId: msg.id,
-            data: msg.optionsData,
-            hasHint: !!hintMsg.hiddenHintData
-          };
-        }
-        if (msg.answerResult && !msg.answerResult.correct) continue; // skip wrong answer responses
+      if (msg.role === "assistant" && msg.gameTurn?.options?.length) {
+        return { messageId: msg.id, gameTurn: msg.gameTurn, hasHint: !!msg.gameTurn.hint };
       }
     }
     return null;
   }, [displayMessages, status]);
 
-  // Find active quick reply suggestions (from the last assistant message with data-chips)
-  const activeQuickReplies = useMemo<QuickReplyData | null>(() => {
-    if (status === "streaming") return null;
-    // Only show if the last message is from assistant (no user reply yet)
-    const lastMsg = displayMessages[displayMessages.length - 1];
-    if (!lastMsg || lastMsg.role !== "assistant") return null;
-    return lastMsg.suggestRepliesData;
-  }, [displayMessages, status]);
 
   const hasActiveOptions = activeOptions !== null;
 
@@ -542,11 +420,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     stopSpeaking();
     playSound("hint" as any);
 
-    // If we have a pending hint, show it directly without sending a message
     if (pendingHint) {
       setShowPendingHint(true);
-
-      // Map: zoom to target city if available
+      // Map: zoom to target city
       if (isCityExplorer && pendingHint.targetCityId) {
         const city = CITIES.find((c) => c.id === pendingHint.targetCityId);
         if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
@@ -561,43 +437,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     }
   }, [isLoading, playSound, sendMessage, stopSpeaking, pendingHint, isCityExplorer]);
 
-  const handleChipClick = useCallback(
-    (chip: SuggestionChip) => {
-      if (isLoading) return;
-      stopSpeaking();
-      playSound("click");
-
-      // Map chip — expand map + fly to city
-      if (chip.type === "map") {
-        if (chip.actionQuery) {
-          const cityId = detectCityInText(chip.actionQuery);
-          if (cityId) {
-            const city = CITIES.find((c) => c.id === cityId);
-            if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-              setFlyToCity("");
-              setMapExpandTrigger((c) => c + 1);
-              setTimeout(() => setFlyToCity(cityId), 150);
-              return;
-            }
-          }
-        }
-        // Fallback for map with no valid actionQuery — fly to last discovered city
-        if (isCityExplorer) {
-          const lastCity = revealedCities[revealedCities.length - 1];
-          if (lastCity) {
-            setFlyToCity("");
-            setMapExpandTrigger((c) => c + 1);
-            setTimeout(() => setFlyToCity(lastCity), 150);
-          }
-        }
-        return;
-      }
-
-      // Photo/curiosity/activity — send as message in game context
-      sendMessage({ text: chip.text });
-    },
-    [isLoading, playSound, sendMessage, stopSpeaking, isCityExplorer, revealedCities]
-  );
 
   const playerAge = activeProfile?.age;
   const isYoungKid = playerAge !== undefined && playerAge <= 7;
@@ -755,12 +594,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                         index === displayMessages.length - 1 &&
                         msg.role === "assistant"
                       }
-                      answerResult={msg.answerResult}
-                      hintData={null}
-                      optionsData={msg.optionsData}
-                      isActiveOptions={false}
-                      onOptionClick={handleOptionClick}
-                      onHintClick={handleHintClick}
                       imageResults={msg.imageResults}
                       isSpeaking={currentMessageId === msg.id}
                       onSpeak={() => speakMessage(msg)}
@@ -803,23 +636,14 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                   </div>
                 )}
 
-                {/* Active options — render prominently at bottom (always visible for selection) */}
+                {/* Active city options — render prominently at bottom */}
                 {activeOptions && (
-                  <ActiveOptionsBlock
-                    optionsData={activeOptions.data}
+                  <CityOptionsBlock
+                    options={activeOptions.gameTurn.options}
+                    hasHint={activeOptions.hasHint}
                     onOptionClick={handleOptionClick}
                     onHintClick={handleHintClick}
                     hintAlreadyShown={showPendingHint}
-                  />
-                )}
-
-                {/* Quick reply suggestions — only when no active quiz options */}
-                {activeQuickReplies && !isLoading && !activeOptions && (
-                  <QuickReplyChips
-                    data={activeQuickReplies}
-                    onChipClick={handleChipClick}
-                    onHintClick={handleHintClick}
-                    disabled={isLoading}
                   />
                 )}
 
@@ -924,13 +748,15 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
 const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
 
-function ActiveOptionsBlock({
-  optionsData,
+function CityOptionsBlock({
+  options,
+  hasHint,
   onOptionClick,
   onHintClick,
   hintAlreadyShown = false,
 }: {
-  optionsData: OptionsData;
+  options: string[];
+  hasHint: boolean;
   onOptionClick: (text: string) => void;
   onHintClick: () => void;
   hintAlreadyShown?: boolean;
@@ -941,7 +767,7 @@ function ActiveOptionsBlock({
         اختار الإجابة الصحيحة 👇
       </div>
       <div className="grid gap-3">
-        {optionsData.options.map((option, i) => (
+        {options.map((option, i) => (
           <button
             key={i}
             onClick={() => onOptionClick(option)}
@@ -955,8 +781,7 @@ function ActiveOptionsBlock({
         ))}
       </div>
 
-      {/* Only show hint button if hint is allowed AND not already shown */}
-      {optionsData.allowHint && !hintAlreadyShown && (
+      {hasHint && !hintAlreadyShown && (
         <button
           onClick={() => onHintClick()}
           className="self-center mt-2 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm sm:text-base font-bold bg-yellow-100 text-yellow-800 border-2 border-yellow-300 hover:bg-yellow-200 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"

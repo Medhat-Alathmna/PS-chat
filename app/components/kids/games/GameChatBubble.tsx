@@ -5,21 +5,11 @@ import { ImageResult } from "@/lib/types";
 import AnimatedMascot from "../AnimatedMascot";
 import SpeakingIndicator from "../SpeakingIndicator";
 
-export interface OptionsData {
-  options: string[];
-  allowHint: boolean;
-}
-
 interface GameChatBubbleProps {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
-  answerResult?: { correct: boolean; explanation: string } | null;
   hintData?: { hint: string; hintNumber: number; images?: ImageResult[] } | null;
-  optionsData?: OptionsData | null;
-  isActiveOptions?: boolean;
-  onOptionClick?: (optionText: string) => void;
-  onHintClick?: () => void;
   imageResults?: ImageResult[] | null;
   isSpeaking?: boolean;
   onSpeak?: () => void;
@@ -32,18 +22,11 @@ const ASSISTANT_COLORS = [
   "#6C5CE7", "#0984E3", "#00B894", "#E17055", "#FDCB6E",
 ];
 
-const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
-
 export default function GameChatBubble({
   role,
   content,
   isStreaming,
-  answerResult,
   hintData,
-  optionsData,
-  isActiveOptions = false,
-  onOptionClick,
-  onHintClick,
   imageResults,
   isSpeaking = false,
   onSpeak,
@@ -70,7 +53,7 @@ export default function GameChatBubble({
   // Skip rendering entirely if there's nothing visible to show
   const hasText = content.trim().length > 0;
   const hasImages = imageResults && imageResults.length > 0;
-  const hasVisibleContent = hasText || isStreaming || hasImages || answerResult || hintData;
+  const hasVisibleContent = hasText || isStreaming || hasImages || hintData;
 
   if (!hasVisibleContent) return null;
 
@@ -113,29 +96,6 @@ export default function GameChatBubble({
                   ))}
                 </div>
               )}
-          </div>
-        )}
-
-        {/* Answer result overlay */}
-        {answerResult && (
-          <div
-            className={`px-4 py-3 rounded-2xl shadow-md animate-pop-in ${
-              answerResult.correct
-                ? "bg-green-50 border-2 border-green-300"
-                : "bg-orange-50 border-2 border-orange-300"
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-2xl">
-                {answerResult.correct ? "✅" : "❌"}
-              </span>
-              <span className="font-bold text-sm">
-                {answerResult.correct ? "أحسنت! 🎉" : "حاول مرة تانية! 💪"}
-              </span>
-            </div>
-            <p className="text-xs text-gray-600" dir="auto">
-              {answerResult.explanation}
-            </p>
           </div>
         )}
 

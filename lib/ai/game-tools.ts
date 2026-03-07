@@ -2,23 +2,6 @@ import { tool } from "ai";
 import { z } from "zod";
 
 /**
- * check_answer — AI declares correct/incorrect with explanation
- */
-export const checkAnswerTool = tool({
-  description:
-    "Use this tool to evaluate the player's answer. Declare if it's correct or incorrect, provide a brief explanation, and optionally share a fun fact. IMPORTANT: If the player says 'مش عارف' or 'ما بعرف' or 'I don't know', do NOT use this tool — use give_hint instead to help them!",
-  inputSchema: z.object({
-    correct: z.boolean().describe("Whether the answer is correct"),
-    explanation: z.string().describe("Brief explanation in Palestinian Arabic"),
-    funFact: z.string().optional().describe("Optional fun fact to share"),
-    pointsEarned: z.number().describe("Points earned for this answer (0 if wrong)"),
-  }),
-  execute: async ({ correct, explanation, funFact, pointsEarned }) => {
-    return { correct, explanation, funFact, pointsEarned };
-  },
-});
-
-/**
  * advance_round — Move to next round
  */
 export const advanceRoundTool = tool({

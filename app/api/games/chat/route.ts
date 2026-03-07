@@ -14,7 +14,6 @@ import { ImageResult } from "@/lib/types";
 import { GameDifficulty, KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { logError } from "@/lib/utils/error-handler";
-import { extractChipsFromText } from "@/lib/utils/messageConverter";
 import { buildCacheOptions } from "@/lib/ai/cache";
 import { makeStreamingCallbacks } from "@/lib/ai/logging";
 
@@ -75,7 +74,7 @@ function countAdvanceRounds(messages: UIMessage[]): number {
 }
 
 /**
- * Scan assistant messages for city names already mentioned (via check_answer explanations).
+ * Scan assistant messages for city names already mentioned (via text parts).
  * Returns an array of city IDs so getData() can exclude them.
  */
 function extractUsedCityIds(messages: UIMessage[]): string[] {
@@ -83,26 +82,32 @@ function extractUsedCityIds(messages: UIMessage[]): string[] {
   for (const msg of messages) {
     if (msg.role !== "assistant") continue;
     for (const part of msg.parts) {
-      // Check text parts for Arabic city names
       if (part.type === "text" && part.text) {
         const id = detectCityInText(part.text);
-        if (id) ids.add(id);
-      }
-      // Check tool invocation outputs (check_answer explanations)
-      if (
-        part.type === "tool-invocation" &&
-        "output" in part &&
-        part.output &&
-        typeof part.output === "object" &&
-        "explanation" in part.output &&
-        typeof (part.output as Record<string, unknown>).explanation === "string"
-      ) {
-        const id = detectCityInText((part.output as Record<string, unknown>).explanation as string);
         if (id) ids.add(id);
       }
     }
   }
   return Array.from(ids);
+}
+
+/**
+ * Extract GAME_TURN JSON from model text output.
+ * Model appends: \nGAME_TURN:{"options":["مدينة أ","مدينة ب"]}
+ */
+function extractGameTurnFromText(text: string): { options: string[] } | null {
+  const idx = text.lastIndexOf("\nGAME_TURN:");
+  if (idx === -1) return null;
+  try {
+    const jsonStr = text.slice(idx + "\nGAME_TURN:".length).trim();
+    const parsed = JSON.parse(jsonStr);
+    if (Array.isArray(parsed?.options) && parsed.options.length > 0) {
+      return { options: parsed.options };
+    }
+  } catch {
+    // parse failed
+  }
+  return null;
 }
 
 /**
@@ -229,7 +234,7 @@ export async function POST(req: NextRequest) {
     const currentHint = buildPrecomputedHint(currentCity, gameDifficulty, currentImages);
     const nextHint = buildPrecomputedHint(nextCity, gameDifficulty, nextImages);
 
-    const tools = buildTools(currentCity.nameAr, currentCity.id, nextCity.nameAr, currentHint, nextHint);
+    const tools = buildTools();
 
     const systemPrompt = buildSystemPrompt(
       gameDifficulty,
@@ -291,10 +296,39 @@ export async function POST(req: NextRequest) {
         writer.merge(result.toUIMessageStream());
 
         try {
-          const chips = extractChipsFromText(await result.text);
-          if (chips) writer.write({ type: "data-chips", data: chips });
+          const [fullText, steps] = await Promise.all([result.text, result.steps]);
+
+          const gameTurn = extractGameTurnFromText(fullText);
+          if (gameTurn) {
+            // Determine which hint to attach: advance_round in this response → next city
+            const hadAdvance = steps.some((step) =>
+              step.toolResults?.some(
+                (tr: { toolName: string }) => tr.toolName === "advance_round"
+              )
+            );
+            const hint = hadAdvance ? nextHint : currentHint;
+
+            // Validate options — auto-inject correct city if missing
+            const correctCity = hadAdvance ? nextCity.nameAr : currentCity.nameAr;
+            if (!gameTurn.options.includes(correctCity)) {
+              const insertIdx = Math.floor(Math.random() * (gameTurn.options.length + 1));
+              gameTurn.options.splice(insertIdx, 0, correctCity);
+              console.warn(`[city-explorer] Auto-injected correct answer: ${correctCity}`);
+            }
+
+            const targetCity = hadAdvance ? nextCity : currentCity;
+            writer.write({
+              type: "data-game-turn",
+              data: {
+                options: gameTurn.options,
+                hint: hint.hint,
+                hintImages: hint.images,
+                targetCityId: targetCity.id,
+              },
+            });
+          }
         } catch {
-          // Chips parse failed — skip gracefully
+          // GAME_TURN injection failed — skip gracefully
         }
       },
     });
