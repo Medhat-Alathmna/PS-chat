@@ -44,6 +44,7 @@ function getOpenRouterProvider(): ReturnType<typeof createOpenAI> {
   openrouterProvider = createOpenAI({
     apiKey,
     baseURL: "https://openrouter.ai/api/v1",
+    compatibility: "compatible",
   });
   return openrouterProvider;
 }
@@ -61,7 +62,7 @@ function resolveFeature(
   const isOR = providerEnv === "openrouter";
   const provider = isOR ? getOpenRouterProvider() : getOpenAIProvider();
   const model = (isOR ? modelOrEnv : modelEnv) || defaultModel;
-  return provider(model);
+  return isOR ? provider.chat(model) : provider(model);
 }
 
 export function getMainChatModelInstance() {
