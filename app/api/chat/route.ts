@@ -9,7 +9,7 @@ import {
   convertToModelMessages,
 } from "ai";
 import { buildMainSystemPrompt } from "@/lib/ai/main";
-import { getMainChatModel, getAIProvider } from "@/lib/ai/config";
+import { getMainChatModelInstance } from "@/lib/ai/config";
 import { kidsTools, timelineSearchTool } from "@/lib/ai/tools";
 import { logError } from "@/lib/utils/error-handler";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
@@ -47,8 +47,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const openai = getAIProvider();
-
     const systemPrompt =
       config?.mode === "localPrompt" && config.systemPrompt?.trim()
         ? config.systemPrompt
@@ -59,7 +57,7 @@ export async function POST(req: NextRequest) {
     const uiStream = createUIMessageStream({
       execute: async ({ writer }) => {
         const result = streamText({
-          model: openai(getMainChatModel()),
+          model: getMainChatModelInstance(),
           system: systemPrompt,
           messages: convertedMessages,
           tools: mainTools,

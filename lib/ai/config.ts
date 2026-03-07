@@ -17,22 +17,15 @@ import { createOpenAI } from "@ai-sdk/openai";
 let openaiClient: OpenAI | null = null;
 
 export function getOpenAIClient(): OpenAI {
-  if (openaiClient) {
-    return openaiClient;
-  }
-
+  if (openaiClient) return openaiClient;
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
-
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
   openaiClient = new OpenAI({ apiKey });
   return openaiClient;
 }
 
-/**
- * Singleton AI SDK providers (Vercel AI SDK — used by chat, games, stories)
- */
+// ── Provider singletons ───────────────────────────────────────────────────────
+
 let openaiProvider: ReturnType<typeof createOpenAI> | null = null;
 let openrouterProvider: ReturnType<typeof createOpenAI> | null = null;
 
@@ -55,43 +48,62 @@ function getOpenRouterProvider(): ReturnType<typeof createOpenAI> {
   return openrouterProvider;
 }
 
+// ── Per-feature model instance getters ───────────────────────────────────────
+// Each returns a ready-to-use provider(model) instance.
+// Configure via .env.local — no code changes needed to switch providers or models.
+
+function resolveFeature(
+  providerEnv: string | undefined,
+  modelEnv: string | undefined,
+  modelOrEnv: string | undefined,
+  defaultModel: string
+) {
+  const isOR = providerEnv === "openrouter";
+  const provider = isOR ? getOpenRouterProvider() : getOpenAIProvider();
+  const model = (isOR ? modelOrEnv : modelEnv) || defaultModel;
+  return provider(model);
+}
+
+export function getMainChatModelInstance() {
+  return resolveFeature(
+    process.env.MAIN_CHAT_PROVIDER,
+    process.env.MAIN_CHAT_MODEL,
+    process.env.MAIN_CHAT_MODEL_OR,
+    "gpt-5-mini"
+  );
+}
+
+export function getCityExploreModelInstance() {
+  return resolveFeature(
+    process.env.CITY_EXPLORE_PROVIDER,
+    process.env.CITY_EXPLORE_MODEL,
+    process.env.CITY_EXPLORE_MODEL_OR,
+    "gpt-5-mini"
+  );
+}
+
+export function getStoriesModelInstance() {
+  return resolveFeature(
+    process.env.STORIES_PROVIDER,
+    process.env.STORIES_MODEL,
+    process.env.STORIES_MODEL_OR,
+    "gpt-5-mini"
+  );
+}
+
 /**
- * Returns the active AI provider based on AI_PROVIDER env var.
- * "openrouter" → OpenRouter, anything else → OpenAI (default)
+ * @deprecated Use getMainChatModelInstance() instead.
+ * Kept for any external callers that still use getAIProvider().
  */
 export function getAIProvider(): ReturnType<typeof createOpenAI> {
-  return process.env.AI_PROVIDER === "openrouter"
-    ? getOpenRouterProvider()
-    : getOpenAIProvider();
-}
-
-// ── Per-feature model getters ─────────────────────────────────────────────────
-
-const isOpenRouter = () => process.env.AI_PROVIDER === "openrouter";
-
-export function getMainChatModel(): string {
-  return isOpenRouter()
-    ? process.env.MAIN_CHAT_MODEL_OR || "google/gemini-2.0-flash-001"
-    : process.env.MAIN_CHAT_MODEL || "gpt-5-mini";
-}
-
-export function getCityExploreModel(): string {
-  return isOpenRouter()
-    ? process.env.CITY_EXPLORE_MODEL_OR || "google/gemini-2.0-flash-001"
-    : process.env.CITY_EXPLORE_MODEL || "gpt-5-mini";
-}
-
-export function getStoriesModel(): string {
-  return isOpenRouter()
-    ? process.env.STORIES_MODEL_OR || "google/gemini-2.0-flash-001"
-    : process.env.STORIES_MODEL || "gpt-5-mini";
+  return getOpenAIProvider();
 }
 
 /**
- * Alias for main chat model — kept for backwards compatibility (TTS, etc.)
+ * @deprecated Use getMainChatModelInstance() instead.
  */
 export function getModel(): string {
-  return getMainChatModel();
+  return process.env.MAIN_CHAT_MODEL || "gpt-5-mini";
 }
 
 /**
