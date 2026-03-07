@@ -1,7 +1,6 @@
 import type { StoryConfig, StoryPage } from "@/lib/types/stories";
 import {
   getGenreOption,
-  getSettingOption,
   getLengthConfig,
   STORY_COMPANIONS,
 } from "@/lib/data/stories/config";
@@ -131,8 +130,8 @@ export function buildStorySystemPrompt(
   lastChoiceText?: string
 ): string {
   const genre = getGenreOption(config.genre);
-  const setting = getSettingOption(config.setting);
   const lengthConfig = getLengthConfig(config.length);
+  const settingsList = genre.settings.map((s) => `${s.nameAr} ${s.emoji}`).join("، ");
   const companion = STORY_COMPANIONS.find((c) => c.id === config.companion);
   if (!companion) {
     throw new Error(`Invalid companion: ${config.companion}`);
@@ -155,7 +154,7 @@ NEVER use dialect. Always use clear, beautiful فصحى.`,
     // 2. Story Parameters
     `## Story Parameters
 - Genre: ${genre.nameAr} (${genre.id}) ${genre.emoji}
-- Setting: ${setting.nameAr} ${setting.emoji}
+- Setting: Choose one fitting location from: ${settingsList}
 - Companion: ${companion.nameAr} ${companion.emoji}
 - Total Pages: ${totalPages}
 - ${heroDescription}`,
@@ -255,7 +254,7 @@ Generate ALL ${totalPages} pages in one response, then end the story.
 ✅ Used story_page tool for each page?
 ✅ Presented story_choice after ${choiceInterval}-${choiceInterval + 1} pages?
 ✅ STOPPED after story_choice? (Don't continue until child responds!)
-✅ Story matches genre (${genre.nameAr}) and setting (${setting.nameAr})?
+✅ Story matches genre (${genre.nameAr}) and chosen setting?
 ✅ On last page, called end_story with a creative title + moralLesson?
 ✅ Hero has a flaw/fear AND a quirky habit?
 ✅ Catchphrase repeated at least 3 times?
@@ -266,7 +265,7 @@ Generate ALL ${totalPages} pages in one response, then end the story.
 ✅ Each page is 5-6 lines?
 ✅ Used story_page tool for each page?
 ✅ Generated ALL ${totalPages} pages in this response?
-✅ Story matches genre (${genre.nameAr}) and setting (${setting.nameAr})?
+✅ Story matches genre (${genre.nameAr}) and chosen setting?
 ✅ Called end_story with a creative title + moralLesson after the last page?
 ✅ Hero has a flaw/fear AND a quirky habit?
 ✅ Catchphrase repeated at least 3 times?

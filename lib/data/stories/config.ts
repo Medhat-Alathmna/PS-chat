@@ -1,12 +1,10 @@
 import type {
   GenreOption,
-  SettingOption,
   StoryCompanion,
   StoryGenre,
   StoryLength,
   StoryLengthConfig,
   StoryMode,
-  StorySetting,
 } from "@/lib/types/stories";
 
 // ── Genres ───────────────────────────────────────────────────────────
@@ -18,6 +16,12 @@ export const STORY_GENRES: GenreOption[] = [
     descriptionAr: "عوالم سحرية وأبطال خارقين",
     emoji: "🧙‍♂️",
     color: "#8B5CF6",
+    settings: [
+      { id: "enchanted-forest", nameAr: "الغابة المسحورة", emoji: "🌳" },
+      { id: "flying-castle", nameAr: "القلعة الطائرة", emoji: "🏰" },
+      { id: "underwater-kingdom", nameAr: "مملكة تحت البحر", emoji: "🧜" },
+      { id: "magic-mountain", nameAr: "جبل السحرة", emoji: "⛰️" },
+    ],
   },
   {
     id: "palestinian-folklore",
@@ -25,6 +29,13 @@ export const STORY_GENRES: GenreOption[] = [
     descriptionAr: "حكايات من بلادنا الجميلة",
     emoji: "🏺",
     color: "#D97706",
+    settings: [
+      { id: "jerusalem", nameAr: "القدس العتيقة", emoji: "🕌" },
+      { id: "nablus", nameAr: "نابلس", emoji: "🫙" },
+      { id: "gaza", nameAr: "غزة على البحر", emoji: "🌊" },
+      { id: "galilee", nameAr: "قرية جليلية", emoji: "🌿" },
+      { id: "bethlehem", nameAr: "بيت لحم", emoji: "⭐" },
+    ],
   },
   {
     id: "adventure",
@@ -32,6 +43,12 @@ export const STORY_GENRES: GenreOption[] = [
     descriptionAr: "رحلات مثيرة واكتشافات",
     emoji: "🗺️",
     color: "#059669",
+    settings: [
+      { id: "mountains", nameAr: "الجبال الشاهقة", emoji: "⛰️" },
+      { id: "jungle", nameAr: "الغابة الاستوائية", emoji: "🌴" },
+      { id: "desert", nameAr: "الصحراء الواسعة", emoji: "🏜️" },
+      { id: "mystery-island", nameAr: "الجزيرة الغامضة", emoji: "🏝️" },
+    ],
   },
   {
     id: "animal",
@@ -39,6 +56,12 @@ export const STORY_GENRES: GenreOption[] = [
     descriptionAr: "قصص حيوانات ظريفة",
     emoji: "🦁",
     color: "#EA580C",
+    settings: [
+      { id: "animal-forest", nameAr: "غابة الحيوانات", emoji: "🌲" },
+      { id: "savanna", nameAr: "السافانا الأفريقية", emoji: "🦁" },
+      { id: "ocean", nameAr: "المحيط الأزرق", emoji: "🐠" },
+      { id: "rainforest", nameAr: "الغابة المطيرة", emoji: "🌧️" },
+    ],
   },
   {
     id: "space",
@@ -46,6 +69,12 @@ export const STORY_GENRES: GenreOption[] = [
     descriptionAr: "مغامرات بين النجوم والكواكب",
     emoji: "🚀",
     color: "#2563EB",
+    settings: [
+      { id: "space-station", nameAr: "محطة الفضاء", emoji: "🛸" },
+      { id: "mars", nameAr: "كوكب المريخ", emoji: "🔴" },
+      { id: "moon", nameAr: "القمر", emoji: "🌙" },
+      { id: "strange-planet", nameAr: "كوكب غريب", emoji: "🪐" },
+    ],
   },
   {
     id: "funny",
@@ -53,41 +82,12 @@ export const STORY_GENRES: GenreOption[] = [
     descriptionAr: "قصص مضحكة وطريفة",
     emoji: "😂",
     color: "#E11D48",
-  },
-];
-
-// ── Settings ──────────────────────────────────────────────────────────
-
-export const STORY_SETTINGS: SettingOption[] = [
-  // Palestine (generic — shown in wizard)
-  {
-    id: "palestine",
-    nameAr: "فلسطين",
-    descriptionAr: "بلادنا الجميلة الخضراء",
-    emoji: "🇵🇸",
-    category: "palestine",
-  }, 
-  // Fantasy
-  {
-    id: "enchanted-forest",
-    nameAr: "الغابة المسحورة",
-    descriptionAr: "غابة مليئة بالأسرار",
-    emoji: "🌳",
-    category: "fantasy",
-  },
-  {
-    id: "flying-castle",
-    nameAr: "القلعة الطائرة",
-    descriptionAr: "قلعة تحلّق بين الغيوم",
-    emoji: "🏰",
-    category: "fantasy",
-  },
-  {
-    id: "underwater-kingdom",
-    nameAr: "مملكة تحت البحر",
-    descriptionAr: "عالم ساحر تحت الماء",
-    emoji: "🧜‍♀️",
-    category: "fantasy",
+    settings: [
+      { id: "funny-school", nameAr: "مدرسة مضحكة", emoji: "🏫" },
+      { id: "busy-market", nameAr: "سوق صاخب", emoji: "🛍️" },
+      { id: "colorful-city", nameAr: "مدينة الألوان", emoji: "🎨" },
+      { id: "weird-village", nameAr: "القرية الغريبة", emoji: "🏘️" },
+    ],
   },
 ];
 
@@ -165,10 +165,6 @@ export const STORY_MODES: {
 
 export function getGenreOption(id: StoryGenre): GenreOption {
   return STORY_GENRES.find((g) => g.id === id)!;
-}
-
-export function getSettingOption(id: StorySetting): SettingOption {
-  return STORY_SETTINGS.find((s) => s.id === id) ?? STORY_SETTINGS[0];
 }
 
 export function getLengthConfig(id: StoryLength): StoryLengthConfig {

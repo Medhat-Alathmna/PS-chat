@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import type {
   StoryConfig,
   StoryGenre,
-  StorySetting,
   StoryCompanion,
   StoryLength,
   StoryMode,
@@ -12,7 +11,6 @@ import type {
 } from "@/lib/types/stories";
 import {
   STORY_GENRES,
-  STORY_SETTINGS,
   STORY_COMPANIONS,
   STORY_LENGTHS,
   STORY_MODES,
@@ -21,17 +19,16 @@ import {
 interface StoryWizardProps {
   onComplete: (config: StoryConfig) => void;
   onBack: () => void;
-  /** Pre-selected genre from quick-start chip; wizard starts at step 1 (setting) */
+  /** Pre-selected genre from quick-start chip; wizard starts at step 1 (companion) */
   preSelectedGenre?: StoryGenre;
   /** Profile age for recommendation badges */
   profileAge?: number;
 }
 
-const STEPS: WizardStep[] = ["genre", "setting", "companion", "length", "mode"];
+const STEPS: WizardStep[] = ["genre", "companion", "length", "mode"];
 
 const STEP_LABELS: Record<WizardStep, string> = {
   genre: "نوع القصة",
-  setting: "مكان القصة",
   companion: "رفيق المغامرة",
   length: "طول القصة",
   mode: "أسلوب القصة",
@@ -39,7 +36,6 @@ const STEP_LABELS: Record<WizardStep, string> = {
 
 const STEP_ICONS: Record<WizardStep, string> = {
   genre: "🎭",
-  setting: "📍",
   companion: "🦊",
   length: "📚",
   mode: "✨",
@@ -163,7 +159,6 @@ export default function StoryWizard({
   const initialStep = preSelectedGenre ? 1 : 0;
   const [stepIndex, setStepIndex] = useState(initialStep);
   const [genre, setGenre] = useState<StoryGenre | null>(preSelectedGenre ?? null);
-  const [setting, setSetting] = useState<StorySetting | null>(null);
   const [companion, setCompanion] = useState<StoryCompanion | null>(null);
   const [length, setLength] = useState<StoryLength | null>(null);
   const [mode, setMode] = useState<StoryMode | null>(null);
@@ -183,18 +178,10 @@ export default function StoryWizard({
     [autoAdvance]
   );
 
-  const pickSetting = useCallback(
-    (id: StorySetting) => {
-      setSetting(id);
-      autoAdvance(2);
-    },
-    [autoAdvance]
-  );
-
   const pickCompanion = useCallback(
     (id: StoryCompanion) => {
       setCompanion(id);
-      autoAdvance(3);
+      autoAdvance(2);
     },
     [autoAdvance]
   );
@@ -202,7 +189,7 @@ export default function StoryWizard({
   const pickLength = useCallback(
     (id: StoryLength) => {
       setLength(id);
-      autoAdvance(4);
+      autoAdvance(3);
     },
     [autoAdvance]
   );
@@ -210,13 +197,13 @@ export default function StoryWizard({
   const pickMode = useCallback(
     (id: StoryMode) => {
       setMode(id);
-      if (genre && setting && companion && length) {
+      if (genre && companion && length) {
         setTimeout(() => {
-          onComplete({ genre, setting, companion, length, mode: id });
+          onComplete({ genre, companion, length, mode: id });
         }, 300);
       }
     },
-    [genre, setting, companion, length, onComplete]
+    [genre, companion, length, onComplete]
   );
 
   const handleBack = useCallback(() => {
@@ -226,11 +213,6 @@ export default function StoryWizard({
     }
     setStepIndex((i) => i - 1);
   }, [stepIndex, onBack, preSelectedGenre]);
-
-  // 4 wizard settings: palestine + 3 fantasy
-  const wizardSettings = STORY_SETTINGS.filter(
-    (s) => s.id === "palestine" || s.category === "fantasy"
-  );
 
   return (
     <div className="flex flex-col h-full" dir="rtl">
@@ -310,67 +292,7 @@ export default function StoryWizard({
           </div>
         )}
 
-        {/* ═══ STEP 2: SETTING ═══ */}
-        {currentStep === "setting" && (
-          <div className="max-w-md mx-auto">
-            <div className="grid grid-cols-2 gap-3">
-              {wizardSettings.map((s) => {
-                const isSelected = setting === s.id;
-                const isPalestine = s.id === "palestine";
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => pickSetting(s.id)}
-                    className={`relative overflow-hidden rounded-2xl text-center transition-all duration-200 border-2 p-5 min-h-[130px] flex flex-col items-center justify-center touch-manipulation ${
-                      isSelected
-                        ? "border-white/70 scale-105 shadow-[0_0_20px_rgba(255,255,255,0.25)]"
-                        : "border-white/10 hover:border-white/30 hover:scale-[1.02] active:scale-95"
-                    }`}
-                    style={{
-                      background: isPalestine
-                        ? isSelected
-                          ? "linear-gradient(135deg, #166534 0%, #15803d 40%, #b45309 100%)"
-                          : "linear-gradient(135deg, #14532d 0%, #166534 40%, #92400e 100%)"
-                        : isSelected
-                          ? "linear-gradient(135deg, #4c1d95 0%, #6d28d9 60%, #1e1b4b 100%)"
-                          : "linear-gradient(135deg, #2e1065 0%, #4c1d95 60%, #1e1b4b 100%)",
-                    }}
-                  >
-                    {/* Particle shimmer on selected */}
-                    {isSelected && (
-                      <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl" aria-hidden>
-                        {["✦", "·", "✧"].map((char, i) => (
-                          <span
-                            key={i}
-                            className="absolute text-white/30 select-none"
-                            style={{
-                              left: `${20 + i * 30}%`,
-                              top: `${15 + i * 25}%`,
-                              fontSize: "0.8rem",
-                              animation: `floatParticle ${2 + i * 0.7}s ease-in-out ${i * 0.4}s infinite`,
-                            }}
-                          >
-                            {char}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <span className="relative text-4xl block mb-2 drop-shadow-lg">{s.emoji}</span>
-                    <span className="relative text-white font-bold text-base block leading-tight">{s.nameAr}</span>
-                    <span className="relative text-white/65 text-xs block mt-1 leading-tight">{s.descriptionAr}</span>
-                    {isSelected && (
-                      <div className="absolute top-2 left-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                        <span className="text-green-600 text-xs font-bold">✓</span>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ═══ STEP 3: COMPANION ═══ */}
+        {/* ═══ STEP 2: COMPANION ═══ */}
         {currentStep === "companion" && (
           <div className="flex flex-col gap-4 max-w-sm mx-auto mt-2">
             {STORY_COMPANIONS.map((c, i) => {
@@ -413,7 +335,7 @@ export default function StoryWizard({
           </div>
         )}
 
-        {/* ═══ STEP 4: LENGTH ═══ */}
+        {/* ═══ STEP 3: LENGTH ═══ */}
         {currentStep === "length" && (
           <div className="flex flex-col gap-3 max-w-sm mx-auto mt-2">
             {STORY_LENGTHS.map((l) => {
@@ -462,7 +384,7 @@ export default function StoryWizard({
           </div>
         )}
 
-        {/* ═══ STEP 5: MODE ═══ */}
+        {/* ═══ STEP 4: MODE ═══ */}
         {currentStep === "mode" && (
           <div className="flex flex-col gap-4 max-w-sm mx-auto mt-2">
             {STORY_MODES.map((m) => {

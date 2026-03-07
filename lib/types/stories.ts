@@ -16,8 +16,6 @@ export type StorySetting =
   | "flying-castle"
   | "underwater-kingdom";
 
-export type StorySettingCategory = "palestine" | "fantasy";
-
 export type StoryCompanion = "medhat" | "self";
 
 export type StoryLength = "short" | "medium" | "long";
@@ -32,9 +30,15 @@ export type StoryLengthConfig = {
 
 export type StoryMode = "interactive" | "continuous";
 
+export type GenreSetting = {
+  id: string;
+  nameAr: string;
+  emoji: string;
+};
+
 export type StoryConfig = {
   genre: StoryGenre;
-  setting: StorySetting;
+  setting?: StorySetting; // optional — kept for backward compat with saved stories
   companion: StoryCompanion;
   length: StoryLength;
   mode: StoryMode;
@@ -72,7 +76,7 @@ export type SavedStory = {
   completedAt?: number;
 };
 
-export type WizardStep = "genre" | "setting" | "companion" | "length" | "mode";
+export type WizardStep = "genre" | "companion" | "length" | "mode";
 
 export type GenreOption = {
   id: StoryGenre;
@@ -80,12 +84,5 @@ export type GenreOption = {
   descriptionAr: string;
   emoji: string;
   color: string;
-};
-
-export type SettingOption = {
-  id: StorySetting;
-  nameAr: string;
-  descriptionAr: string;
-  emoji: string;
-  category: StorySettingCategory;
+  settings: GenreSetting[];
 };
