@@ -255,8 +255,8 @@ export async function POST(req: NextRequest) {
               for (const tr of step.toolResults ?? []) {
                 const tc = step.toolCalls?.find((c: { toolCallId: string }) => c.toolCallId === (tr as { toolCallId: string }).toolCallId);
                 console.log("[game-tool]", (tr as { toolName: string }).toolName, {
-                  input: tc ? (tc as { args: unknown }).args : undefined,
-                  output: (tr as { result: unknown }).result,
+                  input: tc ? (tc as unknown as { input: unknown }).input : undefined,
+                  output: (tr as unknown as { output: unknown }).output,
                 });
               }
             }
