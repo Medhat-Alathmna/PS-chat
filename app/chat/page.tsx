@@ -167,11 +167,7 @@ function KidsChatPageInner() {
               isSpeaking={voice.isSpeaking}
               canSend={chat.canSend}
               hasActiveChips={chat.hasActiveChips}
-              imagePreview={images.imagePreview}
-              onClearImage={handlers.clearImagePreview}
-              onImageSelect={handlers.handleImageSelect}
               textareaRef={refs.textareaRef}
-              fileInputRef={refs.fileInputRef}
             />
           </div>
         </div>
