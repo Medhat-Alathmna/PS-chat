@@ -8,7 +8,7 @@ import {
   stepCountIs,
 } from "ai";
 import { getCityExploreModelInstance } from "@/lib/ai/config";
-import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery } from "@/lib/ai/games/city-explorer";
+import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery, normalizeArabic } from "@/lib/ai/games/city-explorer";
 import { CITIES } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
 import { KidsChatContext, KidsProfile } from "@/lib/types/games";
@@ -183,6 +183,16 @@ export async function POST(req: NextRequest) {
 
     const tools = buildTools();
 
+    // Server-side answer pre-validation — normalize Arabic to catch Unicode variants
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    const lastText = lastUserMsg?.parts.find((p) => p.type === "text")
+      ? (lastUserMsg.parts.find((p) => p.type === "text") as { type: "text"; text: string }).text
+      : "";
+    const confirmedCorrect = !!lastText && normalizeArabic(lastText) === normalizeArabic(currentCity.nameAr);
+    if (confirmedCorrect) {
+      console.log("[city-explorer] Server confirmed correct answer:", lastText);
+    }
+
     const systemPrompt = buildSystemPrompt(
       playerAge,
       currentCity,
@@ -190,6 +200,7 @@ export async function POST(req: NextRequest) {
       isReviewMode,
       kidsProfile?.name,
       chatContext,
+      confirmedCorrect,
     );
 
     console.log("[city-explorer] Round city:", currentCity.nameAr, "→ next:", nextCity.nameAr);

@@ -23,6 +23,21 @@ import {
 } from "../../game-tools";
 import { imageSearchTool } from "../../tools";
 
+// ── Arabic text normalization ─────────────────────────────────────────
+
+/**
+ * Normalize Arabic text for comparison — strips diacritics and normalizes
+ * common character variants (alef, taa marbuta, alef maqsura).
+ */
+export function normalizeArabic(text: string): string {
+  return text
+    .trim()
+    .replace(/[\u064B-\u065F]/g, "") // strip tashkeel (diacritics)
+    .replace(/[أإآ]/g, "ا")          // normalize alef variants
+    .replace(/ة/g, "ه")              // normalize taa marbuta
+    .replace(/ى/g, "ي");             // normalize alef maqsura
+}
+
 // ── Pre-computed hint (server-side, no LLM needed) ──────────────────
 
 export interface PrecomputedHint {
@@ -208,6 +223,7 @@ export function buildSystemPrompt(
   isReviewMode: boolean = false,
   playerName?: string,
   chatContext?: KidsChatContext,
+  confirmedCorrect?: boolean,
 ): string {
   const regionInfo = REGIONS[currentCity.region];
 
@@ -258,6 +274,13 @@ export function buildSystemPrompt(
 ✅ Correct answer? → advance_round + new riddle for ${nextCity.nameAr} + GAME_TURN with "${nextCity.nameAr}"
 ✅ Wrong answer? → encouragement + REPEAT riddle clues + GAME_TURN with SAME options (${currentCity.nameAr} still in list)
 ✅ Off-topic? → 1-2 sentence reply + GAME_TURN with current options`,
+
+    // 14. Server-confirmed correct answer override (injected only when match detected)
+    confirmedCorrect
+      ? `🚨 OVERRIDE — SERVER CONFIRMED CORRECT ANSWER:
+The server has verified that the player's last answer EXACTLY matches "${currentCity.nameAr}".
+You MUST call advance_round immediately. Do NOT say the answer is wrong. Do NOT repeat the riddle.`
+      : "",
   ];
 
   return parts.filter(Boolean).join("\n\n");
