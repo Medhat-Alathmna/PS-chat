@@ -113,11 +113,18 @@ ${fourthWallRule}`;
 
 const IMAGE_GUIDANCE = `## Image & Illustration
 On EVERY story_page call, include an imagePrompt field:
-- Write in English, DALL-E/Midjourney compatible
 - Format: "[hero description], [action in this scene], [setting details], [lighting/mood], children's book watercolor illustration style"
 - ALWAYS reuse the same hero physical details from heroDescription to keep the character consistent
 - On page 1 only: also include heroDescription (detailed Arabic physical description of the hero)
-- On continuation turns (when continuing a multi-turn story): do NOT include heroDescription again — it was already set on page 1`;
+- On continuation turns (when continuing a multi-turn story): do NOT include heroDescription again — it was already set on page 1
+
+### illustrate flag (IMPORTANT)
+Set illustrate: true on EXACTLY 3 pages total across the whole story (or fewer if the story has fewer than 3 pages):
+1. Page 1 — always illustrate (hero introduction and opening scene)
+2. The climactic moment (highest action/drama point — usually around 2/3 through the story)
+3. The resolution/final page (happy ending scene)
+All other pages: illustrate: false (default)
+This controls which pages get AI-generated illustrations — choose the most visually impactful moments.`;
 
 
 // ── System Prompt Builder ────────────────────────────────────────────
@@ -259,6 +266,7 @@ Generate ALL ${totalPages} pages in one response, then end the story.
 ✅ Hero has a flaw/fear AND a quirky habit?
 ✅ Catchphrase repeated at least 3 times?
 ✅ Every page has imagePrompt? Page 1 has heroDescription?
+✅ Exactly 3 pages have illustrate: true (page 1, climax, final)?
 ✅ At least 2 senses per page?`
       : `## ⚠️ CHECKLIST (read before responding):
 ✅ Writing in MSA (الفصحى), NOT dialect?
@@ -270,6 +278,7 @@ Generate ALL ${totalPages} pages in one response, then end the story.
 ✅ Hero has a flaw/fear AND a quirky habit?
 ✅ Catchphrase repeated at least 3 times?
 ✅ Every page has imagePrompt? Page 1 has heroDescription?
+✅ Exactly 3 pages have illustrate: true (page 1, climax, final)?
 ✅ At least 2 senses per page?`,
   ];
 

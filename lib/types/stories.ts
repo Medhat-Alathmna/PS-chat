@@ -49,6 +49,8 @@ export type StoryPage = {
   text: string;
   imagePrompt?: string;
   heroDescription?: string;
+  illustrate?: boolean;
+  imageUrl?: string;
 };
 
 export type StoryChoice = {

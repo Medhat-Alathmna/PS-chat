@@ -17,9 +17,12 @@ export const storyPageTool = tool({
     heroDescription: z.string().optional().describe(
       "Detailed physical description of the hero — ONLY on page 1. Include: hair, eyes, clothing, height, distinguishing features, and quirky habit. Used to keep character appearance consistent across all pages."
     ),
+    illustrate: z.boolean().default(false).describe(
+      "Set to true for the most visually important pages (max 3 per story total). Pick: page 1 (opening scene), the climactic moment, and the resolution. These pages will be illustrated with AI-generated images."
+    ),
   }),
-  execute: async ({ pageNumber, text, isLastPage, imagePrompt, heroDescription }) => {
-    return { pageNumber, text, isLastPage, imagePrompt, heroDescription };
+  execute: async ({ pageNumber, text, isLastPage, imagePrompt, heroDescription, illustrate }) => {
+    return { pageNumber, text, isLastPage, imagePrompt, heroDescription, illustrate };
   },
 });
 

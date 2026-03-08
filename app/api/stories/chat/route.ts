@@ -17,6 +17,7 @@ type StoryChatRequest = {
 };
 
 export async function POST(req: NextRequest) {
+  console.log("[stories-route] ===== POST called =====");
   try {
     const body = (await req.json()) as StoryChatRequest;
     const { messages = [], storyConfig, kidsProfile, previousPages, lastChoiceText } = body;
@@ -70,8 +71,9 @@ export async function POST(req: NextRequest) {
     for (const step of result.steps) {
       for (const tr of step.toolResults) {
         if (tr.toolName === "story_page") {
-          const r = (tr as any).output as { pageNumber: number; text: string; imagePrompt?: string; heroDescription?: string };
-          pages.push({ pageNumber: r.pageNumber, text: r.text, imagePrompt: r.imagePrompt, heroDescription: r.heroDescription });
+          const r = (tr as any).output as { pageNumber: number; text: string; imagePrompt?: string; heroDescription?: string; illustrate?: boolean };
+          console.log(`[stories-route] page ${r.pageNumber} — imagePrompt: ${r.imagePrompt ? "YES" : "NO"} | illustrate: ${r.illustrate}`);
+          pages.push({ pageNumber: r.pageNumber, text: r.text, imagePrompt: r.imagePrompt, heroDescription: r.heroDescription, illustrate: r.illustrate });
         } else if (tr.toolName === "story_choice") {
           const r = (tr as any).output as { prompt: string; choices: { id: string; emoji: string; textAr: string }[] };
           choicePoint = { prompt: r.prompt, choices: r.choices };

@@ -184,6 +184,7 @@ export default function StoryReader({
               pageNumber={currentSlide.page.pageNumber}
               totalPages={totalPages}
               textStyle={textStyle}
+              imageUrl={currentSlide.page.imageUrl}
             />
           ) : (
             <StoryChoiceCards

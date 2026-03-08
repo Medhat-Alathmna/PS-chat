@@ -114,6 +114,27 @@ function StorySession({
 
   const startSentRef = useRef(false);
 
+  // Fetch images after story text arrives — fire and forget
+  const fetchImages = useCallback(async (pages: StoryPage[]) => {
+    try {
+      const res = await fetch("/api/stories/images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pages }),
+      });
+      if (!res.ok) return;
+      const { imageUrls } = await res.json() as { imageUrls: Record<string, string> };
+      if (!imageUrls || Object.keys(imageUrls).length === 0) return;
+      setLivePages((prev) =>
+        prev.map((p) =>
+          imageUrls[String(p.pageNumber)] ? { ...p, imageUrl: imageUrls[String(p.pageNumber)] } : p
+        )
+      );
+    } catch {
+      // silent — story is already displayed
+    }
+  }, []);
+
   const generateNextBatch = useCallback(
     async (userMessage: string, lastChoiceText?: string) => {
       setIsLoading(true);
@@ -147,6 +168,9 @@ function StorySession({
             prev.some((p) => p.pageNumber === page.pageNumber) ? prev : [...prev, page]
           );
         });
+
+        // Generate images after displaying story (non-blocking)
+        if (data.pages?.length > 0) fetchImages(data.pages);
 
         if (data.choicePoint && data.pages?.length > 0) {
           const cp: StoryChoicePoint = {
@@ -222,13 +246,19 @@ function StorySession({
         {/* Error banner */}
         {errorMessage && (
           <div className="shrink-0 mx-4 mt-2 px-4 py-3 rounded-2xl bg-red-500/20 border border-red-400/30 text-center" dir="rtl">
-            <p className="text-white text-sm">{errorMessage}</p>
-            <button
-              onClick={() => setErrorMessage(null)}
-              className="mt-2 text-xs text-white/60 hover:text-white transition-colors underline"
-            >
-              حاول مرة أخرى
-            </button>
+            <p className="text-white text-sm">
+              {errorMessage === "image-failed"
+                ? "تعذّر توليد صور القصة. تحقق من إعدادات STORIES_IMAGES_PROVIDER."
+                : errorMessage}
+            </p>
+            {errorMessage !== "image-failed" && (
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="mt-2 text-xs text-white/60 hover:text-white transition-colors underline"
+              >
+                حاول مرة أخرى
+              </button>
+            )}
           </div>
         )}
 
