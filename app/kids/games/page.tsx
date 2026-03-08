@@ -9,7 +9,6 @@ import AnimatedMascot from "../../components/kids/AnimatedMascot";
 import GameCard from "../../components/kids/games/GameCard";
 import ProfileSetup from "../../components/kids/ProfileSetup";
 import ErrorBoundary from "../../components/ErrorBoundary";
-import RewardsBar from "../../components/kids/RewardsBar";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useRewards } from "@/lib/hooks/useRewards";
 import { useStickers } from "@/lib/hooks/useStickers";
@@ -85,31 +84,13 @@ function GamesHub() {
   return (
     <AnimatedBackground variant="sky" showClouds>
       <div className="relative flex h-screen flex-col overflow-hidden">
-        {/* Header - Responsive centered */}
-        <header className="shrink-0 px-2 py-2 sm:px-4 sm:py-3 z-10 w-full">
-          <div className="flex items-center justify-center">
-            <div className="w-full max-w-sm sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
-              <RewardsBar
-                points={points}
-                level={level}
-                progress={progressToNextLevel()}
-                unlockedStickersCount={unlockedStickers.length}
-                totalStickersCount={totalCount}
-                pointsEarned={0}
-                onOpenStickers={() => { }}
-                soundEnabled={soundEnabled}
-                onToggleSound={toggleSound}
-              />
-            </div>
-          </div>
-        </header>
+    
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 scroll-smooth">
           <div className="mx-auto max-w-2xl pb-20">
             {/* Title */}
             <div className="text-center mb-4 pt-2">
-              <AnimatedMascot state="happy" size="lg" className="mb-2" />
               <h1 className="text-2xl sm:text-3xl font-black text-[var(--kids-purple)] tracking-wide drop-shadow-sm bubble-text">
                 يلا نلعب! 🎮
               </h1>

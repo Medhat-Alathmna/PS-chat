@@ -477,6 +477,15 @@ code {
   animation: shake 0.5s ease-in-out;
 }
 
+/* Chat input glow pulse for send button */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(78, 205, 196, 0.35); }
+  50% { box-shadow: 0 6px 28px rgba(78, 205, 196, 0.65); }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 2.2s ease-in-out infinite;
+}
+
 /* Stagger animation delays */
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         ? config.systemPrompt
         : buildMainSystemPrompt(playerName);
 
-    const convertedMessages = await convertToModelMessages(messages);
+    const convertedMessages = await convertToModelMessages(messages.slice(-3));
 
     const uiStream = createUIMessageStream({
       execute: async ({ writer }) => {
