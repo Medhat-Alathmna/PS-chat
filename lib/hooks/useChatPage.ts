@@ -288,6 +288,18 @@ export function useChatPage(): UseChatPageReturn {
           },
           playerName: activeProfile?.name,
         },
+        prepareSendMessagesRequest: ({ id, messages, body, headers, credentials, api, trigger, messageId }) => ({
+          api,
+          headers,
+          credentials,
+          body: {
+            ...body,
+            id,
+            messages: messages.slice(-3),
+            trigger,
+            messageId,
+          },
+        }),
       }),
     [systemPrompt, activeProfile?.name]
   );
@@ -362,7 +374,6 @@ export function useChatPage(): UseChatPageReturn {
           }
         }
         // Unknown place — geocode it server-side then fly to coordinates
-        setShowMobileMap(true);
         fetch("/api/geocode", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -372,6 +383,7 @@ export function useChatPage(): UseChatPageReturn {
           .then((data: { success: boolean; coordinates?: { lat: number; lng: number } }) => {
             if (data.success && data.coordinates) {
               setFlyToCoordinates({ lat: data.coordinates.lat, lng: data.coordinates.lng, zoom: 15, label: chip.actionQuery });
+              setShowMobileMap(true);
             }
           })
           .catch(() => {});

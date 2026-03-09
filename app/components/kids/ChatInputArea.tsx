@@ -22,7 +22,6 @@ export default function ChatInputArea({
   onKeyDown,
   isLoading,
   canSend,
-  hasActiveChips,
   textareaRef,
 }: ChatInputAreaProps) {
   const hasInput = input.trim().length > 0;
@@ -35,7 +34,7 @@ export default function ChatInputArea({
       <form onSubmit={(e) => void onSubmit(e)} className="mx-auto max-w-2xl">
         <div
           className={`flex items-end gap-2 transition-opacity ${
-            hasActiveChips ? "opacity-50 pointer-events-none" : ""
+            ""
           }`}
         >
           {/* Input pill */}

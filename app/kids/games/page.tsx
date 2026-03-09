@@ -5,21 +5,17 @@ import { useRouter } from "next/navigation";
 import { GameCategory } from "@/lib/types/games";
 import { getGamesByCategory } from "@/lib/data/games";
 import AnimatedBackground from "../../components/kids/AnimatedBackground";
-import AnimatedMascot from "../../components/kids/AnimatedMascot";
 import GameCard from "../../components/kids/games/GameCard";
 import ProfileSetup from "../../components/kids/ProfileSetup";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import { useProfiles } from "@/lib/hooks/useProfiles";
-import { useRewards } from "@/lib/hooks/useRewards";
-import { useStickers } from "@/lib/hooks/useStickers";
 import { useSounds } from "@/lib/hooks/useSounds";
 import ExpandableMap from "../../components/kids/ExpandableMap";
 import { useMapSettings } from "@/lib/hooks/useMapSettings";
 
-const CATEGORIES: { id: GameCategory; label: string; emoji: string; color: string }[] = [
-  { id: "educational", label: "تعليمي", emoji: "📚", color: "#6C5CE7" },
-  { id: "classic", label: "كلاسيكي", emoji: "🎯", color: "#0984E3" },
-  { id: "creative", label: "إبداعي", emoji: "🎨", color: "#00B894" },
+const CATEGORIES: { id: GameCategory; label: string;  color: string }[] = [
+  { id: "educational", label: "تعليمي",  color: "#6C5CE7" },
+  { id: "creative", label: "إبداعي", color: "#00B894" },
 ];
 
 export default function GamesHubPage() {
@@ -34,7 +30,7 @@ function GamesHub() {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<GameCategory>("educational");
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const { soundEnabled, toggleSound, playClick } = useSounds();
+  const {  playClick } = useSounds();
 
   const {
     profiles,
@@ -42,13 +38,11 @@ function GamesHub() {
     isLoaded,
     createProfile,
     updateProfile,
-    deleteProfile,
-    switchProfile,
+
   } = useProfiles();
 
   const profileId = activeProfile?.id;
-  const { points, level, unlockedStickers, progressToNextLevel } = useRewards(profileId);
-  const { totalCount } = useStickers(unlockedStickers, () => { });
+
   const { settings: mapSettings } = useMapSettings(profileId);
 
   if (!isLoaded) return null;
@@ -110,9 +104,9 @@ function GamesHub() {
             </div>
 
             {/* Category tabs - Horizontally Scrollable on Mobile */}
-            <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 px-1 -mx-3 sm:mx-0 sm:justify-center sm:overflow-visible no-scrollbar scroll-pl-3 snap-x">
+            <div style={{justifyContent:'center'}} className="flex gap-2 mb-6 overflow-x-auto pb-2 px-1 -mx-3 sm:mx-0 sm:overflow-visible no-scrollbar scroll-pl-3 snap-x">
               {/* Spacer for scroll start */}
-              <div className="w-1 sm:hidden shrink-0 snap-start" />
+              <div className="w-1 sm:hidden shrink-0 snap-start " />
 
               {CATEGORIES.map((cat) => (
                 <button
@@ -131,7 +125,6 @@ function GamesHub() {
                       : undefined
                   }
                 >
-                  <span className="mr-2 text-lg">{cat.emoji}</span>
                   {cat.label}
                 </button>
               ))}

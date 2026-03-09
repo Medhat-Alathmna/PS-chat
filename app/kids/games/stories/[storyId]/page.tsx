@@ -116,6 +116,7 @@ function StorySession({
 
   // Fetch images after story text arrives — fire and forget
   const fetchImages = useCallback(async (pages: StoryPage[]) => {
+    if (process.env.NEXT_PUBLIC_ENABLE_IMAGES === "false") return;
     try {
       const res = await fetch("/api/stories/images", {
         method: "POST",
