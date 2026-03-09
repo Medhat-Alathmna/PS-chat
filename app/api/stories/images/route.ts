@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { StoryPage } from "@/lib/types/stories";
 import { generateStoryPageImage } from "@/lib/services/story-image-generation";
+import { isImagesEnabled } from "@/lib/config/features";
 
 type StoryImagesRequest = {
   pages: StoryPage[];
@@ -8,6 +9,7 @@ type StoryImagesRequest = {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isImagesEnabled()) return Response.json({ imageUrls: {} });
     const { pages } = (await req.json()) as StoryImagesRequest;
     if (!pages?.length) return Response.json({ imageUrls: {} });
 

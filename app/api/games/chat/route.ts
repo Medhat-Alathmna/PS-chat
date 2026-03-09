@@ -13,6 +13,7 @@ import { CITIES } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
 import { KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
+import { isImagesEnabled } from "@/lib/config/features";
 import { logError } from "@/lib/utils/error-handler";
 import { buildCacheOptions } from "@/lib/ai/cache";
 import { makeStreamingCallbacks } from "@/lib/ai/logging";
@@ -165,12 +166,15 @@ export async function POST(req: NextRequest) {
     const { city: nextCity } = getCityForRound(nextExcludeIds);
 
     // Pre-fetch hint images for BOTH cities in parallel (with 3s timeout)
+    // Skip entirely if images are disabled via ENABLE_IMAGES=false
     const IMAGE_TIMEOUT_MS = 3000;
-    const fetchWithTimeout = (query: string): Promise<ImageResult[]> =>
-      Promise.race([
+    const fetchWithTimeout = (query: string): Promise<ImageResult[]> => {
+      if (!isImagesEnabled()) return Promise.resolve([]);
+      return Promise.race([
         searchImagesMultiSource(query, 2, true).catch(() => []),
         new Promise<ImageResult[]>(resolve => setTimeout(() => resolve([]), IMAGE_TIMEOUT_MS)),
       ]);
+    };
 
     const [currentImages, nextImages] = await Promise.all([
       fetchWithTimeout(buildHintImageQuery(currentCity)),

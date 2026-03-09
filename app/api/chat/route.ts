@@ -11,15 +11,17 @@ import {
 import { buildMainSystemPrompt } from "@/lib/ai/main";
 import { getMainChatModelInstance } from "@/lib/ai/config";
 import { kidsTools, timelineSearchTool } from "@/lib/ai/tools";
+import { isImagesEnabled } from "@/lib/config/features";
 import { logError } from "@/lib/utils/error-handler";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
 import { buildCacheOptions } from "@/lib/ai/cache";
 import { makeStreamingCallbacks } from "@/lib/ai/logging";
 
-const mainTools = {
-  ...kidsTools,
-  timeline_search: timelineSearchTool,
-};
+function buildMainTools() {
+  const { image_search, ...kidsToolsWithoutImages } = kidsTools;
+  const base = isImagesEnabled() ? kidsTools : kidsToolsWithoutImages;
+  return { ...base, timeline_search: timelineSearchTool };
+}
 
 type KidsChatRequest = {
   messages: UIMessage[];
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
           model: getMainChatModelInstance(),
           system: systemPrompt,
           messages: convertedMessages,
-          tools: mainTools,
+          tools: buildMainTools(),
           ...buildCacheOptions("main-chat"),
           ...makeStreamingCallbacks("main-chat"),
         });
