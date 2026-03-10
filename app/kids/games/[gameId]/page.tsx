@@ -31,6 +31,8 @@ import { extractTextAndImages, getToolOutput } from "@/lib/utils/messageConverte
 
 // Synthetic marker injected during history trim — hidden from display
 const TRIM_MARKER = "السؤال الجاي";
+// Message sent to start/restart a round
+const START_MESSAGE = "ابدأ!";
 
 export default function GamePage() {
   return (
@@ -97,6 +99,8 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   // Trim history after round advance — clear old messages once the new round starts
   const trimPending = useRef(false);
+  // Auto-start next round after advance_round + trim complete
+  const autoStartPending = useRef(false);
 
   // Profiles
   const {
@@ -209,6 +213,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                 }
               }
               trimPending.current = true;
+              autoStartPending.current = true;
             } else if (toolName === "end_game") {
               playSound("gameOver" as any);
               if (gameState.summary) {
@@ -226,7 +231,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     if (gameStarted && !startSentRef.current) {
       startSentRef.current = true;
       playSound("gameStart" as any);
-      sendMessage({ text: "ابدأ!" });
+      sendMessage({ text: START_MESSAGE });
     }
   }, [gameStarted, sendMessage, playSound]);
 
@@ -275,6 +280,13 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
     console.log("[game] Trimmed history after round advance, kept", survivingIds.size, "tool parts");
   }, [status, aiMessages, setMessages]);
+
+  // Auto-start next round after advance_round fires and trim completes
+  useEffect(() => {
+    if (status !== "ready" || !autoStartPending.current || !currentCityId || trimPending.current) return;
+    autoStartPending.current = false;
+    sendMessage({ text: START_MESSAGE });
+  }, [status, currentCityId, sendMessage]);
 
   // Resize textarea
   useEffect(() => {
