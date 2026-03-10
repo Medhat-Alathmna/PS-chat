@@ -56,15 +56,10 @@ export function extractTextAndImages(parts: unknown[]): {
     }
   }
 
-  // Extract chips from raw text, then strip suffix blocks (CHIPS or GAME_TURN) from display text
+  // Extract chips from raw text, then strip CHIPS suffix from display text
   const inlineChips = extractChipsFromText(rawText);
   const chipsPos = rawText.search(/\nCHIPS:/i);
-  const gameTurnPos = rawText.search(/\nGAME_TURN:/i);
-  const cutPos = Math.min(
-    chipsPos >= 0 ? chipsPos : Infinity,
-    gameTurnPos >= 0 ? gameTurnPos : Infinity,
-  );
-  const textContent = cutPos < Infinity ? rawText.slice(0, cutPos).trim() : rawText;
+  const textContent = chipsPos >= 0 ? rawText.slice(0, chipsPos).trim() : rawText;
 
   return { textContent, userImageParts, inlineChips };
 }

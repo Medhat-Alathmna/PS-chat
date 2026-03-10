@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
-import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  streamText,
-  UIMessage,
-  convertToModelMessages,
-  stepCountIs,
-} from "ai";
+import { generateObject } from "ai";
 import { getCityExploreModelInstance } from "@/lib/ai/config";
-import { buildSystemPrompt, buildTools, getCityForRound, trimCompletedRounds, buildPrecomputedHint, buildHintImageQuery, normalizeArabic } from "@/lib/ai/games/city-explorer";
+import {
+  buildSystemPrompt,
+  getCityForRound,
+  buildPrecomputedHint,
+  buildHintImageQuery,
+  normalizeArabic,
+  GameResponseSchema,
+} from "@/lib/ai/games/city-explorer";
 import { CITIES } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
 import { KidsChatContext, KidsProfile } from "@/lib/types/games";
@@ -16,10 +16,11 @@ import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { isImagesEnabled } from "@/lib/config/features";
 import { logError } from "@/lib/utils/error-handler";
 import { buildCacheOptions } from "@/lib/ai/cache";
-import { makeStreamingCallbacks } from "@/lib/ai/logging";
+
+type SimpleMessage = { role: "user" | "assistant"; content: string };
 
 type GameChatRequest = {
-  messages: UIMessage[];
+  messages: SimpleMessage[];
   chatContext?: KidsChatContext;
   kidsProfile?: KidsProfile;
   discoveredCityIds?: string[];
@@ -28,103 +29,10 @@ type GameChatRequest = {
 };
 
 /**
- * Count advance_round tool calls to determine the current round number.
- * Used as a deterministic seed for city selection (same round = same city).
+ * Cap messages to prevent token bloat from many wrong guesses within a round.
+ * Keeps the first 2 + last 4 messages.
  */
-function countAdvanceRounds(messages: UIMessage[]): number {
-  let count = 0;
-  for (const msg of messages) {
-    if (msg.role !== "assistant") continue;
-    for (const part of msg.parts) {
-      if (part.type === "tool-invocation") {
-        const p = part as Record<string, unknown>;
-        // Detect advance_round by toolName or output shape
-        if (
-          p.toolName === "advance_round" ||
-          (p.output && typeof p.output === "object" && "roundCompleted" in (p.output as object))
-        ) {
-          count++;
-        }
-      }
-    }
-  }
-  return count;
-}
-
-/**
- * Extract GAME_TURN JSON from model text output.
- * Model appends: \nGAME_TURN:{"options":["مدينة أ","مدينة ب"]}
- */
-function extractGameTurnFromText(text: string): { options: string[] } | null {
-  const idx = text.lastIndexOf("\nGAME_TURN:");
-  if (idx === -1) return null;
-  try {
-    const jsonStr = text.slice(idx + "\nGAME_TURN:".length).trim();
-    const parsed = JSON.parse(jsonStr);
-    if (Array.isArray(parsed?.options) && parsed.options.length > 0) {
-      return { options: parsed.options };
-    }
-  } catch {
-    // parse failed
-  }
-  return null;
-}
-
-/**
- * Trim completed-round messages, keeping only a brief Arabic summary + current round.
- * The AI already gets fresh city data via the system prompt, so old round messages add no value.
- */
-function trimCompletedRoundMessages(
-  messages: UIMessage[],
-  currentRound: number,
-  discoveredCityNames: string[]
-): UIMessage[] {
-  // Find the last advance_round tool invocation — everything before it is a completed round
-  let lastAdvanceIdx = -1;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    if (msg.role !== "assistant") continue;
-    for (const part of msg.parts) {
-      if (
-        part.type === "tool-invocation" &&
-        (part as Record<string, unknown>).toolName === "advance_round"
-      ) {
-        lastAdvanceIdx = i;
-        break;
-      }
-    }
-    if (lastAdvanceIdx !== -1) break;
-  }
-
-  if (lastAdvanceIdx === -1) return messages; // round 1 — nothing to trim
-
-  const citiesList = discoveredCityNames.length
-    ? discoveredCityNames.join("، ")
-    : "—";
-
-  const summaryText = `[ملخص الجولات السابقة]
-الجولة الحالية: ${currentRound + 1}
-المدن المكتشفة: ${citiesList}
----
-أكمل اللعبة من هنا!`;
-
-  const summaryMessage: UIMessage = {
-    id: "round-summary",
-    role: "user",
-    parts: [{ type: "text", text: summaryText }],
-  };
-
-  return [summaryMessage, ...messages.slice(lastAdvanceIdx + 1)];
-}
-
-/**
- * Cap within-round messages to prevent token bloat from many wrong guesses.
- * Keeps the first 2 messages (riddle/options context) + last 4 (recent attempts).
- */
-function trimWithinRoundMessages(
-  messages: UIMessage[],
-  maxMessages = 8
-): UIMessage[] {
+function trimMessages(messages: SimpleMessage[], maxMessages = 8): SimpleMessage[] {
   if (messages.length <= maxMessages) return messages;
   return [...messages.slice(0, 2), ...messages.slice(-4)];
 }
@@ -141,8 +49,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const roundNumber = currentRound ?? countAdvanceRounds(messages);
-    const playerAge = kidsProfile?.age || 8;
+    const roundNumber = currentRound ?? 0;
 
     // Exclude list = all cities discovered in previous sessions + current session
     const excludeIds: string[] = [...(discoveredCityIds || [])];
@@ -166,7 +73,6 @@ export async function POST(req: NextRequest) {
     const { city: nextCity } = getCityForRound(nextExcludeIds);
 
     // Pre-fetch hint images for BOTH cities in parallel (with 3s timeout)
-    // Skip entirely if images are disabled via ENABLE_IMAGES=false
     const IMAGE_TIMEOUT_MS = 3000;
     const fetchWithTimeout = (query: string): Promise<ImageResult[]> => {
       if (!isImagesEnabled()) return Promise.resolve([]);
@@ -181,157 +87,68 @@ export async function POST(req: NextRequest) {
       fetchWithTimeout(buildHintImageQuery(nextCity)),
     ]);
 
-    // Build pre-computed hints from city data + pre-fetched images
     const currentHint = buildPrecomputedHint(currentCity, currentImages);
     const nextHint = buildPrecomputedHint(nextCity, nextImages);
 
-    const tools = buildTools();
-
-    // Server-side answer pre-validation — normalize Arabic to catch Unicode variants
+    // Server-side answer pre-validation
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    const lastText = lastUserMsg?.parts.find((p) => p.type === "text")
-      ? (lastUserMsg.parts.find((p) => p.type === "text") as { type: "text"; text: string }).text
-      : "";
-    const confirmedCorrect = !!lastText && normalizeArabic(lastText) === normalizeArabic(currentCity.nameAr);
-    if (confirmedCorrect) {
-      console.log("[city-explorer] Server confirmed correct answer:", lastText);
-    }
+    const lastText = lastUserMsg?.content ?? "";
+    const isCorrect = !!lastText && normalizeArabic(lastText) === normalizeArabic(currentCity.nameAr);
+
 
     const systemPrompt = buildSystemPrompt(
-      playerAge,
       currentCity,
       nextCity,
       isReviewMode,
       kidsProfile?.name,
       chatContext,
-      confirmedCorrect,
+      isCorrect,
     );
 
-    console.log("[city-explorer] Round city:", currentCity.nameAr, "→ next:", nextCity.nameAr);
 
-    // Trim old-round messages (saves 3k-10k+ tokens per request)
-    let aiMessages = messages;
-    if (trimCompletedRounds && roundNumber > 0) {
-      const discoveredNames = excludeIds
-        .map((id) => CITIES.find((c) => c.id === id)?.nameAr)
-        .filter(Boolean) as string[];
-      aiMessages = trimCompletedRoundMessages(messages, roundNumber, discoveredNames);
-      console.log("[game-chat] Trimmed cross-round messages", {
-        original: messages.length,
-        trimmed: aiMessages.length,
-        round: roundNumber + 1,
-      });
-    }
+    const trimmedMessages = trimMessages(messages);
 
-    // Cap within-round messages (safety net for many wrong guesses)
-    const preTrimCount = aiMessages.length;
-    aiMessages = trimWithinRoundMessages(aiMessages);
-    if (aiMessages.length < preTrimCount) {
-      console.log("[game-chat] Trimmed within-round messages", {
-        before: preTrimCount,
-        after: aiMessages.length,
-      });
-    }
-
-    const convertedMessages = await convertToModelMessages(aiMessages);
-
-    const uiStream = createUIMessageStream({
-      execute: async ({ writer }) => {
-        const cacheKey = `game-a${playerAge}`;
-        const result = streamText({
-          model: getCityExploreModelInstance(),
-          system: systemPrompt,
-          messages: convertedMessages,
-          tools,
-          stopWhen: stepCountIs(5),
-          ...buildCacheOptions(cacheKey),
-          ...makeStreamingCallbacks("game-chat", { logToolResults: true }),
-        });
-
-        writer.merge(result.toUIMessageStream());
-
-        const steps = await result.steps;
-        const fullText = steps.map((s) => s.text).join("");
-
-          // Log all tool calls from all steps
-          try {
-            for (const step of steps) {
-              for (const tr of step.toolResults ?? []) {
-                const tc = step.toolCalls?.find((c: { toolCallId: string }) => c.toolCallId === (tr as { toolCallId: string }).toolCallId);
-                console.log("[game-tool]", (tr as { toolName: string }).toolName, {
-                  input: tc ? (tc as unknown as { input: unknown }).input : undefined,
-                  output: (tr as unknown as { output: unknown }).output,
-                });
-              }
-            }
-          } catch (logErr) {
-            console.error("[game-tool] logging error:", logErr);
-          }
-
-          // Inject data-game-turn
-          try {
-            const gameTurn = extractGameTurnFromText(fullText);
-            if (gameTurn) {
-              const hadAdvance = steps.some((step) =>
-                step.toolResults?.some(
-                  (tr: { toolName: string }) => tr.toolName === "advance_round"
-                )
-              );
-              const hint = hadAdvance ? nextHint : currentHint;
-
-              // Validate options — auto-inject correct city if missing
-              const correctCity = hadAdvance ? nextCity.nameAr : currentCity.nameAr;
-              if (!gameTurn.options.includes(correctCity)) {
-                const insertIdx = Math.floor(Math.random() * (gameTurn.options.length + 1));
-                gameTurn.options.splice(insertIdx, 0, correctCity);
-                console.warn(`[city-explorer] Auto-injected correct answer: ${correctCity}`);
-              }
-
-              const targetCity = hadAdvance ? nextCity : currentCity;
-
-              // Sanitize before writing to stream
-              const cleanOptions = gameTurn.options
-                .map((o) => o.trim())
-                .filter((o) => o.length > 0);
-              const cleanHint = hint.hint.trim();
-              const cleanImages = hint.images.filter(
-                (img) => (img.thumbnailUrl || img.imageUrl)?.startsWith("http")
-              );
-              const cleanTargetCityId = targetCity.id.trim();
-
-              const gameData = {
-                options: cleanOptions,
-                hint: cleanHint,
-                hintImages: cleanImages.map((img) => img.thumbnailUrl || img.imageUrl),
-                targetCityId: cleanTargetCityId,
-                hadAdvance,
-              };
-              console.log("[game-turn]", JSON.stringify(gameData, null, 2));
-              writer.write({
-                type: "data-game-turn",
-                data: {
-                  options: cleanOptions,
-                  hint: cleanHint,
-                  hintImages: cleanImages,
-                  targetCityId: cleanTargetCityId,
-                },
-              });
-            } else {
-              console.log("[game-turn] null — no GAME_TURN found in response");
-            }
-          } catch (injectErr) {
-            console.error("[game-turn] injection error:", injectErr);
-          }
-      },
+    const { object: turn } = await generateObject({
+      model: getCityExploreModelInstance(),
+      schema: GameResponseSchema,
+      system: systemPrompt,
+      messages: trimmedMessages.map(m => ({ role: m.role, content: m.content })),
+      ...buildCacheOptions("game"),
     });
 
-    return createUIMessageStreamResponse({ stream: uiStream });
+
+    // Pick hint: if correct answer was given, inject next city's hint
+    const hint = isCorrect ? nextHint : currentHint;
+    const targetCityId = isCorrect ? nextCity.id : currentCity.id;
+
+    // Auto-inject correct city if model omitted it from options (turn only)
+    if (turn.type === "turn") {
+      if (!turn.options) turn.options = [];
+      const correctCity = isCorrect ? nextCity.nameAr : currentCity.nameAr;
+      if (!turn.options.includes(correctCity)) {
+        const insertIdx = Math.floor(Math.random() * (turn.options.length + 1));
+        turn.options.splice(insertIdx, 0, correctCity);
+      }
+    }
+
+    const cleanHintImages = hint.images
+      .filter(img => (img.thumbnailUrl || img.imageUrl)?.startsWith("http"))
+      .map(img => img.thumbnailUrl || img.imageUrl)
+      .filter(Boolean) as string[];
+
+    return Response.json({
+      turn,
+      currentCityId: currentCity.id,
+      targetCityId,
+      hint: hint.hint,
+      hintImages: cleanHintImages,
+      isCorrect,
+    });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
     logError("game-chat-route", error);
     return new Response(
-      JSON.stringify({
-        error: "حدث خطأ. يرجى المحاولة مرة أخرى.",
-      }),
+      JSON.stringify({ error: "حدث خطأ. يرجى المحاولة مرة أخرى.", detail: msg }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }

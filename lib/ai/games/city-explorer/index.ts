@@ -1,14 +1,11 @@
 /**
- * City Explorer — Optimized game module (Token-Efficient)
+ * City Explorer — Refactored game module
  *
- * Key optimizations:
- * 1. DRY principle - no repeated rules
- * 2. Minimal examples - only essential ones
- * 3. State machine approach - clear transitions
- * 4. Static content FIRST for prompt caching (OpenAI 50% discount on cached prefix)
- * 5. Critical checklist at END (recency bias)
+ * Uses generateObject() + Zod schema instead of streaming + tool calls.
+ * Age logic removed. GAME_TURN suffix hacks removed.
  */
 
+import { z } from "zod";
 import { CITIES, REGIONS, City } from "@/lib/data/cities";
 import { ImageResult } from "@/lib/types";
 import { KidsChatContext } from "@/lib/types/games";
@@ -16,12 +13,6 @@ import {
   MEDHAT_CHARACTER as MEDHAT_BASE,
   SAFETY_RULES,
 } from "../../kids";
-import { buildAgeAdaptationSection } from "./age";
-import {
-  advanceRoundTool,
-  endGameTool,
-} from "../../game-tools";
-import { imageSearchTool } from "../../tools";
 
 // ── Arabic text normalization ─────────────────────────────────────────
 
@@ -37,6 +28,17 @@ export function normalizeArabic(text: string): string {
     .replace(/ة/g, "ه")              // normalize taa marbuta
     .replace(/ى/g, "ي");             // normalize alef maqsura
 }
+
+// ── Zod Schema ────────────────────────────────────────────────────────
+
+export const GameResponseSchema = z.object({
+  type: z.enum(["turn", "game_over"]).describe('"turn" for an ongoing game round, "game_over" when all 5 rounds are completed or the player quits'),
+  message: z.string().describe("Medhat's Arabic message — riddle, encouragement, celebration, or farewell"),
+  options: z.array(z.string()).optional().describe("Exactly 3 Arabic city name options including the correct answer (required when type=turn)"),
+  reason: z.enum(["completed", "quit"]).optional().describe("Why the game ended (required when type=game_over)"),
+});
+
+export type GameResponse = z.infer<typeof GameResponseSchema>;
 
 // ── Pre-computed hint (server-side, no LLM needed) ──────────────────
 
@@ -69,62 +71,9 @@ export function buildPrecomputedHint(
  * Use English name + Palestine for more accurate image search results.
  */
 export function buildHintImageQuery(city: City): string {
-  // Take first landmark phrase only (before و) to keep query focused
   const primaryLandmark = city.famousFor.landmark.split(" و")[0].trim();
   return `${primaryLandmark} ${city.name} Palestine`;
 }
-
-// ── Opt-in: trim completed-round messages server-side ────────────────
-export const trimCompletedRounds = true;
-
-// ── Tool collection ──────────────────────────────────────────────────
-
-/**
- * Build game tools — only advance_round, end_game, image_search.
- * Options/hints are now delivered via GAME_TURN JSON suffix injected server-side.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildTools(): Record<string, any> {
-  return {
-    advance_round: advanceRoundTool,
-    end_game: endGameTool,
-    image_search: imageSearchTool,
-  };
-}
-
-// ── Core Rules ────────────────────────────────────────────────────────
-
-const CORE_RULES = `## Game: City Explorer
-
-### Response Format (MANDATORY):
-Every response MUST end with this JSON on its own line:
-GAME_TURN:{"options":["مدينة أ","مدينة ب","مدينة ج"]}
-
-Exception: end_game responses do NOT need GAME_TURN.
-
-### Flow:
-- NEW QUESTION: Write riddle (2-3 sentences) → append GAME_TURN with current city options
-- WRONG ANSWER: Write encouragement (1 sentence) → REPEAT THE RIDDLE again (1-2 sentences using same clues) → append GAME_TURN with EXACT SAME options
-- CORRECT ANSWER — STRICT ORDER (celebration → riddle → GAME_TURN → advance_round):
-  1. Write celebration (1 sentence ONLY)
-  2. Write ACTUAL RIDDLE for NEXT CITY — 2-3 real clues/facts from Next City Data (NOT "get ready"!)
-  3. Append GAME_TURN with NEXT CITY options
-  4. Call advance_round tool — MUST be LAST, after GAME_TURN. After it returns: output NOTHING.
-  ⚠ WRONG: celebration → advance_round → riddle → GAME_TURN (tool before text = duplicate content bug)
-- OFF-TOPIC: Reply in 1-2 sentences → append GAME_TURN with CURRENT options. NEVER leave player without options!
-
-### Critical Rules:
-- STRICT: Use ONLY facts from City Data. Never invent or embellish facts.
-- GAME_TURN options MUST include the correct city answer
-- NEVER mention coordinates/lat/lng
-- NEVER call check_answer, or present_options — they do not exist`;
-
-// ── Tool Quick Reference ─────────────────────────────────────────────
-
-const TOOL_REFERENCE = `## Tools:
-- advance_round({roundCompleted, feedback, pointsEarned: 15}) — call ONLY on correct answer
-- end_game — call when all rounds complete or player quits
-- image_search — optional, for extra visuals`;
 
 // ── City Selection System (Random + Region Diverse) ──────────────────
 
@@ -174,7 +123,7 @@ export function getCityForRound(
 function formatCityData(city: City, isReviewMode: boolean): string {
   const regionInfo = REGIONS[city.region];
   const facts = city.facts.map((f, i) => `${i + 1}. ${f}`).join(" | ");
-  
+
   const header = isReviewMode
     ? `## City Data (REVIEW - all discovered! 🎉)`
     : `## City Data`;
@@ -190,12 +139,10 @@ ${facts}
 📖 Description: ${city.descriptionAr}
 
 🍽️ Food: ${city.famousFor.food}
-🏛️ Landmark: ${city.famousFor.landmark}  
+🏛️ Landmark: ${city.famousFor.landmark}
 🎨 Craft: ${city.famousFor.craft}
 🏖️ Lifestyle: ${city.lifestyle.join(" | ")}`;
 }
-
-// ── System Prompt Builder (Optimized) ────────────────────────────────
 
 /**
  * Compact next-city section — only what the AI needs to write the riddle/hint/options
@@ -203,7 +150,7 @@ ${facts}
 function formatNextCityData(city: City): string {
   const regionInfo = REGIONS[city.region];
   const facts = city.facts.slice(0, 3).map((f, i) => `${i + 1}. ${f}`).join(" | ");
-  return `## Next City Data (use AFTER correct answer + advance_round)
+  return `## Next City Data (use AFTER correct answer)
 🎯 NEXT ANSWER: ${city.nameAr} (${city.name})
 📍 Region: ${regionInfo.nameAr}
 📝 Facts: ${facts}
@@ -211,8 +158,25 @@ function formatNextCityData(city: City): string {
 📖 ${city.descriptionAr}`;
 }
 
+// ── Core Rules ────────────────────────────────────────────────────────
+
+const CORE_RULES = `## Game: City Explorer
+
+### Response Rules:
+- NEW QUESTION: Write riddle (2-3 sentences using facts) → set options with 3 cities including correct answer
+- WRONG ANSWER: Encouragement (1 sentence) → repeat riddle (1-2 sentences, same clues) → SAME 3 options
+- CORRECT ANSWER: Celebration (1 sentence) → new riddle for NEXT CITY (2-3 sentences) → next city options
+- OFF-TOPIC: 1-2 sentence reply → current city options. NEVER leave player without options!
+- GAME OVER (5 rounds done or player quits): use type="game_over"
+
+### Critical Rules:
+- Use ONLY facts from City Data. Never invent or embellish facts.
+- options MUST include the correct city answer
+- NEVER mention coordinates/lat/lng`;
+
+// ── System Prompt Builder ─────────────────────────────────────────────
+
 export function buildSystemPrompt(
-  age: number,
   currentCity: City,
   nextCity: City,
   isReviewMode: boolean = false,
@@ -223,8 +187,6 @@ export function buildSystemPrompt(
   const regionInfo = REGIONS[currentCity.region];
 
   const parts: string[] = [
-    // ── STATIC PREFIX (cacheable ~1200-1500 tokens) ──────────────────
-
     // 1. Character (static)
     MEDHAT_BASE,
 
@@ -234,47 +196,39 @@ export function buildSystemPrompt(
     // 3. Safety (static)
     SAFETY_RULES,
 
-    // 4. Tool reference (static)
-    TOOL_REFERENCE,
-
-    // 5. Game info (static)
+    // 4. Game info (static)
     `## Game: مستكشف المدن | Rounds: 5 | Points: 15/correct | Bonus: 25`,
 
-    // ── SEMI-STATIC / DYNAMIC (changes per session/round) ────────────
-
-    // 6. Age adaptation (semi-static — per session)
-    buildAgeAdaptationSection(age),
-
-    // 7. Player name (semi-static — per session)
+    // 5. Player name (semi-static)
     playerName ? `## Player: ${playerName}\nUse their name naturally every 2–3 messages — not every sentence.` : "",
 
-    // 9. Chat context (dynamic)
+    // 6. Chat context (dynamic)
     chatContext?.recentTopics?.length
       ? `## Context: Player was talking about ${chatContext.recentTopics.join(", ")}`
       : "",
 
-    // 10. Target city (dynamic — changes per round)
+    // 7. Target city (dynamic)
     `⚠️ TARGET CITY: ${currentCity.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
 
-    // 11. City data current (dynamic)
+    // 8. City data current (dynamic)
     formatCityData(currentCity, isReviewMode),
 
-    // 12. Next city data (dynamic)
+    // 9. Next city data (dynamic)
     formatNextCityData(nextCity),
 
-    // 13. CRITICAL REMINDER at END (LLM pays attention to end)
+    // 10. CRITICAL REMINDER at END
     `⚠️ CHECKLIST before responding:
-✅ Every response ends with GAME_TURN:{"options":[...]} (except end_game)
-✅ Current question: GAME_TURN options include "${currentCity.nameAr}"
-✅ Correct answer? → advance_round + new riddle for ${nextCity.nameAr} + GAME_TURN with "${nextCity.nameAr}"
-✅ Wrong answer? → encouragement + REPEAT riddle clues + GAME_TURN with SAME options (${currentCity.nameAr} still in list)
-✅ Off-topic? → 1-2 sentence reply + GAME_TURN with current options`,
+✅ message: Medhat's response in Arabic (riddle / encouragement / celebration)
+✅ options: exactly 3 cities, must include "${currentCity.nameAr}" (or "${nextCity.nameAr}" after correct answer)
+✅ Wrong answer? → repeat riddle clues, SAME options with "${currentCity.nameAr}" still in list
+✅ Correct answer? → celebration + new riddle for ${nextCity.nameAr}, options include "${nextCity.nameAr}"
+✅ 5 rounds done? → type="game_over"`,
 
-    // 14. Server-confirmed correct answer override (injected only when match detected)
+    // 11. Server-confirmed correct answer override
     confirmedCorrect
       ? `🚨 OVERRIDE — SERVER CONFIRMED CORRECT ANSWER:
-The server has verified that the player's last answer EXACTLY matches "${currentCity.nameAr}".
-You MUST call advance_round immediately. Do NOT say the answer is wrong. Do NOT repeat the riddle.`
+The server verified the player's last answer EXACTLY matches "${currentCity.nameAr}".
+Respond as CORRECT ANSWER: celebration + new riddle for next city + options for ${nextCity.nameAr}.`
       : "",
   ];
 
