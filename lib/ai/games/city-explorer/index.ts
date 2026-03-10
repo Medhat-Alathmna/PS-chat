@@ -105,11 +105,11 @@ Exception: end_game responses do NOT need GAME_TURN.
 ### Flow:
 - NEW QUESTION: Write riddle (2-3 sentences) → append GAME_TURN with current city options
 - WRONG ANSWER: Write encouragement (1 sentence) → REPEAT THE RIDDLE again (1-2 sentences using same clues) → append GAME_TURN with EXACT SAME options
-- CORRECT ANSWER — STRICT ORDER:
+- CORRECT ANSWER — STRICT ORDER (celebration → riddle → GAME_TURN → advance_round):
   1. Write celebration (1 sentence ONLY)
-  2. Append GAME_TURN with a few city name options (include the next round's city somewhere in the list)
-  3. Call advance_round tool — MUST be LAST, after GAME_TURN. After it returns: output NOTHING.
-  ⚠ DO NOT write the next city's riddle here — it will be written automatically in the next message
+  2. Write ACTUAL RIDDLE for NEXT CITY — 2-3 real clues/facts from Next City Data (NOT "get ready"!)
+  3. Append GAME_TURN with NEXT CITY options
+  4. Call advance_round tool — MUST be LAST, after GAME_TURN. After it returns: output NOTHING.
   ⚠ WRONG: celebration → advance_round → riddle → GAME_TURN (tool before text = duplicate content bug)
 - OFF-TOPIC: Reply in 1-2 sentences → append GAME_TURN with CURRENT options. NEVER leave player without options!
 
@@ -197,11 +197,24 @@ ${facts}
 
 // ── System Prompt Builder (Optimized) ────────────────────────────────
 
+/**
+ * Compact next-city section — only what the AI needs to write the riddle/hint/options
+ */
+function formatNextCityData(city: City): string {
+  const regionInfo = REGIONS[city.region];
+  const facts = city.facts.slice(0, 3).map((f, i) => `${i + 1}. ${f}`).join(" | ");
+  return `## Next City Data (use AFTER correct answer + advance_round)
+🎯 NEXT ANSWER: ${city.nameAr} (${city.name})
+📍 Region: ${regionInfo.nameAr}
+📝 Facts: ${facts}
+🍽️ Food: ${city.famousFor.food} | 🏛️ Landmark: ${city.famousFor.landmark}
+📖 ${city.descriptionAr}`;
+}
 
 export function buildSystemPrompt(
   age: number,
   currentCity: City,
-  nextCityName: string,
+  nextCity: City,
   isReviewMode: boolean = false,
   playerName?: string,
   chatContext?: KidsChatContext,
@@ -241,21 +254,23 @@ export function buildSystemPrompt(
       : "",
 
     // 10. Target city (dynamic — changes per round)
-    `⚠️ TARGET CITY: ${currentCity.nameAr} | Region: ${regionInfo.nameAr}`,
+    `⚠️ TARGET CITY: ${currentCity.nameAr} | Region: ${regionInfo.nameAr} | NEXT: ${nextCity.nameAr}`,
 
     // 11. City data current (dynamic)
     formatCityData(currentCity, isReviewMode),
 
-    // 12. CRITICAL REMINDER at END (LLM pays attention to end)
+    // 12. Next city data (dynamic)
+    formatNextCityData(nextCity),
+
+    // 13. CRITICAL REMINDER at END (LLM pays attention to end)
     `⚠️ CHECKLIST before responding:
 ✅ Every response ends with GAME_TURN:{"options":[...]} (except end_game)
 ✅ Current question: GAME_TURN options include "${currentCity.nameAr}"
-✅ Correct answer? → celebration (1 sentence) + GAME_TURN (include "${nextCityName}" in options) + advance_round. NO riddle here.
-✅ Wrong answer? → encouragement + REPEAT riddle clues (from City Data above) + GAME_TURN with SAME options (${currentCity.nameAr} still in list)
-✅ Off-topic? → 1-2 sentence reply + GAME_TURN with current options
-✅ Riddle uses ONLY facts from "## City Data" above — NEVER invent clues`,
+✅ Correct answer? → advance_round + new riddle for ${nextCity.nameAr} + GAME_TURN with "${nextCity.nameAr}"
+✅ Wrong answer? → encouragement + REPEAT riddle clues + GAME_TURN with SAME options (${currentCity.nameAr} still in list)
+✅ Off-topic? → 1-2 sentence reply + GAME_TURN with current options`,
 
-    // 13. Server-confirmed correct answer override (injected only when match detected)
+    // 14. Server-confirmed correct answer override (injected only when match detected)
     confirmedCorrect
       ? `🚨 OVERRIDE — SERVER CONFIRMED CORRECT ANSWER:
 The server has verified that the player's last answer EXACTLY matches "${currentCity.nameAr}".

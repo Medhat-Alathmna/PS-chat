@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildSystemPrompt(
       playerAge,
       currentCity,
-      nextCity.nameAr,
+      nextCity,
       isReviewMode,
       kidsProfile?.name,
       chatContext,
