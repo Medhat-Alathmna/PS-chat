@@ -26,7 +26,7 @@ interface KidsIntroScreenProps {
 }
 
 /**
- * Kids intro screen with animated mascot and fun suggestions
+ * Kids intro screen with fun suggestions
  */
 export default function KidsIntroScreen({
   onSelect,

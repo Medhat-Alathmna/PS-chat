@@ -105,22 +105,22 @@ Exception: end_game responses do NOT need GAME_TURN.
 ### Flow:
 - NEW QUESTION: Write riddle (2-3 sentences) → append GAME_TURN with current city options
 - WRONG ANSWER: Write encouragement (1 sentence) → REPEAT THE RIDDLE again (1-2 sentences using same clues) → append GAME_TURN with EXACT SAME options
-- CORRECT ANSWER (all in ONE response):
-  1. Write celebration (1 sentence)
-  2. Call advance_round tool
-  3. Write ACTUAL RIDDLE for NEXT CITY — 2-3 real clues/facts about it (NOT "get ready" or "next question coming"!)
-  4. Append GAME_TURN with NEXT CITY options
+- CORRECT ANSWER — STRICT ORDER (one step only):
+  1. Write celebration (1 sentence ONLY)
+  2. Write ACTUAL RIDDLE for NEXT CITY — 2-3 real clues/facts from Next City Data (NOT "get ready"!)
+  3. Append GAME_TURN with NEXT CITY options
+  4. Call advance_round tool — MUST be LAST, after GAME_TURN
+  5. After advance_round returns: output NOTHING. Response is DONE.
 - OFF-TOPIC: Reply in 1-2 sentences → append GAME_TURN with CURRENT options. NEVER leave player without options!
 
-### After advance_round — WRITE THE RIDDLE IMMEDIATELY:
-- WRONG: "جهز حالك للسؤال الجاي" — this tells the player NOTHING
-- WRONG: "السؤال الجاي جاهز!" — empty, no information
-- RIGHT: Write 2-3 actual clues from Next City Data facts (e.g. "في هذه المدينة كنافة مشهورة وجامع قديم...")
+### CORRECT ORDER for correct answer:
+- WRONG ORDER: celebration → advance_round → riddle → GAME_TURN (causes duplicate content bug)
+- RIGHT ORDER: celebration → riddle → GAME_TURN → advance_round (tool call is ALWAYS last)
+- After advance_round tool runs: STOP. Do NOT write any text. Response is complete.
 
 ### Critical Rules:
 - STRICT: Use ONLY facts from City Data. Never invent or embellish facts.
 - GAME_TURN options MUST include the correct city answer
-- After correct: BRIEF celebration → advance_round → REAL RIDDLE WITH CLUES → GAME_TURN (next city)
 - NEVER mention coordinates/lat/lng
 - NEVER call check_answer, or present_options — they do not exist`;
 

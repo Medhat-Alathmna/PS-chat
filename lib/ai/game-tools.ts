@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 export const advanceRoundTool = tool({
   description:
-    "Use this tool to move to the next round in the game. Used after the player completes a creative task or story contribution.",
+    "Use this tool to advance to the next round. Call this ONLY AFTER you have already written the celebration, next city riddle, and GAME_TURN in your response. This tool call must be LAST. After this tool executes, output NOTHING more — your response is complete.",
   inputSchema: z.object({
     roundCompleted: z.number().describe("The round number just completed"),
     feedback: z.string().describe("Encouraging feedback on the player's contribution"),

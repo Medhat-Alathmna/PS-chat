@@ -92,8 +92,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const startSentRef = useRef(false);
 
-  // Auto-advance: after correct answer, auto-send "next question" so the AI presents the next city
-  const autoAdvancePending = useRef(false);
   // Trim history after round advance — clear old messages once the new round starts
   const trimPending = useRef(false);
 
@@ -192,7 +190,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
               setTimeout(() => setShowConfetti(false), 2000);
               gameRewards.onCorrectAnswer(gameId, config.pointsPerCorrect);
               gameRewards.onRoundComplete(gameId, 0);
-              autoAdvancePending.current = true;
               // Map: reveal city on advance_round — use tracked ref, fall back to text detection
               if (isCityExplorer) {
                 const cityId = currentTargetCityIdRef.current || detectCityInText(toolPart.output.feedback as string || "");
@@ -236,43 +233,6 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     if (!container) return;
     container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [aiMessages, isLoading]);
-
-  // Auto-advance to next question after correct answer
-  useEffect(() => {
-    if (status !== "ready" || !autoAdvancePending.current) return;
-    autoAdvancePending.current = false;
-
-    // Now that streaming is complete, check if the AI already called
-    // advance_round in its response. If so, it already presented the
-    // next question — no need to send "السؤال الجاي".
-    const lastAssistantMsg = [...aiMessages].reverse().find(m => m.role === "assistant");
-    if (lastAssistantMsg) {
-      const hasAdvance = lastAssistantMsg.parts.some((p) => {
-        const tp = p as { type: string };
-        return tp.type === "tool-advance_round";
-      });
-      if (hasAdvance) return; // AI already advanced, skip auto-advance
-    }
-
-    // Count advance_round calls to determine current round
-    let advanceCount = 0;
-    for (const msg of aiMessages) {
-      if (msg.role !== "assistant") continue;
-      for (const part of msg.parts) {
-        const tp = part as { type: string };
-        if (tp.type === "tool-advance_round") advanceCount++;
-      }
-    }
-
-    // Don't auto-advance on last round — let AI call end_game
-    const maxRounds = typeof config.rounds === "number" ? config.rounds : 99;
-    if (advanceCount >= maxRounds - 1) return;
-
-    const timer = setTimeout(() => {
-      sendMessage({ text: "السؤال الجاي" });
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [status, aiMessages, config.rounds, sendMessage]);
 
   // Trim chat history after round advance — keep only the new round's content
   useEffect(() => {
