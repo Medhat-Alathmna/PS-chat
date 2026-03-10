@@ -29,6 +29,9 @@ import { CITIES, detectCityInText } from "@/lib/data/cities";
 import ExpandableMap from "../../../components/kids/ExpandableMap";
 import { extractTextAndImages, getToolOutput } from "@/lib/utils/messageConverter";
 
+// Synthetic marker injected during history trim — hidden from display
+const TRIM_MARKER = "السؤال الجاي";
+
 export default function GamePage() {
   return (
     <ErrorBoundary>
@@ -255,7 +258,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     const syntheticUser: UIMessage = {
       id: "trim-" + Date.now(),
       role: "user",
-      parts: [{ type: "text", text: "السؤال الجاي" }],
+      parts: [{ type: "text", text: TRIM_MARKER }],
     };
 
     setMessages([syntheticUser, lastAssistant]);
@@ -284,10 +287,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   // Convert messages for display
   const displayMessages = useMemo(() => {
     return aiMessages.filter((msg) => {
-      // Hide auto-advance "next question" messages from display
+      // Hide trim-marker messages from display
       if (msg.role === "user") {
         const { textContent } = extractTextAndImages(msg.parts);
-        if (textContent.trim() === "السؤال الجاي") return false;
+        if (textContent.trim() === TRIM_MARKER) return false;
       }
       return true;
     }).map((msg) => {
