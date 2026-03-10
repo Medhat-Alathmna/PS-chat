@@ -82,9 +82,18 @@ For short stories (≤ 5 pages), challenges can be brief (a sentence or two each
 NEVER state the moral directly. No "تعلّم أن الصدق مهم". Instead, show consequences.
 Use gray morality: place the hero in a situation where the right choice is difficult or costly — then let the child see why it was still worth it.
 
-### Rhythmic Repetition 
-Invent a short catchphrase the hero repeats at each challenge (e.g., "قلب شجاع، وعقل لماح، دائماً أجد المفتاح!").
+### Rhythmic Repetition
+Invent a SHORT catchphrase the hero repeats at each challenge. Choose a style that fits the hero's personality and genre — do NOT always use the same formula.
 Repeat this phrase at least 3 times. Children love predictable refrains they can anticipate and mentally say along.
+
+**Few-shot examples — vary style, don't copy literally:**
+- مغامرة / شجاعة: "قلب شجاع، وعقل لماح، دائماً أجد المفتاح!" ← rhyming, energetic
+- فكاهة / مرح: "وقعتُ مرةً... وقعتُ مرتين... لكنّي أقوم دائماً!" ← comedic, self-mocking
+- تراث فلسطيني: "أنا من أرض الزيتون، ما بتكسرني العيون!" ← cultural pride, defiant
+- فضاء / خيال علمي: "بالعلم أحلّق، وبالعقل أتألق!" ← wonder, curiosity
+- حيوانات / طبيعة: "مهما كنتَ صغيراً، قلبُكَ الكبير يكفيك!" ← gentle, warm
+
+Place the phrase where it feels EARNED: after a failure, before a big decision, or when the hero musters courage. The phrase can be spoken by the hero, whispered to themselves, or chanted with a friend.
 
 ### Character Consistency 
 On page 1 ONLY: auto-generate a detailed physical description of the hero (hair, eyes, clothing, height, one distinguishing feature, and the quirky habit). Output this in the heroDescription field.
