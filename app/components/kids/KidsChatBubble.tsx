@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { ChatMessage } from "@/lib/types";
-import AnimatedMascot from "./AnimatedMascot";
 import SpeakingIndicator from "./SpeakingIndicator";
 
 interface KidsChatBubbleProps {
@@ -36,24 +35,6 @@ export default function KidsChatBubble({
       ASSISTANT_COLORS.length;
     return ASSISTANT_COLORS[index];
   }, [message.id, isUser]);
-
-  const mascotState = useMemo(() => {
-    if (isStreaming) return "thinking";
-    if (!message.content) return "happy";
-    const content = message.content.toLowerCase();
-    if (content.includes("مبروك") || content.includes("برافو") || content.includes("ممتاز") ||
-        content.includes("رائع") || content.includes("🎉") || content.includes("🏆")) {
-      return "celebrating";
-    }
-    if (content.includes("أهلا") || content.includes("مرحبا") || content.includes("👋")) {
-      return "waving";
-    }
-    if (content.includes("؟") || content.includes("هل") || content.includes("ماذا") ||
-        content.includes("كيف") || content.includes("لماذا")) {
-      return "thinking";
-    }
-    return "happy";
-  }, [message.content, isStreaming]);
 
   // ── User message ──────────────────────────────────────────────
   if (isUser) {
@@ -214,8 +195,8 @@ function formatKidsMessageWithIcons(content: string): string {
 
 export function TypingBubble() {
   return (
-    <div className="flex gap-2 items-start animate-fade-in-up">
-      <AnimatedMascot state="thinking" size="sm" className="shrink-0 mt-1" />
+    <div className="flex gap-2 items-center animate-fade-in-up">
+      <span className="text-sm text-[var(--kids-purple)] font-bold animate-pulse">مدحت يفكر...</span>
       <div className="px-4 py-3 bg-white/80 rounded-2xl rounded-tl-sm shadow-md">
         <div className="flex gap-1.5 items-center">
           <span className="w-2.5 h-2.5 bg-[var(--kids-purple)] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { KidsProfile, ProfileAvatar, ProfileColor } from "@/lib/types/games";
-import AnimatedMascot from "./AnimatedMascot";
 import AnimatedBackground from "./AnimatedBackground";
 
 const AVATARS: ProfileAvatar[] = [
@@ -55,10 +54,6 @@ export default function ProfileSetup({ onComplete, existingProfiles, onCancel }:
     <AnimatedBackground variant="sky" showClouds>
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-sm mx-auto w-full">
-          <div className="mb-6">
-            <AnimatedMascot state="waving" size="xl" showName />
-          </div>
-
           <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-xl animate-fade-in-up">
             {/* Progress dots */}
             <div className="flex justify-center gap-2 mb-4">

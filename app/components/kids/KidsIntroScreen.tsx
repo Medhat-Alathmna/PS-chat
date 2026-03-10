@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import AnimatedMascot from "./AnimatedMascot";
 import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
 import ProfileSwitcher from "./ProfileSwitcher";
@@ -143,11 +142,6 @@ export default function KidsIntroScreen({
         {/* Main content */}
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
           <div className="text-center max-w-2xl w-full mx-auto">
-            {/* Mascot — hidden on mobile */}
-            <div className="hidden sm:block mb-8">
-              <AnimatedMascot state="waving" size="xl" showName />
-            </div>
-
             {/* Welcome text */}
             <div className="animate-fade-in-up">
               <h1 className="text-3xl sm:text-4xl font-bold text-[var(--kids-purple)] mb-2 sm:mb-5 bubble-text">

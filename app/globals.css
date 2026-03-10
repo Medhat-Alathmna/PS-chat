@@ -281,19 +281,6 @@ code {
   }
 }
 
-/* Wiggle animation for mascot */
-@keyframes wiggle {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-5deg);
-  }
-  75% {
-    transform: rotate(5deg);
-  }
-}
-
 /* Pulse grow animation */
 @keyframes pulseGrow {
   0%, 100% {
@@ -435,10 +422,6 @@ code {
 
 .animate-bounce-kids {
   animation: bounce 2s ease infinite;
-}
-
-.animate-wiggle {
-  animation: wiggle 1s ease-in-out infinite;
 }
 
 .animate-pulse-grow {

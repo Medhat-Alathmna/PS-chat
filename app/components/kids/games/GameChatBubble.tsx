@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { ImageResult } from "@/lib/types";
-import AnimatedMascot from "../AnimatedMascot";
 import SpeakingIndicator from "../SpeakingIndicator";
 
 interface GameChatBubbleProps {
@@ -59,11 +58,6 @@ export default function GameChatBubble({
 
   return (
     <div className={`flex gap-2 items-start ${className ?? "animate-fade-in-up"}`}>
-      <AnimatedMascot
-        state={isStreaming ? "thinking" : "happy"}
-        size="sm"
-        className="shrink-0 mt-1"
-      />
       <div className="max-w-[85%] flex flex-col gap-2">
         {/* Main message - only render if there's text content, images, or streaming */}
         {(hasText || isStreaming || hasImages) && (
@@ -173,8 +167,8 @@ export default function GameChatBubble({
 
 export function GameTypingBubble() {
   return (
-    <div className="flex gap-2 items-start animate-fade-in">
-      <AnimatedMascot state="thinking" size="sm" className="shrink-0 mt-1" />
+    <div className="flex gap-2 items-center animate-fade-in">
+      <span className="text-sm text-[var(--kids-purple)] font-bold animate-pulse">مدحت يفكر...</span>
       <div className="px-4 py-3 bg-white/80 rounded-2xl rounded-tl-sm shadow-md">
         <div className="flex gap-1.5">
           <div className="w-2 h-2 bg-[var(--kids-purple)] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
