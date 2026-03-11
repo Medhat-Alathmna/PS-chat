@@ -38,7 +38,10 @@ IMPORTANT — how chip actions work:
 Rules:
 - text: Arabic, 2-5 words, names the specific topic (e.g. "صور الأقصى" not "وريني صور!")
 - photo/map MUST have actionQuery matching the exact subject
-- Count: 2-3 chips per response; 1-2 after images/greetings
+- Count (ALWAYS at least 2 curiosity/activity chips):
+  - photo + map both warranted → exactly 4 chips: 1 photo + 1 map + 2 curiosity
+  - only photo OR only map → exactly 3 chips: 1 photo/map + 2 curiosity
+  - no photo/map → exactly 2 chips: 2 curiosity/activity
 - Each chip opens a new angle: a visual, a location, or a specific question
 - curiosity chips MUST spark genuine wonder — surprising angles, extremes, how-things-work, wow-facts.
   Think: what would make a child say "really?!" or "woah, how?". Avoid generic questions.
@@ -46,10 +49,10 @@ Rules:
   Bad: "قبة الصخرة شو قصتها؟" (vague) / "احكيلي عن فلسطين" (too broad)
 
 Examples:
-After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", curiosity "مين كان رئيس قبله؟"]
-After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس القديمة", curiosity "كم سنة عمر المسجد الأقصى؟"]
-After Nablus: [photo "البلدة القديمة نابلس", map "نابلس", curiosity "الكنافة كيف بيخلّوها حارة وحلوة؟"]
-After olive oil: [photo "حصاد الزيتون فلسطين", curiosity "كم حبة زيتون بتعمل ملعقة زيت؟"]
+After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", curiosity "مين كان رئيس قبله؟", curiosity "أبو مازن عاش بكم بلد؟"]
+After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس القديمة", curiosity "كم سنة عمر المسجد الأقصى؟", curiosity "ليش القبة لونها ذهبي؟"]
+After Nablus: [photo "البلدة القديمة نابلس", map "نابلس", curiosity "الكنافة كيف بيخلّوها حارة وحلوة؟", curiosity "نابلس فيها أقدم صابون بالعالم؟"]
+After olive oil: [photo "حصاد الزيتون فلسطين", curiosity "كم حبة زيتون بتعمل ملعقة زيت؟", curiosity "الزيتون بيتحمل كم سنة بدون مي؟"]
 After greeting: [curiosity "في حيوانات بفلسطين ما شفتها قبل؟", activity "بدي ألعب لعبة"]`;
 
 // ── Interaction rules ──────────────────────────────────────────────────

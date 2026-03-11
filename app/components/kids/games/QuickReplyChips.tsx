@@ -71,34 +71,62 @@ const CHIP_STYLES: Record<
   },
 };
 
+function ChipButton({
+  chip,
+  onChipClick,
+  disabled,
+  className = "",
+}: {
+  chip: SuggestionChip;
+  onChipClick: (chip: SuggestionChip) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const style = CHIP_STYLES[chip.type] || CHIP_STYLES.curiosity;
+  return (
+    <button
+      type="button"
+      onClick={() => onChipClick(chip)}
+      disabled={disabled}
+      className={`group relative flex items-center gap-3 px-5 py-3.5 rounded-3xl text-right transition-all shadow-md ${style.bg} border-2 ${style.border} text-gray-800 ${style.hover} hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-40 disabled:hover:scale-100 cursor-pointer overflow-hidden ${className}`}
+      dir="auto"
+    >
+      <div className={`absolute inset-0 bg-gradient-to-r ${style.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
+      <span className="text-xl shrink-0 filter drop-shadow-sm">{style.emoji}</span>
+      <span className="text-base sm:text-lg font-bold leading-relaxed">{chip.text}</span>
+    </button>
+  );
+}
+
 export default function QuickReplyChips({
   data,
   onChipClick,
   onHintClick,
   disabled,
 }: QuickReplyChipsProps) {
+  const { suggestions } = data;
+  const photoMapChips = suggestions.filter((c) => c.type === "photo" || c.type === "map");
+  const otherChips = suggestions.filter((c) => c.type !== "photo" && c.type !== "map");
+  const hasPhotoAndMap =
+    photoMapChips.some((c) => c.type === "photo") &&
+    photoMapChips.some((c) => c.type === "map");
+
   return (
     <div className="flex flex-col gap-2 animate-pop-in">
-      <div className="grid gap-2">
-        {data.suggestions.map((chip, i) => {
-          const style = CHIP_STYLES[chip.type] || CHIP_STYLES.curiosity;
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onChipClick(chip)}
-              disabled={disabled}
-              className={`group relative flex items-center gap-3 px-5 py-3.5 rounded-3xl text-right transition-all shadow-md ${style.bg} border-2 ${style.border} text-gray-800 ${style.hover} hover:scale-[1.02] hover:shadow-lg active:scale-95 disabled:opacity-40 disabled:hover:scale-100 cursor-pointer overflow-hidden`}
-              dir="auto"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-r ${style.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
-              <span className="text-xl shrink-0 filter drop-shadow-sm">{style.emoji}</span>
-              <span className="text-base sm:text-lg font-bold leading-relaxed">{chip.text}</span>
-            </button>
-          );
-        })}
-      </div>
-
+      {hasPhotoAndMap ? (
+        <div className="flex gap-2">
+          {photoMapChips.map((chip) => (
+            <ChipButton key={chip.type} chip={chip} onChipClick={onChipClick} disabled={disabled} className="flex-1 min-w-0" />
+          ))}
+        </div>
+      ) : (
+        photoMapChips.map((chip) => (
+          <ChipButton key={chip.type} chip={chip} onChipClick={onChipClick} disabled={disabled} />
+        ))
+      )}
+      {otherChips.map((chip) => (
+        <ChipButton key={`${chip.type}-${chip.text}`} chip={chip} onChipClick={onChipClick} disabled={disabled} />
+      ))}
     </div>
   );
 }
