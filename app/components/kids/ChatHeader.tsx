@@ -134,15 +134,6 @@ export default function ChatHeader({
           <span className="text-xl">←</span>
         </button>
 
-        <ProfileSwitcher
-          profiles={profiles}
-          activeProfile={activeProfile}
-          onSwitch={onSwitchProfile}
-          onAddNew={onAddNewProfile}
-          onEdit={onEditProfile}
-          onDelete={onDeleteProfile}
-        />
-
         <div className="flex-1 min-w-0">
           <RewardsBar {...rewardsBarProps} />
         </div>
@@ -162,14 +153,6 @@ export default function ChatHeader({
           aria-label="الإعدادات"
         >
           <span className="text-xl">{"\u2699\uFE0F"}</span>
-        </button>
-
-        <button
-          onClick={onNavigateToGames}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white rounded-2xl font-bold text-base hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
-        >
-          <span className="text-lg">🎮</span>
-          <span>ألعاب</span>
         </button>
       </div>
     </header>

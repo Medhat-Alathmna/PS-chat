@@ -38,6 +38,7 @@ import { useMapSettings } from "@/lib/hooks/useMapSettings";
 import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
 import { useChatSettings } from "@/lib/hooks/useChatSettings";
 import { useBackgroundMusicContext } from "@/app/layout";
+import { useMedhatVoices } from "@/lib/hooks/useMedhatVoices";
 
 // Dynamic import for map component
 const PalestineLeafletMap = dynamic(
@@ -248,6 +249,8 @@ export function useChatPage(): UseChatPageReturn {
     speakMessage,
   } = useVoiceSynthesis({ soundEnabled });
 
+  const { playLookAtMap, playLookAtPics } = useMedhatVoices({ voiceEnabled });
+
   // Chat context for game integration
   const { addTopic } = useChatContext(profileId);
 
@@ -343,6 +346,7 @@ export function useChatPage(): UseChatPageReturn {
       playPop();
 
       if (chip.type === "photo" && chip.actionQuery) {
+        playLookAtPics();
         // Direct image search — no AI round-trip
         setDirectImagesLoading(true);
         setDirectImages([]);
@@ -363,6 +367,7 @@ export function useChatPage(): UseChatPageReturn {
       }
 
       if (chip.type === "map" && chip.actionQuery) {
+        playLookAtMap();
         // Try known cities first
         const cityId = detectCityInText(chip.actionQuery);
         if (cityId) {
@@ -399,7 +404,7 @@ export function useChatPage(): UseChatPageReturn {
       // curiosity / activity — send as message (current behavior)
       sendMessage({ text: chip.text });
     },
-    [isLoading, playPop, sendMessage, stopSpeaking]
+    [isLoading, playLookAtMap, playLookAtPics, playPop, sendMessage, stopSpeaking]
   );
 
   // Auto-scroll
