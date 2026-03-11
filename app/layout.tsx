@@ -4,6 +4,7 @@ import { createContext, useContext } from "react";
 import { Geist, Geist_Mono, Noto_Sans_Arabic, Cairo, Tajawal, Changa } from "next/font/google";
 import "./globals.css";
 import { useBackgroundMusic } from "@/lib/hooks/useBackgroundMusic";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <BackgroundMusicContext.Provider value={music}>
+          <Toaster position="top-center" richColors />
           <div className="min-h-screen bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
             {children}
           </div>

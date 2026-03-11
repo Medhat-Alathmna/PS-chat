@@ -23,9 +23,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await geocodeLocation(query);
+    // Append "فلسطين" to anchor the search within Palestine
+    const searchQuery = `${query.trim()} فلسطين`;
+    const result = await geocodeLocation(searchQuery);
     if (!result.success || !result.data) {
-      return NextResponse.json({ success: false });
+      return NextResponse.json({ success: false, error: result.error ?? "Location not found" });
     }
 
     const { lat, lng } = result.data.coordinates;

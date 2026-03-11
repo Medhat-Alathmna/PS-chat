@@ -120,6 +120,7 @@ function KidsChatPageInner() {
             mapSettings={map.mapSettings}
             onCityClick={handlers.handleCityClick}
             onAskAboutCity={handlers.handleAskAboutCity}
+            flyToCoordinates={map.flyToCoordinates}
             MapComponent={map.PalestineLeafletMap}
           />
 

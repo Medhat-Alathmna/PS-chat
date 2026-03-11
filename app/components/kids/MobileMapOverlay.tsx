@@ -13,6 +13,7 @@ interface MobileMapOverlayProps {
   mapSettings: MapSettings;
   onCityClick: (city: City) => void;
   onAskAboutCity: (city: City) => void;
+  flyToCoordinates?: { lat: number; lng: number; zoom?: number; label?: string } | null;
   MapComponent: React.ComponentType<{
     onCityClick?: (city: City) => void;
     onAskAboutCity?: (city: City) => void;
@@ -21,6 +22,7 @@ interface MobileMapOverlayProps {
     enableFullInteraction?: boolean;
     className?: string;
     mapSettings?: MapSettings;
+    flyToCoordinates?: { lat: number; lng: number; zoom?: number; label?: string } | null;
   }>;
 }
 
@@ -35,6 +37,7 @@ export default function MobileMapOverlay({
   mapSettings,
   onCityClick,
   onAskAboutCity,
+  flyToCoordinates,
   MapComponent,
 }: MobileMapOverlayProps) {
   if (!show) return null;
@@ -74,6 +77,7 @@ export default function MobileMapOverlay({
             enableFullInteraction={true}
             className="h-full"
             mapSettings={mapSettings}
+            flyToCoordinates={flyToCoordinates}
           />
         </div>
 

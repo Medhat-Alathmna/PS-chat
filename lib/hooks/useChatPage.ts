@@ -4,6 +4,7 @@
  * Returns grouped objects for cleaner usage.
  */
 
+import { toast } from "sonner";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import {
@@ -377,16 +378,21 @@ export function useChatPage(): UseChatPageReturn {
         fetch("/api/geocode", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: chip.actionQuery }),
+          body: JSON.stringify({ query: `${chip.actionQuery} فلسطين` }),
         })
           .then((res) => res.json())
-          .then((data: { success: boolean; coordinates?: { lat: number; lng: number } }) => {
+          .then((data: { success: boolean; coordinates?: { lat: number; lng: number }; error?: string }) => {
             if (data.success && data.coordinates) {
               setFlyToCoordinates({ lat: data.coordinates.lat, lng: data.coordinates.lng, zoom: 15, label: chip.actionQuery });
               setShowMobileMap(true);
+            } else {
+              toast.error(data.error ?? "تعذّر تحديد موقع هذا المكان");
             }
           })
-          .catch(() => {});
+          .catch((err: unknown) => {
+            console.error("[geocode] fetch error:", err);
+            toast.error("حدث خطأ أثناء البحث عن الموقع");
+          });
         return;
       }
 
