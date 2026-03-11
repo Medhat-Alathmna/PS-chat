@@ -44,7 +44,8 @@
       "Bash(rm:*)",
       "Bash(pip show:*)",
       "Bash(pip install:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(gh repo view --json nameWithOwner)"
     ]
   }
 }

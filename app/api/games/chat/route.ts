@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     const nextHint = buildPrecomputedHint(nextCity, nextImages);
 
     // Server-side answer pre-validation
-    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    const lastUserMsg = messages.findLast((m) => m.role === "user");
     const lastText = lastUserMsg?.content ?? "";
     const isCorrect = !!lastText && normalizeArabic(lastText) === normalizeArabic(currentCity.nameAr);
 

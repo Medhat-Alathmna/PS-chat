@@ -109,6 +109,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const [pendingHint, setPendingHint] = useState<{ hint: string; images?: string[]; targetCityId?: string } | null>(null);
   const [showPendingHint, setShowPendingHint] = useState(false);
 
+  // Ref-mirror of revealedCities — lets sendGameMessage check without the dep
+  const revealedCitiesRef = useRef<string[]>([]);
+  useEffect(() => { revealedCitiesRef.current = revealedCities; }, [revealedCities]);
+
   const prevHintCityIdRef = useRef<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -207,7 +211,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         if (isCityExplorer && newCityId) {
           const city = CITIES.find(c => c.id === newCityId);
           if (city && typeof city.lat === "number" && typeof city.lng === "number" && !isNaN(city.lat) && !isNaN(city.lng)) {
-            if (!revealedCities.includes(newCityId)) {
+            if (!revealedCitiesRef.current.includes(newCityId)) {
               setRevealedCities(prev => [...prev, newCityId]);
               discoveredCities.addCity(newCityId);
               setHighlightRegion(null);
@@ -259,7 +263,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     isLoading, messages, gameId, currentCityId, isCityExplorer,
     discoveredCities.discoveredIds, discoveredCities.addCity,
     gameState, gameRewards, config.pointsPerCorrect,
-    activeProfile, getContext, playSound, revealedCities,
+    activeProfile, getContext, playSound,
   ]);
 
   // Auto-send "Start!" message
