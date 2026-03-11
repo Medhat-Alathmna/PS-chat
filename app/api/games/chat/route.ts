@@ -140,6 +140,7 @@ export async function POST(req: NextRequest) {
       turn,
       currentCityId: currentCity.id,
       targetCityId,
+      targetCityNameAr: isCorrect ? nextCity.nameAr : currentCity.nameAr,
       hint: hint.hint,
       hintImages: cleanHintImages,
       isCorrect,

@@ -39,12 +39,14 @@ type GameMessage = {
   hint?: string;
   hintImages?: string[];
   targetCityId?: string;
+  targetCityNameAr?: string;
 };
 
 type GameApiResponse = {
   turn: GameResponse;
   currentCityId: string;
   targetCityId: string;
+  targetCityNameAr: string;
   hint: string;
   hintImages: string[];
   isCorrect: boolean;
@@ -184,7 +186,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       }
 
       const data: GameApiResponse = await res.json();
-      const { turn, currentCityId: newCityId, targetCityId, hint, hintImages, isCorrect } = data;
+      const { turn, currentCityId: newCityId, targetCityId, targetCityNameAr, hint, hintImages, isCorrect } = data;
 
       // Build assistant message
       const assistantMsg: GameMessage = {
@@ -197,6 +199,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         hint,
         hintImages,
         targetCityId,
+        targetCityNameAr,
       };
 
       // Handle game events
@@ -314,6 +317,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     hint: string | undefined;
     hintImages: string[] | undefined;
     targetCityId: string | undefined;
+    targetCityNameAr: string | undefined;
     hasHint: boolean;
   } | null>(() => {
     if (isLoading) return null;
@@ -326,6 +330,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
           hint: msg.hint,
           hintImages: msg.hintImages,
           targetCityId: msg.targetCityId,
+          targetCityNameAr: msg.targetCityNameAr,
           hasHint: !!msg.hint,
         };
       }
@@ -520,6 +525,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                     onOptionClick={handleOptionClick}
                     onHintClick={handleHintClick}
                     hintAlreadyShown={showPendingHint}
+                    targetCityNameAr={activeOptions.targetCityNameAr}
                   />
                 )}
 
@@ -622,32 +628,52 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
 
 function CityOptionsBlock({
-  options, hasHint, onOptionClick, onHintClick, hintAlreadyShown = false,
+  options, hasHint, onOptionClick, onHintClick, hintAlreadyShown = false, targetCityNameAr,
 }: {
   options: string[];
   hasHint: boolean;
   onOptionClick: (text: string) => void;
   onHintClick: () => void;
   hintAlreadyShown?: boolean;
+  targetCityNameAr?: string;
 }) {
+  const [wrongOption, setWrongOption] = useState<string | null>(null);
+
+  const handleClick = (option: string) => {
+    if (targetCityNameAr && option !== targetCityNameAr) {
+      setWrongOption(option);
+      setTimeout(() => setWrongOption(null), 600);
+      return;
+    }
+    onOptionClick(option);
+  };
+
   return (
     <div className="flex flex-col gap-3 animate-pop-in my-2">
       <div className="text-center text-sm text-[var(--kids-purple)] font-bold opacity-80 mb-1">
         اختار الإجابة الصحيحة 👇
       </div>
       <div className="grid gap-3">
-        {options.map((option, i) => (
-          <button
-            key={i}
-            onClick={() => onOptionClick(option)}
-            className="group relative flex items-center gap-3 px-5 py-4 rounded-3xl text-right transition-all shadow-md bg-white border-2 border-[var(--kids-purple)]/20 text-gray-800 hover:bg-purple-50 hover:border-[var(--kids-purple)] hover:scale-[1.02] hover:shadow-lg active:scale-95 cursor-pointer overflow-hidden"
-            dir="auto"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-[var(--kids-purple)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <span className="text-2xl shrink-0 filter drop-shadow-sm">{NUMBER_EMOJIS[i]}</span>
-            <span className="text-base sm:text-lg font-bold leading-relaxed">{option}</span>
-          </button>
-        ))}
+        {options.map((option, i) => {
+          const isWrong = wrongOption === option;
+          return (
+            <button
+              key={i}
+              onClick={() => handleClick(option)}
+              disabled={!!wrongOption}
+              className={`group relative flex items-center gap-3 px-5 py-4 rounded-3xl text-right transition-all shadow-md border-2 overflow-hidden ${
+                isWrong
+                  ? "animate-shake bg-red-100 border-red-400 text-red-700 cursor-not-allowed"
+                  : "bg-white border-[var(--kids-purple)]/20 text-gray-800 hover:bg-purple-50 hover:border-[var(--kids-purple)] hover:scale-[1.02] hover:shadow-lg active:scale-95 cursor-pointer"
+              }`}
+              dir="auto"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--kids-purple)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="text-2xl shrink-0 filter drop-shadow-sm">{NUMBER_EMOJIS[i]}</span>
+              <span className="text-base sm:text-lg font-bold leading-relaxed">{option}</span>
+            </button>
+          );
+        })}
       </div>
 
       {hasHint && !hintAlreadyShown && (
