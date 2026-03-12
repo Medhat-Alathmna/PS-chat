@@ -5,8 +5,6 @@
  */
 
 import { toast } from "sonner";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import {
   ChangeEvent,
   FormEvent,
@@ -280,41 +278,73 @@ export function useChatPage(): UseChatPageReturn {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imagePreview, setImagePreview] = useState<{ url: string; mediaType: string; file: File } | null>(null);
 
-  // AI Chat hook — key by profileId so it resets on switch
-  const chatTransport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: "/api/chat",
-        body: {
-          config: {
-            mode: "localPrompt",
-            systemPrompt,
-          },
-          playerName: activeProfile?.name,
-        },
-        prepareSendMessagesRequest: ({ id, messages, body, headers, credentials, api, trigger, messageId }) => ({
-          api,
-          headers,
-          credentials,
-          body: {
-            ...body,
-            id,
-            messages: messages.slice(-3),
-            trigger,
-            messageId,
-          },
-        }),
-      }),
-    [systemPrompt, activeProfile?.name]
-  );
+  // Chat state — manage messages and loading manually
+  const [aiMessages, setAiMessages] = useState<Array<{ id: string; role: string; parts: unknown[] }>>([]);
+  const [status, setStatus] = useState<"initialized" | "submitted" | "streaming" | "idle">("initialized");
 
-  const {
-    messages: aiMessages,
-    sendMessage,
-    status,
-  } = useChat({
-    transport: chatTransport,
-  });
+  const sendMessage = useCallback(
+    async (message: { text: string; files?: { type: "file"; mediaType: string; url: string }[] }) => {
+      // Add user message to state
+      const userMessageId = `user-${Date.now()}`;
+      const userMessage = { id: userMessageId, role: "user", parts: [{ type: "text", text: message.text }] as unknown[] };
+      if (message.files) {
+        for (const file of message.files) {
+          (userMessage.parts as unknown[]).push({
+            type: "file",
+            mediaType: file.mediaType,
+            url: file.url,
+          });
+        }
+      }
+
+      setAiMessages((prev) => [...prev, userMessage]);
+      setStatus("submitted");
+
+      try {
+        // Send request to API
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [...aiMessages, userMessage].slice(-3),
+            config: {
+              mode: "localPrompt",
+              systemPrompt,
+            },
+            playerName: activeProfile?.name,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.error || "حدث خطأ. يرجى المحاولة مرة أخرى.");
+          setStatus("idle");
+          return;
+        }
+
+        const data = await response.json();
+
+        // Create assistant message with parts
+        const assistantMessageId = `assistant-${Date.now()}`;
+        const assistantMessage = {
+          id: assistantMessageId,
+          role: "assistant",
+          parts: [
+            { type: "text", text: data.text },
+            ...(data.chips?.length ? [{ type: "data-chips", data: { chips: data.chips } }] : []),
+          ] as unknown[],
+        };
+
+        setAiMessages((prev) => [...prev, assistantMessage]);
+        setStatus("idle");
+      } catch (error) {
+        console.error("Chat error:", error);
+        toast.error("حدث خطأ. يرجى المحاولة مرة أخرى.");
+        setStatus("idle");
+      }
+    },
+    [aiMessages, systemPrompt, activeProfile?.name]
+  );
 
   const isLoading = status === "streaming" || status === "submitted";
 

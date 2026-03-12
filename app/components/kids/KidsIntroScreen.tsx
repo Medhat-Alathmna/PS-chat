@@ -333,6 +333,8 @@ function getCategoryLabel(category: string): string {
     history: "تاريخ",
     culture: "ثقافة",
     fun: "مرح",
+    historical_figures: "شخصيات تاريخية",
+    political_leaders: "قادة سياسيين",
   };
   return labels[category] || category;
 }

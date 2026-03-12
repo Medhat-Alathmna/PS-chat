@@ -8,10 +8,8 @@ import {
   ImageResult,
   LocationInfo,
   MapData,
-  WebSearchResultItem,
   VideoResult,
   NewsItem,
-  TimelineEvent,
   SuggestionChip,
 } from "@/lib/types";
 import { normalizeSuggestions } from "@/app/components/kids/games/QuickReplyChips";
@@ -102,11 +100,6 @@ interface LocationSearchOutput {
   mapUpdated?: boolean;
 }
 
-interface WebSearchOutput {
-  success: boolean;
-  results: WebSearchResultItem[];
-}
-
 interface VideoSearchOutput {
   success: boolean;
   video: VideoResult;
@@ -117,15 +110,10 @@ interface NewsSearchOutput {
   news: NewsItem[];
 }
 
-interface TimelineSearchOutput {
-  success: boolean;
-  events: TimelineEvent[];
-}
-
 /**
  * Builds a ChatMessage from an AI SDK message.
- * Handles tools: image_search, location_search, web_search, video_search,
- * news_search, timeline_search. Chips come from data-chips part (experimental_output).
+ * Handles tools: image_search, location_search, video_search, news_search.
+ * Chips come from data-chips part (experimental_output).
  */
 export function buildChatMessage(
   msg: { id: string; role: string; parts: unknown[] },
@@ -136,10 +124,8 @@ export function buildChatMessage(
   let images: ImageResult[] | undefined;
   let location: LocationInfo | undefined;
   let mapData: MapData | undefined;
-  let webSearchResults: WebSearchResultItem[] | undefined;
   let video: VideoResult | undefined;
   let news: NewsItem[] | undefined;
-  let timeline: TimelineEvent[] | undefined;
   let suggestRepliesData: { suggestions: SuggestionChip[] } | undefined;
 
   // Process image_search
@@ -162,12 +148,6 @@ export function buildChatMessage(
     };
   }
 
-  // Process web_search
-  const webResult = getToolOutput<WebSearchOutput>(msg.parts, "web_search");
-  if (webResult?.success && webResult?.results?.length > 0) {
-    webSearchResults = webResult.results;
-  }
-
   // Process video_search
   const videoResult = getToolOutput<VideoSearchOutput>(msg.parts, "video_search");
   if (videoResult?.success && videoResult?.video) {
@@ -178,12 +158,6 @@ export function buildChatMessage(
   const newsResult = getToolOutput<NewsSearchOutput>(msg.parts, "news_search");
   if (newsResult?.success && newsResult?.news?.length > 0) {
     news = newsResult.news;
-  }
-
-  // Process timeline_search
-  const timelineResult = getToolOutput<TimelineSearchOutput>(msg.parts, "timeline_search");
-  if (timelineResult?.success && timelineResult?.events?.length > 0) {
-    timeline = timelineResult.events;
   }
 
   // Process chips — prefer inline CHIPS: from text, fall back to data-chips part
@@ -204,10 +178,8 @@ export function buildChatMessage(
     userImages: userImageParts.length > 0 ? userImageParts : undefined,
     location,
     mapData,
-    webSearchResults,
     video,
     news,
-    timeline,
     suggestRepliesData,
   };
 }

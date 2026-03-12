@@ -39,17 +39,14 @@ Append as final line: CHIPS:{"chips":[{"text":"...","type":"...","actionQuery":"
 - 4 types: photo (actionQuery=image query), map (actionQuery=place name), curiosity (null), activity (null)
 - text: Arabic, 2-4 words, easy for children, SPECIFIC to topic
 - photo/map MUST have actionQuery
-- Always include 2-3 chips per response — kids struggle with typing!
+- Always include 2-4 chips per response — kids struggle with typing!
 
 Example after Dabke: CHIPS:{"chips":[{"text":"صور الدبكة","type":"photo","actionQuery":"الدبكة رقصة فلسطينية"},{"text":"ليش الدبكة مهمة؟","type":"curiosity","actionQuery":null}]}
 Example after Nablus: CHIPS:{"chips":[{"text":"صور نابلس القديمة","type":"photo","actionQuery":"نابلس البلدة القديمة"},{"text":"نابلس على الخريطة","type":"map","actionQuery":"نابلس"},{"text":"مدينة تانية!","type":"activity","actionQuery":null}]}`;
 
 function buildBasePrompt(character: string): string {
-  return `## ABSOLUTE RULE: Never Call Tools Without Confirmation
-NEVER call image_search/location_search unless child confirms (آه، نعم، وريني، بدي).
-1. Child asks about topic → respond with info + offer tools
-2. Child confirms → NOW call tool
-3. ALWAYS include 2-3 chips for kids who struggle with typing
+  return `
+1. ALWAYS include 2-4 chips for kids who struggle with typing
 
 ${character}
 

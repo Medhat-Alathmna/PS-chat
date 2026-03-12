@@ -24,13 +24,6 @@ export type ToolCallInfo = {
   state: "pending" | "running" | "completed" | "error";
 };
 
-export type WebSearchResultItem = {
-  title: string;
-  snippet: string;
-  url: string;
-  source: string;
-};
-
 export type DebugInfo = {
   messageId: string;
   toolCalls: ToolCallInfo[];
@@ -46,10 +39,8 @@ export type ChatMessage = {
   userImages?: { url: string; mediaType: string }[];
   location?: LocationInfo;
   mapData?: MapData;
-  webSearchResults?: WebSearchResultItem[];
   video?: VideoResult;
   news?: NewsItem[];
-  timeline?: TimelineEvent[];
   suggestRepliesData?: { suggestions: SuggestionChip[] };
   debug?: DebugInfo;
 };
@@ -143,20 +134,6 @@ export type NewsItem = {
   imageUrl?: string;
   publishedAt: string;
   category?: string;
-};
-
-// ============================================
-// TIMELINE TYPES
-// ============================================
-
-export type TimelineEvent = {
-  id: string;
-  year: number;
-  title: string;
-  description: string;
-  category?: "political" | "cultural" | "military" | "social" | "other";
-  imageUrl?: string;
-  location?: string;
 };
 
 // ============================================

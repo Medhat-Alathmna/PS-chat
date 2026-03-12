@@ -3,8 +3,7 @@ import { z } from "zod";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { geocodeLocation } from "@/lib/services/maps/geocoding";
 import { searchYouTubeVideos } from "@/lib/services/video/youtube";
-import { searchTimelineByKeyword, getTimelineEvents } from "@/lib/data/palestinian-history";
-import { ImageResult, Coordinates, VideoResult, NewsItem, TimelineEvent } from "@/lib/types";
+import { ImageResult, Coordinates, VideoResult, NewsItem } from "@/lib/types";
 
 // ============================================
 // CHIP SCHEMAS (for experimental_output / Output.object)
@@ -130,91 +129,6 @@ export const locationSearchTool = tool({
   },
 });
 
-/**
- * Web Search Tool
- * Searches the web for information about Palestine
- */
-export const webSearchTool = tool({
-  description:
-    "Search web for recent Palestine-related information or facts.",
-  inputSchema: z.object({
-    query: z
-      .string()
-      .describe(
-        "Search query (e.g., 'Palestinian culture', 'Gaza history', 'West Bank cities')"
-      ),
-  }),
-  execute: async ({ query }): Promise<WebSearchResult> => {
-    try {
-      // Add Palestine context to search
-      const searchQuery = query.toLowerCase().includes("فلسطين") ||
-        query.toLowerCase().includes("palestine")
-        ? query
-        : `${query} Palestine`;
-
-      // Use DuckDuckGo Instant Answer API (free, no API key needed)
-      const response = await fetch(
-        `https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json&no_html=1&skip_disambig=1`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      const results: WebSearchResultItem[] = [];
-
-      // Extract abstract if available
-      if (data.Abstract) {
-        results.push({
-          title: data.Heading || query,
-          snippet: data.Abstract,
-          url: data.AbstractURL || "",
-          source: data.AbstractSource || "DuckDuckGo",
-        });
-      }
-
-      // Extract related topics
-      if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-        for (const topic of data.RelatedTopics.slice(0, 5)) {
-          if (topic.Text && topic.FirstURL) {
-            results.push({
-              title: topic.Text.split(" - ")[0] || topic.Text.substring(0, 50),
-              snippet: topic.Text,
-              url: topic.FirstURL,
-              source: "DuckDuckGo",
-            });
-          }
-        }
-      }
-
-      if (results.length === 0) {
-        return {
-          success: false,
-          query,
-          results: [],
-          message: `لم يتم العثور على نتائج لـ "${query}"`,
-        };
-      }
-
-      return {
-        success: true,
-        query,
-        results,
-        message: `تم العثور على ${results.length} نتيجة لـ "${query}"`,
-      };
-    } catch (error) {
-      console.error("[web_search] Error:", error);
-      return {
-        success: false,
-        query,
-        results: [],
-        message: "حدث خطأ أثناء البحث في الإنترنت",
-      };
-    }
-  },
-});
 
 /**
  * Video Search Tool
@@ -261,87 +175,6 @@ export const videoSearchTool = tool({
   },
 });
 
-/**
- * Timeline Search Tool
- * Retrieves Palestinian historical events
- */
-export const timelineSearchTool = tool({
-  description:
-    "Get Palestinian historical timeline events. Use for history questions.",
-  inputSchema: z.object({
-    query: z
-      .string()
-      .optional()
-      .describe("Search keyword (e.g., 'نكبة', '1948', 'القدس')"),
-    startYear: z
-      .number()
-      .optional()
-      .describe("Start year for filtering (e.g., 1900)"),
-    endYear: z
-      .number()
-      .optional()
-      .describe("End year for filtering (e.g., 2000)"),
-    category: z
-      .enum(["political", "cultural", "military", "social", "other"])
-      .optional()
-      .describe("Category filter"),
-    limit: z
-      .number()
-      .min(1)
-      .max(10)
-      .default(5)
-      .describe("Number of events to return (1-10)"),
-  }),
-  execute: async ({
-    query,
-    startYear,
-    endYear,
-    category,
-    limit = 5,
-  }): Promise<TimelineSearchResult> => {
-    try {
-      let events: TimelineEvent[];
-
-      if (query) {
-        events = searchTimelineByKeyword(query);
-      } else {
-        events = getTimelineEvents({
-          startYear,
-          endYear,
-          category,
-          limit,
-        });
-      }
-
-      if (events.length === 0) {
-        return {
-          success: false,
-          query: query || "",
-          events: [],
-          message: "لم يتم العثور على أحداث تاريخية",
-        };
-      }
-
-      // Apply limit
-      events = events.slice(0, limit);
-
-      return {
-        success: true,
-        query: query || "",
-        events,
-        message: `تم العثور على ${events.length} حدث تاريخي`,
-      };
-    } catch (error) {
-      console.error("[timeline_search] Error:", error);
-      return {
-        success: false,
-        query: query || "",
-        events: [],
-        message: "حدث خطأ أثناء البحث في التاريخ",
-      };
-    }
-  },
-});
 
 // ============================================
 // TOOL RESULT TYPES
@@ -362,20 +195,6 @@ export type LocationSearchResult = {
   message: string;
 };
 
-export type WebSearchResultItem = {
-  title: string;
-  snippet: string;
-  url: string;
-  source: string;
-};
-
-export type WebSearchResult = {
-  success: boolean;
-  query: string;
-  results: WebSearchResultItem[];
-  message: string;
-};
-
 export type VideoSearchResult = {
   success: boolean;
   query: string;
@@ -390,13 +209,6 @@ export type NewsSearchResult = {
   message: string;
 };
 
-export type TimelineSearchResult = {
-  success: boolean;
-  query: string;
-  events: TimelineEvent[];
-  message: string;
-};
-
 // ============================================
 // EXPORT ALL TOOLS
 // ============================================
@@ -404,9 +216,7 @@ export type TimelineSearchResult = {
 export const allTools = {
   image_search: imageSearchTool,
   location_search: locationSearchTool,
-  web_search: webSearchTool,
   video_search: videoSearchTool,
-  timeline_search: timelineSearchTool,
 };
 
 /**

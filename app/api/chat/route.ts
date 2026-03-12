@@ -2,25 +2,21 @@
 
 import { NextRequest } from "next/server";
 import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  streamText,
+  generateText,
   UIMessage,
   convertToModelMessages,
 } from "ai";
 import { buildMainSystemPrompt } from "@/lib/ai/main";
 import { getMainChatModelInstance } from "@/lib/ai/config";
-import { kidsTools, timelineSearchTool } from "@/lib/ai/tools";
+import { kidsTools } from "@/lib/ai/tools";
 import { isImagesEnabled } from "@/lib/config/features";
 import { logError } from "@/lib/utils/error-handler";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
 import { buildCacheOptions } from "@/lib/ai/cache";
-import { makeStreamingCallbacks } from "@/lib/ai/logging";
 
 function buildMainTools() {
   const { image_search, ...kidsToolsWithoutImages } = kidsTools;
-  const base = isImagesEnabled() ? kidsTools : kidsToolsWithoutImages;
-  return { ...base, timeline_search: timelineSearchTool };
+  return isImagesEnabled() ? kidsTools : kidsToolsWithoutImages;
 }
 
 type KidsChatRequest = {
@@ -34,7 +30,7 @@ type KidsChatRequest = {
 
 /**
  * POST /api/chat - Main chat agent (Medhat)
- * Tools: image_search, location_search, timeline_search
+ * Tools: image_search, location_search
  * Chips generated via Output.object (parallel with text — no extra tool round-trip)
  */
 export async function POST(req: NextRequest) {
@@ -56,29 +52,26 @@ export async function POST(req: NextRequest) {
 
     const convertedMessages = await convertToModelMessages(messages.slice(-3));
 
-    const uiStream = createUIMessageStream({
-      execute: async ({ writer }) => {
-        const result = streamText({
-          model: getMainChatModelInstance(),
-          system: systemPrompt,
-          messages: convertedMessages,
-          tools: buildMainTools(),
-          ...buildCacheOptions("main-chat"),
-          ...makeStreamingCallbacks("main-chat"),
-        });
-
-        writer.merge(result.toUIMessageStream());
-
-        try {
-          const chips = extractChipsFromText(await result.text);
-          if (chips) writer.write({ type: "data-chips", data: chips });
-        } catch {
-          // Chips parse failed — skip gracefully
-        }
-      },
+    const result = await generateText({
+      model: getMainChatModelInstance(),
+      system: systemPrompt,
+      messages: convertedMessages,
+      tools: buildMainTools(),
+      ...buildCacheOptions("main-chat"),
     });
 
-    return createUIMessageStreamResponse({ stream: uiStream });
+    const chips = extractChipsFromText(result.text);
+
+    // Strip CHIPS suffix from display text
+    const chipsPos = result.text.search(/\nCHIPS:/i);
+    const textContent = chipsPos >= 0 ? result.text.slice(0, chipsPos).trim() : result.text;
+
+    return Response.json({
+      text: textContent,
+      chips: chips?.chips || [],
+      finishReason: result.finishReason,
+      usage: result.usage,
+    });
   } catch (error) {
     logError("kids-chat-route", error);
     return new Response(

@@ -8,7 +8,7 @@ export type KidsPrompt = {
   text: string;
   textAr: string;
   emoji: string;
-  category: "cities" | "food" | "history" | "culture" | "fun";
+  category: "cities" | "food" | "history" | "culture" | "fun" | "historical_figures" | "political_leaders";
   color: string;
 };
 
@@ -274,9 +274,85 @@ export const KIDS_PROMPTS: KidsPrompt[] = [
     id: "p32",
     text: "Tell me about Palestinian pottery!",
     textAr: "احكيلي عن الخزف الفلسطيني!",
-    emoji: "�",
+    emoji: "🏺",
     category: "culture",
     color: "#E74C3C",
+  },
+
+  // Historical Figures
+  {
+    id: "h1",
+    text: "Tell me about Ghassan Kanafani!",
+    textAr: "احكيلي عن غسان كنفاني!",
+    emoji: "📚",
+    category: "historical_figures",
+    color: "#8E44AD",
+  },
+  {
+    id: "h3",
+    text: "Tell me about Mahmoud Darwish!",
+    textAr: "احكيلي عن محمود درويش!",
+    emoji: "✍️",
+    category: "historical_figures",
+    color: "#3498DB",
+  },
+  {
+    id: "h4",
+    text: "Who was Samih Al-Qasim?",
+    textAr: "من هو سميح القاسم؟",
+    emoji: "🎭",
+    category: "historical_figures",
+    color: "#E67E22",
+  },
+  {
+    id: "h5",
+    text: "Tell me about Emile Habibi!",
+    textAr: "احكيلي عن إميل حبيبي!",
+    emoji: "📖",
+    category: "historical_figures",
+    color: "#27AE60",
+  },
+
+  // Political Leaders
+  {
+    id: "pl1",
+    text: "Who was Yasser Arafat?",
+    textAr: "من هو ياسر عرفات؟",
+    emoji: "🤝",
+    category: "political_leaders",
+    color: "#009736",
+  },
+  {
+    id: "pl2",
+    text: "Tell me about Mahmoud Abbas!",
+    textAr: "احكيلي عن محمود عباس!",
+    emoji: "🏛️",
+    category: "political_leaders",
+    color: "#1ABC9C",
+  },
+  {
+    id: "pl3",
+    text: "Who was Ahmed Yassin?",
+    textAr: "من هو أحمد ياسين؟",
+    emoji: "👨‍💼",
+    category: "political_leaders",
+    color: "#34495E",
+  },
+  {
+    id: "pl4",
+    text: "Tell me about Hanan Ashrawi!",
+    textAr: "احكيلي عن هناء الأشرواي!",
+    emoji: "🎓",
+    category: "political_leaders",
+    color: "#F39C12",
+  },
+  {
+    id: "pl5",
+    text: "Who is Leila Khaled?",
+    textAr: "من هي ليلى خالد؟",
+    emoji: "💪",
+    category: "political_leaders",
+    color: "#FF9F43",
   },
 ];
 
@@ -294,4 +370,19 @@ export function getRandomPrompts(count: number = 4): KidsPrompt[] {
 // Get prompt by ID
 export function getPromptById(id: string): KidsPrompt | undefined {
   return KIDS_PROMPTS.find((p) => p.id === id);
+}
+
+// Get one prompt per category (one from each category without repetition)
+export function getOnePromptPerCategory(): KidsPrompt[] {
+  // Get all unique categories
+  const categories = Array.from(
+    new Set(KIDS_PROMPTS.map((p) => p.category))
+  );
+
+  // Get one random prompt from each category
+  return categories.map((category) => {
+    const promptsInCategory = KIDS_PROMPTS.filter((p) => p.category === category);
+    // Get a random prompt from this category
+    return promptsInCategory[Math.floor(Math.random() * promptsInCategory.length)];
+  });
 }
