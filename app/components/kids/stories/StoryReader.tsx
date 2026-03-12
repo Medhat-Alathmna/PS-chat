@@ -141,7 +141,6 @@ export default function StoryReader({
   }
 
   const currentSlide = slides[currentIndex];
-  const remaining = slides.length - currentIndex - 1;
 
   const cardClass = [
     "story-card-current",
@@ -160,18 +159,6 @@ export default function StoryReader({
     >
       {/* Card stack area */}
       <div className="relative flex-1 pb-4">
-        {/* Ghost cards — blank frosted glass peeking behind */}
-        {remaining >= 2 && (
-          <div className="story-ghost story-ghost-2">
-            <div className="w-full max-w-lg bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 min-h-[60vh]" />
-          </div>
-        )}
-        {remaining >= 1 && (
-          <div className="story-ghost story-ghost-1">
-            <div className="w-full max-w-lg bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 min-h-[60vh]" />
-          </div>
-        )}
-
         {/* Current card */}
         <div
           key={currentIndex}

@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       model: getStoriesModelInstance(),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
+      temperature:1,
       tools,
       stopWhen: stepCountIs(20),
       ...buildCacheOptions(cacheKey),

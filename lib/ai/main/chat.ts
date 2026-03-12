@@ -38,10 +38,10 @@ IMPORTANT — how chip actions work:
 Rules:
 - text: Arabic, 2-5 words, names the specific topic (e.g. "صور الأقصى" not "وريني صور!")
 - photo/map MUST have actionQuery matching the exact subject
-- Count (ALWAYS at least 2 curiosity/activity chips):
-  - photo + map both warranted → exactly 4 chips: 1 photo + 1 map + 2 curiosity
-  - only photo OR only map → exactly 3 chips: 1 photo/map + 2 curiosity
-  - no photo/map → exactly 2 chips: 2 curiosity/activity
+- Count (ALWAYS exactly 2 curiosity chips — no exceptions):
+  - photo + map both warranted → 4 chips: 1 photo + 1 map + 2 curiosity
+  - only photo OR only map → 3 chips: 1 photo/map + 2 curiosity
+  - no photo/map → 2 curiosity chips (+ 1 activity if relevant, e.g. greetings)
 - Each chip opens a new angle: a visual, a location, or a specific question
 - curiosity chips MUST spark genuine wonder — surprising angles, extremes, how-things-work, wow-facts.
   Think: what would make a child say "really?!" or "woah, how?". Avoid generic questions.
@@ -53,7 +53,7 @@ After Mahmoud Abbas: [photo "صور أبو مازن", map "رام الله", cur
 After Al-Aqsa: [photo "صور المسجد الأقصى", map "القدس القديمة", curiosity "كم سنة عمر المسجد الأقصى؟", curiosity "ليش القبة لونها ذهبي؟"]
 After Nablus: [photo "البلدة القديمة نابلس", map "نابلس", curiosity "الكنافة كيف بيخلّوها حارة وحلوة؟", curiosity "نابلس فيها أقدم صابون بالعالم؟"]
 After olive oil: [photo "حصاد الزيتون فلسطين", curiosity "كم حبة زيتون بتعمل ملعقة زيت؟", curiosity "الزيتون بيتحمل كم سنة بدون مي؟"]
-After greeting: [curiosity "في حيوانات بفلسطين ما شفتها قبل؟", activity "بدي ألعب لعبة"]`;
+After greeting: [curiosity "في حيوانات بفلسطين ما شفتها قبل؟", curiosity "أكبر مدينة بفلسطين إيش هي؟", activity "بدي ألعب لعبة"]`;
 
 // ── Interaction rules ──────────────────────────────────────────────────
 
