@@ -441,8 +441,17 @@ export function useChatPage(): UseChatPageReturn {
   useEffect(() => {
     const container = chatContainerRef.current;
     if (!container) return;
-    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-  }, [messages, isLoading]);
+
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role !== "user") return;
+
+    const userMsgs = container.querySelectorAll('[data-role="user"]');
+    const last = userMsgs[userMsgs.length - 1] as HTMLElement | undefined;
+    if (last) {
+      const offset = last.getBoundingClientRect().top - container.getBoundingClientRect().top;
+      container.scrollBy({ top: offset, behavior: "smooth" });
+    }
+  }, [messages]);
 
   // Resize textarea
   useEffect(() => {

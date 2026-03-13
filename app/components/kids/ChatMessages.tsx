@@ -59,20 +59,21 @@ export default function ChatMessages({
             : message;
           const reveal = revealClass(message.id);
           return (
-            <KidsChatBubble
-              key={message.id}
-              message={displayMessage}
-              isStreaming={
-                status === "streaming" &&
-                index === messages.length - 1 &&
-                message.role === "assistant"
-              }
-              isSpeaking={currentMessageId === message.id}
-              onSpeak={() => onSpeak(message)}
-              onStopSpeaking={onStopSpeaking}
-              textStyle={textStyle}
-              {...(reveal ? { className: reveal } : {})}
-            />
+            <div key={message.id} data-role={message.role}>
+              <KidsChatBubble
+                message={displayMessage}
+                isStreaming={
+                  status === "streaming" &&
+                  index === messages.length - 1 &&
+                  message.role === "assistant"
+                }
+                isSpeaking={currentMessageId === message.id}
+                onSpeak={() => onSpeak(message)}
+                onStopSpeaking={onStopSpeaking}
+                textStyle={textStyle}
+                {...(reveal ? { className: reveal } : {})}
+              />
+            </div>
           );
         })}
 

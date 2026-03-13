@@ -181,8 +181,23 @@ export default function KidsIntroScreen({
               <p className="text-lg sm:text-xl text-gray-600 mb-3 sm:mb-8">
                 أنا مدحت، صاحبك من فلسطين!
                 <br />
-                <span className="text-[var(--kids-green)]">
-                  يلا نلعب ونتعلم سوا! 🎮
+                <span className="inline-flex items-center gap-2 justify-center">
+                  <span className="text-[var(--kids-green)]">
+                    يلا نلعب ونتعلم سوا! 🎮
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setPrompts(getRandomPrompts(4)); }}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[var(--kids-green)]/15 hover:bg-[var(--kids-green)]/30 active:scale-90 transition-all text-[var(--kids-green)]"
+                    title="غير الاقتراحات"
+                    aria-label="تغيير الاقتراحات"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="16 3 21 3 21 8"/>
+                      <line x1="4" y1="20" x2="21" y2="3"/>
+                      <polyline points="21 16 21 21 16 21"/>
+                      <line x1="15" y1="15" x2="21" y2="21"/>
+                    </svg>
+                  </button>
                 </span>
               </p>
             </div>
