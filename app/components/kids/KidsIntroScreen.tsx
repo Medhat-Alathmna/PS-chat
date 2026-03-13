@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
@@ -8,6 +8,8 @@ import ProfileSwitcher from "./ProfileSwitcher";
 import { RewardLevel } from "@/lib/types";
 import { KidsProfile } from "@/lib/types/games";
 import { getRandomPrompts, KidsPrompt } from "@/lib/data/kids-prompts";
+
+const INTRO_VOICE_KEY = "falastin_intro_voice_played";
 
 interface KidsIntroScreenProps {
   onSelect: (text: string) => void;
@@ -44,9 +46,38 @@ export default function KidsIntroScreen({
   onDeleteProfile,
 }: KidsIntroScreenProps) {
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [showLottie, setShowLottie] = useState(false);
   const [prompts, setPrompts] = useState<KidsPrompt[]>([]);
+
+  // Play intro voice once per session
+  useEffect(() => {
+    if (sessionStorage.getItem(INTRO_VOICE_KEY)) return;
+
+    const audio = new Audio("/sounds/medhat-voice/main tts.ogg");
+    const markPlayed = () => sessionStorage.setItem(INTRO_VOICE_KEY, "1");
+    const tryPlay = () => { audio.play().then(markPlayed).catch(() => {}); };
+
+    const timer = setTimeout(() => {
+      audio.play().then(markPlayed).catch(() => {
+        // Autoplay blocked — wait for interaction inside this screen only
+        const el = containerRef.current;
+        if (!el) return;
+        el.addEventListener("click", tryPlay, { once: true });
+        el.addEventListener("touchstart", tryPlay, { once: true });
+      });
+    }, 600);
+
+    return () => {
+      clearTimeout(timer);
+      const el = containerRef.current;
+      if (el) {
+        el.removeEventListener("click", tryPlay);
+        el.removeEventListener("touchstart", tryPlay);
+      }
+    };
+  }, []);
 
   // Get 4 random prompts - only on client to avoid hydration mismatch
   useEffect(() => {
@@ -78,7 +109,7 @@ export default function KidsIntroScreen({
         </div>
       )}
 
-      <div className="min-h-screen flex flex-col">
+      <div ref={containerRef} className="min-h-screen flex flex-col">
         {/* Header row — music | profile + settings + level */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0 z-20">
           {/* Left: music toggle */}
