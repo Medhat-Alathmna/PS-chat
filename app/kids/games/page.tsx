@@ -77,7 +77,7 @@ function GamesHub() {
 
   return (
     <AnimatedBackground variant="sky" showClouds>
-      <div className="relative flex h-screen flex-col overflow-hidden">
+      <div className="relative flex h-dvh flex-col overflow-hidden">
     
 
         {/* Content */}

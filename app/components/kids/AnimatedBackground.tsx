@@ -33,7 +33,7 @@ export default function AnimatedBackground({
   }, [variant]);
 
   return (
-    <div className={`relative min-h-screen overflow-hidden ${bgClass}`}>
+    <div className={`relative min-h-dvh overflow-hidden ${bgClass}`}>
       {/* Clouds */}
       {showClouds && <Clouds />}
 

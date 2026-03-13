@@ -437,7 +437,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
 
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
-      <div className="relative flex h-screen flex-col overflow-hidden">
+      <div className="relative flex h-dvh flex-col overflow-hidden">
         {/* Game header */}
         <header className="shrink-0 px-3 py-2 z-10 w-full">
           <div className={`mx-auto ${isCityExplorer ? "max-w-7xl" : "max-w-4xl"}`}>

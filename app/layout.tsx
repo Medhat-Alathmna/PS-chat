@@ -65,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#6C5CE7" />
         <title>PS-Kids | تعلم مع مدحت - Learn with Medhat</title>
         <meta name="description" content="تطبيق تعليمي ممتع للأطفال عن فلسطين - An engaging educational app for kids about Palestine" />
@@ -76,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <BackgroundMusicContext.Provider value={music}>
           <Toaster position="top-center" richColors />
-          <div className="min-h-screen bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
+          <div className="min-h-dvh bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
             {children}
           </div>
         </BackgroundMusicContext.Provider>
