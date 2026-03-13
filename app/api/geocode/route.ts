@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Append "فلسطين" to anchor the search within Palestine
-    const searchQuery = `${query.trim()} فلسطين`;
+    const searchQuery = `${query.trim()}`;
     const result = await geocodeLocation(searchQuery);
     if (!result.success || !result.data) {
       return NextResponse.json({ success: false, error: result.error ?? "Location not found" });

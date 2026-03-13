@@ -171,8 +171,7 @@ const CORE_RULES = `## Game: City Explorer
 
 ### Critical Rules:
 - Use ONLY facts from City Data. Never invent or embellish facts.
-- options MUST include the correct city answer
-- NEVER mention coordinates/lat/lng`;
+- options MUST include the correct city answer`;
 
 // ── System Prompt Builder ─────────────────────────────────────────────
 
