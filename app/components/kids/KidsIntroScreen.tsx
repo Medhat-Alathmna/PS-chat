@@ -322,7 +322,7 @@ function PromptCard({
       </span>
 
       {/* Text */}
-      <p className="font-bold text-gray-700 pr-8">{prompt.textAr}</p>
+      <p className="font-bold text-gray-700 pr-8 pb-7">{prompt.textAr}</p>
 
       {/* Category indicator */}
       <span
