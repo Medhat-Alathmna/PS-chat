@@ -274,6 +274,7 @@ export function useChatPage(): UseChatPageReturn {
   const [unlockedStickerData, setUnlockedStickerData] = useState<Sticker | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const userJustSentRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [imagePreview, setImagePreview] = useState<{ url: string; mediaType: string; file: File } | null>(null);
@@ -298,6 +299,7 @@ export function useChatPage(): UseChatPageReturn {
       }
 
       setAiMessages((prev) => [...prev, userMessage]);
+      userJustSentRef.current = true;
       setStatus("submitted");
 
       try {
@@ -437,20 +439,21 @@ export function useChatPage(): UseChatPageReturn {
     [isLoading, playLookAtMap, playLookAtPics, playPop, sendMessage, stopSpeaking]
   );
 
-  // Auto-scroll
+  // Auto-scroll: scroll user's message to top of chat container
   useEffect(() => {
+    if (!userJustSentRef.current) return;
+    userJustSentRef.current = false;
+
     const container = chatContainerRef.current;
     if (!container) return;
 
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role !== "user") return;
-
-    const userMsgs = container.querySelectorAll('[data-role="user"]');
-    const last = userMsgs[userMsgs.length - 1] as HTMLElement | undefined;
-    if (last) {
-      const offset = last.getBoundingClientRect().top - container.getBoundingClientRect().top;
-      container.scrollBy({ top: offset, behavior: "smooth" });
-    }
+    requestAnimationFrame(() => {
+      const userMsgs = container.querySelectorAll('[data-role="user"]');
+      const lastUserEl = userMsgs[userMsgs.length - 1] as HTMLElement | undefined;
+      if (lastUserEl) {
+        lastUserEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
   }, [messages]);
 
   // Resize textarea
