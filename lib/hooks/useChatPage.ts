@@ -439,21 +439,11 @@ export function useChatPage(): UseChatPageReturn {
     [isLoading, playLookAtMap, playLookAtPics, playPop, sendMessage, stopSpeaking]
   );
 
-  // Auto-scroll: scroll user's message to top of chat container
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
-    if (!userJustSentRef.current) return;
-    userJustSentRef.current = false;
-
     const container = chatContainerRef.current;
     if (!container) return;
-
-    requestAnimationFrame(() => {
-      const userMsgs = container.querySelectorAll('[data-role="user"]');
-      const lastUserEl = userMsgs[userMsgs.length - 1] as HTMLElement | undefined;
-      if (lastUserEl) {
-        lastUserEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
+    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   // Resize textarea
