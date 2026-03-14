@@ -361,10 +361,14 @@ export function getPromptsByCategory(category: string): KidsPrompt[] {
   return KIDS_PROMPTS.filter((p) => p.category === category);
 }
 
-// Get random prompts
+// Get random prompts — one per category, shuffled categories, up to `count`
 export function getRandomPrompts(count: number = 4): KidsPrompt[] {
-  const shuffled = [...KIDS_PROMPTS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+  const categories = Array.from(new Set(KIDS_PROMPTS.map((p) => p.category)));
+  const shuffledCategories = categories.sort(() => Math.random() - 0.5).slice(0, count);
+  return shuffledCategories.map((category) => {
+    const inCategory = KIDS_PROMPTS.filter((p) => p.category === category);
+    return inCategory[Math.floor(Math.random() * inCategory.length)];
+  });
 }
 
 // Get prompt by ID
