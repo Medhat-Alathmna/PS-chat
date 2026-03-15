@@ -135,6 +135,42 @@ function GamesHub() {
 
             {/* Games grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+              {/* Special World Explorer card — visible in educational category */}
+              {activeCategory === "educational" && (
+                <div className="animate-fade-in-up">
+                  <button
+                    onClick={() => {
+                      playClick();
+                      router.push("/kids/world-explorer");
+                    }}
+                    className="relative p-3 sm:p-4 rounded-xl sm:rounded-2xl text-right backdrop-blur-sm border-2 sm:border-3 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-xl group w-full flex flex-col items-center sm:items-stretch h-full"
+                    style={{
+                      borderColor: "#54A0FF40",
+                      background: "linear-gradient(135deg, #000814, #0c1a3a, #0d2137)",
+                    }}
+                  >
+                    <span
+                      className="absolute top-2 left-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium"
+                      style={{ backgroundColor: "#54A0FF20", color: "#54A0FF" }}
+                    >
+                      جديد ✨
+                    </span>
+                    <span className="text-4xl sm:text-5xl block mb-1 sm:mb-2 mt-4 sm:mt-2 group-hover:animate-bounce-kids filter drop-shadow-sm">
+                      🌍
+                    </span>
+                    <h3 className="font-bold text-white text-sm sm:text-lg mb-0.5 sm:mb-1 text-center sm:text-right w-full truncate">
+                      مستكشف الدول
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-white/60 line-clamp-2 text-center sm:text-right hidden xs:block">
+                      استكشف دول العالم بكرة ثلاثية الأبعاد
+                    </p>
+                    <div
+                      className="absolute bottom-0 left-4 right-4 h-1 rounded-full opacity-60"
+                      style={{ backgroundColor: "#54A0FF" }}
+                    />
+                  </button>
+                </div>
+              )}
               {/* Special Stories card — visible in creative category */}
               {activeCategory === "creative" && (
                 <div className="animate-fade-in-up">
