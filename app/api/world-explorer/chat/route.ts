@@ -3,7 +3,7 @@
 import { NextRequest } from "next/server";
 import { generateText } from "ai";
 import { buildWorldExplorerSystemPrompt } from "@/lib/ai/world-explorer";
-import { getMainChatModelInstance } from "@/lib/ai/config";
+import { getWorldExplorerModelInstance } from "@/lib/ai/config";
 import { COUNTRIES_BY_ID } from "@/lib/data/countries";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
 import { logError } from "@/lib/utils/error-handler";
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const coreMessages = messages.slice(-6);
 
     const result = await generateText({
-      model: getMainChatModelInstance(),
+      model: getWorldExplorerModelInstance(),
       system: systemPrompt,
       messages: coreMessages,
     });

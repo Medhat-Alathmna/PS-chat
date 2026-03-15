@@ -91,6 +91,15 @@ export function getStoriesModelInstance() {
   );
 }
 
+export function getWorldExplorerModelInstance() {
+  return resolveFeature(
+    process.env.WORLD_EXPLORER_PROVIDER,
+    process.env.WORLD_EXPLORER_MODEL,
+    process.env.WORLD_EXPLORER_MODEL_OR,
+    "gpt-5-mini"
+  );
+}
+
 /**
  * @deprecated Use getMainChatModelInstance() instead.
  * Kept for any external callers that still use getAIProvider().
