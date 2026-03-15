@@ -50,6 +50,11 @@ export default function WorldExplorerPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
 
+  useEffect(() => {
+    const t = setTimeout(() => setHasInteracted(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
   const flyTo = useCallback((country: Country) => {
     setSelectedCountry(country);
     setSheetOpen(true);

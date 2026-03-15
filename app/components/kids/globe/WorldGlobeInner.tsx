@@ -171,15 +171,13 @@ export default function WorldGlobeInner({
     [onCountryClick]
   );
 
-  const getPolygonLabel = useCallback((d: object) => {
+  const getPolygonLabel = useCallback((d: object): string => {
     const f = d as { id?: string };
     const country = COUNTRIES_BY_ID.get(f.id ?? "");
     if (!country) return "";
-    // Return HTMLElement instead of HTML string to avoid innerHTML XSS sink
-    const div = document.createElement("div");
-    div.style.cssText = "background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:Cairo,'Noto Sans Arabic',sans-serif;font-size:14px;direction:rtl";
-    div.textContent = `${countryCodeToFlag(country.code)} ${country.nameAr}`;
-    return div;
+    const flag = countryCodeToFlag(country.code);
+    const name = country.nameAr.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `<div style="background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:Cairo,'Noto Sans Arabic',sans-serif;font-size:14px;direction:rtl">${flag} ${name}</div>`;
   }, []);
 
   const getPolygonAltitude = useCallback(
