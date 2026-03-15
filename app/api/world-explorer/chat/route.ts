@@ -37,7 +37,12 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildWorldExplorerSystemPrompt(country, playerName);
     // Keep last 6 messages to avoid token bloat while maintaining context
     // Use CoreMessage[] directly — avoids UIMessage/convertToModelMessages SDK shape issues
-    const coreMessages = messages.slice(-6);
+    const raw = messages.slice(-6);
+    // Empty messages = intro request — inject a synthetic opener so generateText is valid
+    const coreMessages =
+      raw.length > 0
+        ? raw
+        : [{ role: "user" as const, content: "قدم لي مقدمة عن هذه الدولة" }];
 
     const result = await generateText({
       model: getWorldExplorerModelInstance(),

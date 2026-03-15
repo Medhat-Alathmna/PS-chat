@@ -53,7 +53,8 @@
       "Bash(git cherry-pick:*)",
       "Bash(gh pr:*)",
       "Bash(node -e \":*)",
-      "Bash(grep '\"\"three\"\"' package.json)"
+      "Bash(grep '\"\"three\"\"' package.json)",
+      "Bash(gh api:*)"
     ]
   }
 }
