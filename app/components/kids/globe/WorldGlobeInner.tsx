@@ -1,0 +1,238 @@
+"use client";
+
+import { useEffect, useRef, useCallback, useMemo } from "react";
+import Globe, { GlobeMethods } from "react-globe.gl";
+import { Country, COUNTRIES_BY_ID, countryCodeToFlag } from "@/lib/data/countries";
+import { GlobeSettings } from "@/lib/types/globe-settings";
+import geoData from "@/lib/data/countries geo json/countries.geo.json";
+
+// ── Palestine 1948 polygon (British Mandate borders) ──────────────────────
+const PALESTINE_FEATURE = {
+  type: "Feature",
+  id: "PSE",
+  properties: { name: "فلسطين" },
+  geometry: {
+    type: "Polygon",
+    coordinates: [[
+      [34.95, 29.50], [34.24, 30.75], [34.23, 31.35], [34.26, 31.70],
+      [34.48, 31.86], [34.75, 31.87], [34.90, 32.07], [35.10, 32.49],
+      [35.16, 32.87], [35.10, 33.10], [35.18, 33.33], [35.48, 33.09],
+      [35.88, 33.38], [36.09, 33.06], [35.93, 32.72], [35.78, 32.52],
+      [35.57, 32.54], [35.55, 32.27], [35.73, 32.19], [35.75, 31.87],
+      [35.79, 31.75], [35.53, 31.52], [35.41, 31.25], [35.18, 30.71],
+      [34.95, 29.50],
+    ]],
+  },
+};
+
+// ── Globe texture URLs ─────────────────────────────────────────────────────
+const TEXTURES: Record<string, string | null> = {
+  realistic: "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg",
+  night:     "//unpkg.com/three-globe/example/img/earth-night.jpg",
+  political: null,
+  cartoon:   null,
+};
+
+// ── Country colours by appearance ─────────────────────────────────────────
+const CONTINENT_COLORS: Record<string, string> = {
+  africa:   "#48CAE4",
+  asia:     "#95D5B2",
+  europe:   "#ADB5BD",
+  americas: "#FFAFCC",
+  oceania:  "#CDB4DB",
+};
+
+const CARTOON_COLORS = [
+  "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
+  "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9",
+];
+
+function getCountryColor(
+  feature: { id?: string },
+  appearance: GlobeSettings["appearance"],
+  selectedId: string | null
+): string {
+  const id = feature.id as string;
+  if (id === "PSE") return "#2D7D46"; // Palestine always green
+  if (id === selectedId) return "#A55EEA";
+
+  const country = COUNTRIES_BY_ID.get(id);
+  if (!country) return "#CCCCCC";
+
+  if (appearance === "cartoon") {
+    // deterministic color from id chars
+    const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return CARTOON_COLORS[hash % CARTOON_COLORS.length];
+  }
+
+  if (appearance === "political") {
+    return CONTINENT_COLORS[country.continent] ?? "#CCCCCC";
+  }
+
+  return "#FFFFFF20"; // transparent overlay for realistic/night
+}
+
+// Constant polygon style callbacks — defined at module level to avoid recreating each render
+const polygonSideColor = () => "rgba(0,0,0,0.15)";
+const polygonStrokeColor = () => "rgba(255,255,255,0.2)";
+
+// ── Props ──────────────────────────────────────────────────────────────────
+interface WorldGlobeInnerProps {
+  onCountryClick: (country: Country) => void;
+  selectedCountryId: string | null;
+  flyToCountryId: string | null;
+  settings: GlobeSettings;
+  width: number;
+  height: number;
+}
+
+export default function WorldGlobeInner({
+  onCountryClick,
+  selectedCountryId,
+  flyToCountryId,
+  settings,
+  width,
+  height,
+}: WorldGlobeInnerProps) {
+  const globeRef = useRef<GlobeMethods | undefined>(undefined);
+
+  // Build polygon data: remove Israel entirely, inject Palestine with 1948 borders
+  const polygonsData = useMemo(() => {
+    const features = (geoData as { features: object[] }).features
+      .filter((f: object) => {
+        const id = (f as { id?: string }).id;
+        return id !== "ATA" && id !== "ISR"; // remove Antarctica + Israel
+      });
+    return [...features, PALESTINE_FEATURE]; // Palestine replaces Israel on the map
+  }, []);
+
+  // Globe texture URL (null for political/cartoon)
+  const globeImageUrl = TEXTURES[settings.appearance] ?? "";
+
+  // Background color based on space setting
+  const bgColor = {
+    "stars-dense": "#000814",
+    "stars-light": "#0D1B2A",
+    black:         "#000000",
+  }[settings.spaceBackground];
+
+  // Atmosphere color
+  const atmosphereColor = settings.appearance === "night" ? "#1a6699" : "#63a8e3";
+
+  // Fly to country when flyToCountryId changes
+  useEffect(() => {
+    if (!flyToCountryId || !globeRef.current) return;
+    const country = COUNTRIES_BY_ID.get(flyToCountryId);
+    if (!country) return;
+    globeRef.current.pointOfView(
+      { lat: country.lat, lng: country.lng, altitude: 1.8 },
+      1200
+    );
+  }, [flyToCountryId]);
+
+  // Sync auto-rotate settings to OrbitControls
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const ctrl = globeRef.current.controls() as { autoRotate: boolean; autoRotateSpeed: number } | undefined;
+    if (!ctrl) return;
+    ctrl.autoRotate = settings.autoRotate;
+    ctrl.autoRotateSpeed = settings.rotationSpeed;
+  }, [settings.autoRotate, settings.rotationSpeed]);
+
+  // Start at Palestine and apply initial auto-rotate settings after globe initializes
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const g = globeRef.current;
+      if (!g) return;
+      g.pointOfView({ lat: 31.9, lng: 35.2, altitude: 2.5 }, 800);
+      // Apply auto-rotate here too — the separate effect misses first mount since controls aren't ready yet
+      const ctrl = g.controls() as { autoRotate: boolean; autoRotateSpeed: number } | undefined;
+      if (ctrl) {
+        ctrl.autoRotate = settings.autoRotate;
+        ctrl.autoRotateSpeed = settings.rotationSpeed;
+      }
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only on mount — settings are already loaded (parent returns null until isLoaded)
+
+  const handlePolygonClick = useCallback(
+    (polygon: object) => {
+      const feature = polygon as { id?: string };
+      const id = feature.id;
+      if (!id) return;
+      const country = COUNTRIES_BY_ID.get(id);
+      if (country) onCountryClick(country);
+    },
+    [onCountryClick]
+  );
+
+  const getPolygonLabel = useCallback((d: object) => {
+    const f = d as { id?: string };
+    const country = COUNTRIES_BY_ID.get(f.id ?? "");
+    if (!country) return "";
+    return `
+      <div style="background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:sans-serif;font-size:14px;direction:rtl">
+        ${countryCodeToFlag(country.code)} <strong>${country.nameAr}</strong>
+      </div>
+    `;
+  }, []);
+
+  const getPolygonAltitude = useCallback(
+    (d: object) => {
+      const f = d as { id?: string };
+      if (f.id === "PSE") return 0.025;
+      if (f.id === selectedCountryId) return 0.015;
+      return 0.005;
+    },
+    [selectedCountryId]
+  );
+
+  const getPolygonCapColor = useCallback(
+    (d: object) => getCountryColor(d as { id?: string }, settings.appearance, selectedCountryId),
+    [settings.appearance, selectedCountryId]
+  );
+
+
+  // Label data for country names
+  const labelsData = useMemo(() => {
+    if (!settings.showCountryLabels) return [];
+    return Array.from(COUNTRIES_BY_ID.values()).map((c) => ({
+      lat: c.lat,
+      lng: c.lng,
+      text: c.nameAr,
+      size: 0.4,
+      color: "white",
+    }));
+  }, [settings.showCountryLabels]);
+
+  return (
+    <Globe
+      ref={globeRef}
+      width={width}
+      height={height}
+      backgroundColor={bgColor}
+      globeImageUrl={globeImageUrl}
+      bumpImageUrl={settings.appearance === "realistic" ? "//unpkg.com/three-globe/example/img/earth-topology.png" : ""}
+      polygonsData={polygonsData}
+      polygonCapColor={getPolygonCapColor}
+      polygonSideColor={polygonSideColor}
+      polygonStrokeColor={polygonStrokeColor}
+      polygonAltitude={getPolygonAltitude}
+      polygonLabel={getPolygonLabel}
+      onPolygonClick={handlePolygonClick}
+      polygonsTransitionDuration={300}
+      atmosphereColor={atmosphereColor}
+      atmosphereAltitude={0.15}
+      enablePointerInteraction
+      animateIn={false}
+      labelsData={labelsData}
+      labelLat={(d: object) => (d as { lat: number }).lat}
+      labelLng={(d: object) => (d as { lng: number }).lng}
+      labelText={(d: object) => (d as { text: string }).text}
+      labelSize={(d: object) => (d as { size: number }).size}
+      labelColor={(d: object) => (d as { color: string }).color}
+      labelAltitude={0.01}
+    />
+  );
+}

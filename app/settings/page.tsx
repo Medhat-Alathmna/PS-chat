@@ -9,6 +9,7 @@ import { useProfiles } from "@/lib/hooks/useProfiles";
 import TextSettingsContent from "@/app/components/kids/settings/TextSettingsContent";
 import MapSettingsContent from "@/app/components/kids/settings/MapSettingsContent";
 import ChatSettingsContent from "@/app/components/kids/settings/ChatSettingsContent";
+import GlobeSettingsContent from "@/app/components/kids/settings/GlobeSettingsContent";
 
 export default function SettingsPage() {
   return (
@@ -24,7 +25,8 @@ function SettingsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const activeTab = tabParam === "map" ? "map" : tabParam === "chat" ? "chat" : "text";
+  const VALID_TABS = new Set(["map", "chat", "globe", "text"]);
+  const activeTab = VALID_TABS.has(tabParam ?? "") ? (tabParam as string) : "text";
 
   const {
     profiles,
@@ -120,6 +122,17 @@ function SettingsInner() {
               <span>🗺️</span>
               <span>الخريطة</span>
             </button>
+            <button
+              onClick={() => router.replace("/settings?tab=globe")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                activeTab === "globe"
+                  ? "bg-[var(--kids-purple)] text-white shadow-md"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <span>🌍</span>
+              <span>الكرة</span>
+            </button>
           </div>
         </div>
 
@@ -130,6 +143,8 @@ function SettingsInner() {
               <TextSettingsContent profileId={profileId} />
             ) : activeTab === "chat" ? (
               <ChatSettingsContent profileId={profileId} />
+            ) : activeTab === "globe" ? (
+              <GlobeSettingsContent profileId={profileId} />
             ) : (
               <MapSettingsContent profileId={profileId} />
             )}
