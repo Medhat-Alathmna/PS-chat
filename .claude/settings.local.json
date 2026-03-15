@@ -47,7 +47,11 @@
       "Bash(python:*)",
       "Bash(gh repo view --json nameWithOwner)",
       "Bash(gh repo view --json nameWithOwner -q .nameWithOwner)",
-      "Bash(find c:/Work/React/PS-chat/lib -type f \\\\\\(-name *.json -o -name *.geojson \\\\\\))"
+      "Bash(find c:/Work/React/PS-chat/lib -type f \\\\\\(-name *.json -o -name *.geojson \\\\\\))",
+      "Bash(gh repo:*)",
+      "Bash(git checkout:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(gh pr:*)"
     ]
   }
 }

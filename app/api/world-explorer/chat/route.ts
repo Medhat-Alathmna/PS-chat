@@ -1,15 +1,17 @@
 "use server";
 
 import { NextRequest } from "next/server";
-import { generateText, UIMessage, convertToModelMessages } from "ai";
+import { generateText } from "ai";
 import { buildWorldExplorerSystemPrompt } from "@/lib/ai/world-explorer";
 import { getMainChatModelInstance } from "@/lib/ai/config";
 import { COUNTRIES_BY_ID } from "@/lib/data/countries";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
 import { logError } from "@/lib/utils/error-handler";
 
+type SimpleMessage = { role: "user" | "assistant"; content: string };
+
 type WorldExplorerRequest = {
-  messages: UIMessage[];
+  messages: SimpleMessage[];
   countryId: string;
   playerName?: string;
 };
@@ -34,12 +36,13 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = buildWorldExplorerSystemPrompt(country, playerName);
     // Keep last 6 messages to avoid token bloat while maintaining context
-    const convertedMessages = await convertToModelMessages(messages.slice(-6));
+    // Use CoreMessage[] directly — avoids UIMessage/convertToModelMessages SDK shape issues
+    const coreMessages = messages.slice(-6);
 
     const result = await generateText({
       model: getMainChatModelInstance(),
       system: systemPrompt,
-      messages: convertedMessages,
+      messages: coreMessages,
     });
 
     const chips = extractChipsFromText(result.text);

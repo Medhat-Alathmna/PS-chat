@@ -110,11 +110,11 @@ export default function WorldGlobeInner({
   const globeImageUrl = TEXTURES[settings.appearance] ?? "";
 
   // Background color based on space setting
-  const bgColor = {
+  const bgColor = ({
     "stars-dense": "#000814",
     "stars-light": "#0D1B2A",
     black:         "#000000",
-  }[settings.spaceBackground];
+  } as Record<string, string>)[settings.spaceBackground] ?? "#000814";
 
   // Atmosphere color
   const atmosphereColor = settings.appearance === "night" ? "#1a6699" : "#63a8e3";
@@ -171,11 +171,11 @@ export default function WorldGlobeInner({
     const f = d as { id?: string };
     const country = COUNTRIES_BY_ID.get(f.id ?? "");
     if (!country) return "";
-    return `
-      <div style="background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:sans-serif;font-size:14px;direction:rtl">
-        ${countryCodeToFlag(country.code)} <strong>${country.nameAr}</strong>
-      </div>
-    `;
+    // Return HTMLElement instead of HTML string to avoid innerHTML XSS sink
+    const div = document.createElement("div");
+    div.style.cssText = "background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:sans-serif;font-size:14px;direction:rtl";
+    div.textContent = `${countryCodeToFlag(country.code)} ${country.nameAr}`;
+    return div;
   }, []);
 
   const getPolygonAltitude = useCallback(

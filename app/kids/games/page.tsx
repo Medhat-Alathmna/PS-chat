@@ -211,7 +211,7 @@ function GamesHub() {
                 <div
                   key={game.id}
                   className="animate-fade-in-up"
-                  style={{ animationDelay: `${(index + (activeCategory === "creative" ? 1 : 0)) * 50}ms` }}
+                  style={{ animationDelay: `${(index + (activeCategory === "creative" || activeCategory === "educational" ? 1 : 0)) * 50}ms` }}
                 >
                   <GameCard
                     game={game}

@@ -54,6 +54,7 @@ export default function CountrySheet({
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(SNAP_HALF);
   const sheetHeightRef = useRef(SNAP_HALF); // mirrors sheetHeight state, avoids stale closures in drag handlers
+  const messagesRef = useRef<ChatMessage[]>([]); // mirrors messages state, avoids stale closures in sendMessage
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Detect mobile ──────────────────────────────────────────────────────
@@ -71,6 +72,9 @@ export default function CountrySheet({
       cancelAnimationFrame(frameId);
     };
   }, []);
+
+  // Keep messagesRef in sync
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   // ── Auto-scroll on new messages ────────────────────────────────────────
   useEffect(() => {
@@ -126,7 +130,7 @@ export default function CountrySheet({
 
     fetchIntro();
     return () => { cancelled = true; };
-  }, [country?.id, isOpen]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [country?.id, isOpen, playerName]);
 
   // ── Send message ───────────────────────────────────────────────────────
   const sendMessage = useCallback(
@@ -138,11 +142,10 @@ export default function CountrySheet({
       setLoading(true);
 
       try {
-        const history = [...messages, userMsg].map((m) => ({
+        // Use messagesRef to avoid stale closure; send simple CoreMessage format
+        const history = [...messagesRef.current, userMsg].map((m) => ({
           role: m.role,
           content: m.text,
-          id: Math.random().toString(36),
-          parts: [{ type: "text", text: m.text }],
         }));
 
         const res = await fetch("/api/world-explorer/chat", {
@@ -174,7 +177,7 @@ export default function CountrySheet({
         setLoading(false);
       }
     },
-    [country, loading, messages, playerName]
+    [country, loading, playerName]  // messagesRef used instead of messages to avoid stale closure
   );
 
   // ── Touch drag on the handle ───────────────────────────────────────────
