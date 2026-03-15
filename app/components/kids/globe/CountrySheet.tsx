@@ -532,7 +532,7 @@ function AuroraBorder({ isPalestine, rounded }: { isPalestine: boolean; rounded?
     <div
       className={`h-0.5 w-full flex-shrink-0${rounded ? " rounded-t-3xl" : ""}`}
       style={{
-        background: isPalestine
+        backgroundImage: isPalestine
           ? "linear-gradient(90deg, #2D7D46, #4ECDC4, #2D7D46)"
           : "linear-gradient(90deg, #A55EEA, #54A0FF, #4ECDC4, #A55EEA)",
         backgroundSize: "200% 100%",

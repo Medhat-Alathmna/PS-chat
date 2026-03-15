@@ -6,6 +6,7 @@ import { Country, COUNTRIES_BY_ID, countryCodeToFlag } from "@/lib/data/countrie
 import { GlobeSettings } from "@/lib/types/globe-settings";
 import geoData from "@/lib/data/countries geo json/countries.geo.json";
 
+
 // ── Palestine 1948 polygon (British Mandate borders) ──────────────────────
 const PALESTINE_FEATURE = {
   type: "Feature",
@@ -26,7 +27,7 @@ const PALESTINE_FEATURE = {
 };
 
 // ── Globe texture URLs ─────────────────────────────────────────────────────
-const TEXTURES: Record<string, string | null> = {
+const TEXTURE_URLS: Record<string, string | null> = {
   realistic: "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg",
   night:     "//unpkg.com/three-globe/example/img/earth-night.jpg",
   political: null,
@@ -53,6 +54,7 @@ function getCountryColor(
   selectedId: string | null
 ): string {
   const id = feature.id as string;
+
   if (id === "PSE") return "#2D7D46"; // Palestine always green
   if (id === selectedId) return "#A55EEA";
 
@@ -60,7 +62,6 @@ function getCountryColor(
   if (!country) return "#CCCCCC";
 
   if (appearance === "cartoon") {
-    // deterministic color from id chars
     const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
     return CARTOON_COLORS[hash % CARTOON_COLORS.length];
   }
@@ -96,18 +97,20 @@ export default function WorldGlobeInner({
 }: WorldGlobeInnerProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
 
-  // Build polygon data: remove Israel entirely, inject Palestine with 1948 borders
+  // Build polygon data: filter out unrecognized territories (would render gray) + inject Palestine
   const polygonsData = useMemo(() => {
+    // IDs not in COUNTRIES_BY_ID would render as #CCCCCC gray — filter them out entirely
+    const SKIP_IDS = new Set(["ATA", "ISR", "ATF", "BMU", "-99", "FLK", "GRL", "GUF", "CS-KM", "NCL", "PRI", "ESH", "TWN"]);
     const features = (geoData as { features: object[] }).features
       .filter((f: object) => {
         const id = (f as { id?: string }).id;
-        return id !== "ATA" && id !== "ISR"; // remove Antarctica + Israel
+        return !SKIP_IDS.has(id ?? "");
       });
-    return [...features, PALESTINE_FEATURE]; // Palestine replaces Israel on the map
+    return [...features, PALESTINE_FEATURE];
   }, []);
 
-  // Globe texture URL (null for political/cartoon)
-  const globeImageUrl = TEXTURES[settings.appearance] ?? "";
+  // Globe texture URL — realistic/night load a real image; political/cartoon use empty (handled via onGlobeReady)
+  const globeImageUrl = TEXTURE_URLS[settings.appearance] ?? "";
 
   // Background color based on space setting
   const bgColor = ({
@@ -125,7 +128,7 @@ export default function WorldGlobeInner({
     const country = COUNTRIES_BY_ID.get(flyToCountryId);
     if (!country) return;
     globeRef.current.pointOfView(
-      { lat: country.lat, lng: country.lng, altitude: 1.8 },
+      { lat: country.lat, lng: country.lng, altitude: 0.8 },
       1200
     );
   }, [flyToCountryId]);
@@ -146,10 +149,11 @@ export default function WorldGlobeInner({
       if (!g) return;
       g.pointOfView({ lat: 31.9, lng: 35.2, altitude: 2.5 }, 800);
       // Apply auto-rotate here too — the separate effect misses first mount since controls aren't ready yet
-      const ctrl = g.controls() as { autoRotate: boolean; autoRotateSpeed: number } | undefined;
+      const ctrl = g.controls() as { autoRotate: boolean; autoRotateSpeed: number; minDistance: number } | undefined;
       if (ctrl) {
         ctrl.autoRotate = settings.autoRotate;
         ctrl.autoRotateSpeed = settings.rotationSpeed;
+        ctrl.minDistance = 150; // prevent zooming in too close (globe radius=100, altitude≈0.5)
       }
     }, 600);
     return () => clearTimeout(t);
@@ -173,7 +177,7 @@ export default function WorldGlobeInner({
     if (!country) return "";
     // Return HTMLElement instead of HTML string to avoid innerHTML XSS sink
     const div = document.createElement("div");
-    div.style.cssText = "background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:sans-serif;font-size:14px;direction:rtl";
+    div.style.cssText = "background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:Cairo,'Noto Sans Arabic',sans-serif;font-size:14px;direction:rtl";
     div.textContent = `${countryCodeToFlag(country.code)} ${country.nameAr}`;
     return div;
   }, []);
@@ -193,18 +197,39 @@ export default function WorldGlobeInner({
     [settings.appearance, selectedCountryId]
   );
 
+  // Apply ocean color to the globe sphere for non-textured modes (cartoon/political).
+  // three-globe leaves the sphere with its default white MeshPhongMaterial when globeImageUrl="",
+  // causing ocean/sea areas (not covered by country polygons) to render as gray under WebGL lighting.
+  // We use scene().traverse() since react-globe.gl only exposes "scene" in its ref API — not "globeMaterial".
+  // The globe sphere has widthSegments=90 (= 360/globeCurvatureResolution default 4), distinguishing it
+  // from the tile-engine's inner sphere (widthSegments=180) and all other meshes.
+  const applyOceanColor = useCallback(() => {
+    const g = globeRef.current;
+    if (!g) return;
+    const isFlat = settings.appearance === "cartoon" || settings.appearance === "political";
+    try {
+      g.scene().traverse((obj: Record<string, any>) => {
+        if (
+          obj.isMesh &&
+          obj.geometry?.type === "SphereGeometry" &&
+          obj.material?.type === "MeshPhongMaterial" &&
+          obj.geometry?.parameters?.widthSegments === 90
+        ) {
+          obj.material.map = null;
+          obj.material.color?.set(isFlat ? "#1a3a6c" : "#ffffff");
+          obj.material.needsUpdate = true;
+        }
+      });
+    } catch {
+      // Globe not fully initialized yet — onGlobeReady will retry
+    }
+  }, [settings.appearance]);
 
-  // Label data for country names
-  const labelsData = useMemo(() => {
-    if (!settings.showCountryLabels) return [];
-    return Array.from(COUNTRIES_BY_ID.values()).map((c) => ({
-      lat: c.lat,
-      lng: c.lng,
-      text: c.nameAr,
-      size: 0.4,
-      color: "white",
-    }));
-  }, [settings.showCountryLabels]);
+  // Run on mount (when globe is ready) and whenever appearance changes
+  useEffect(() => { applyOceanColor(); }, [applyOceanColor]);
+  const handleGlobeReady = applyOceanColor;
+
+
 
   return (
     <Globe
@@ -221,18 +246,12 @@ export default function WorldGlobeInner({
       polygonAltitude={getPolygonAltitude}
       polygonLabel={getPolygonLabel}
       onPolygonClick={handlePolygonClick}
+      onGlobeReady={handleGlobeReady}
       polygonsTransitionDuration={300}
       atmosphereColor={atmosphereColor}
       atmosphereAltitude={0.15}
       enablePointerInteraction
       animateIn={false}
-      labelsData={labelsData}
-      labelLat={(d: object) => (d as { lat: number }).lat}
-      labelLng={(d: object) => (d as { lng: number }).lng}
-      labelText={(d: object) => (d as { text: string }).text}
-      labelSize={(d: object) => (d as { size: number }).size}
-      labelColor={(d: object) => (d as { color: string }).color}
-      labelAltitude={0.01}
     />
   );
 }
