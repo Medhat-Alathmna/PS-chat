@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import Globe, { GlobeMethods } from "react-globe.gl";
-import { Country, COUNTRIES, COUNTRIES_BY_ID, countryCodeToFlag } from "@/lib/data/countries";
+import { Country, COUNTRIES, COUNTRIES_BY_ID } from "@/lib/data/countries";
 import { GlobeSettings } from "@/lib/types/globe-settings";
 import geoData from "@/lib/data/countries geo json/countries.geo.json";
 
@@ -77,7 +77,39 @@ function getCountryColor(
 const polygonSideColor = () => "rgba(0,0,0,0.15)";
 const polygonStrokeColor = () => "rgba(255,255,255,0.2)";
 
-// ── Nearest country by lat/lng (squared Euclidean on country center coords) ─
+// ── Point-in-polygon (ray-casting) for GeoJSON ring ──────────────────────
+function pointInRing(lat: number, lng: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if ((yi > lat) !== (yj > lat) && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+// ── Find the country whose GeoJSON polygon contains lat/lng ───────────────
+function countryAtPoint(lat: number, lng: number, features: object[]): Country | null {
+  for (const f of features) {
+    const feat = f as { id?: string; geometry?: { type: string; coordinates: unknown } };
+    if (!feat.id || !feat.geometry) continue;
+    const country = COUNTRIES_BY_ID.get(feat.id);
+    if (!country) continue;
+    const { type, coordinates } = feat.geometry as { type: string; coordinates: number[][][] | number[][][][] };
+    if (type === "Polygon") {
+      if (pointInRing(lat, lng, (coordinates as number[][][])[0])) return country;
+    } else if (type === "MultiPolygon") {
+      for (const poly of coordinates as number[][][][]) {
+        if (pointInRing(lat, lng, poly[0])) return country;
+      }
+    }
+  }
+  return null;
+}
+
+// ── Fallback: nearest country centroid (for ocean areas) ─────────────────
 function nearestCountry(lat: number, lng: number): Country | null {
   let best: Country | null = null;
   let bestDist = Infinity;
@@ -184,14 +216,6 @@ export default function WorldGlobeInner({
     [onCountryClick]
   );
 
-  const getPolygonLabel = useCallback((d: object): string => {
-    const f = d as { id?: string };
-    const country = COUNTRIES_BY_ID.get(f.id ?? "");
-    if (!country) return "";
-    const flag = countryCodeToFlag(country.code);
-    const name = country.nameAr.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return `<div style="background:rgba(0,0,0,0.75);color:white;padding:6px 10px;border-radius:8px;font-family:Cairo,'Noto Sans Arabic',sans-serif;font-size:14px;direction:rtl">${flag} ${name}</div>`;
-  }, []);
 
   const getPolygonAltitude = useCallback(
     (d: object) => {
@@ -217,7 +241,7 @@ export default function WorldGlobeInner({
       const g = globeRef.current;
       if (g) {
         const { lat, lng } = g.pointOfView();
-        const c = nearestCountry(lat, lng);
+        const c = countryAtPoint(lat, lng, polygonsData) ?? nearestCountry(lat, lng);
         const id = c?.id ?? null;
         if (id !== lastId) {
           lastId = id;
@@ -228,7 +252,7 @@ export default function WorldGlobeInner({
     };
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [onCountryCenter]);
+  }, [onCountryCenter, polygonsData]);
 
   // Apply ocean color to the globe sphere for non-textured modes (cartoon/political).
   // three-globe leaves the sphere with its default white MeshPhongMaterial when globeImageUrl="",
@@ -277,7 +301,6 @@ export default function WorldGlobeInner({
       polygonSideColor={polygonSideColor}
       polygonStrokeColor={polygonStrokeColor}
       polygonAltitude={getPolygonAltitude}
-      polygonLabel={getPolygonLabel}
       onPolygonClick={handlePolygonClick}
       onGlobeReady={handleGlobeReady}
       polygonsTransitionDuration={300}

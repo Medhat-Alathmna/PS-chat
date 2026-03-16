@@ -166,6 +166,32 @@ export default function WorldExplorerPage() {
           onCountryCenter={setCenteredCountry}
         />
 
+        {/* ── Center Crosshair ── */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <div style={{ position: "relative", width: 40, height: 40 }}>
+            {/* Horizontal line */}
+            <div style={{
+              position: "absolute", top: "50%", left: 0, right: 0,
+              height: 1.5, background: "rgba(255,255,255,0.55)",
+              transform: "translateY(-50%)",
+            }} />
+            {/* Vertical line */}
+            <div style={{
+              position: "absolute", left: "50%", top: 0, bottom: 0,
+              width: 1.5, background: "rgba(255,255,255,0.55)",
+              transform: "translateX(-50%)",
+            }} />
+            {/* Center dot */}
+            <div style={{
+              position: "absolute", top: "50%", left: "50%",
+              width: 6, height: 6, borderRadius: "50%",
+              background: "#c084fc",
+              transform: "translate(-50%, -50%)",
+              boxShadow: "0 0 6px 2px rgba(192,132,252,0.6)",
+            }} />
+          </div>
+        </div>
+
         {/* ── Centered Country Indicator ── */}
         {centeredCountry && (
           <div
