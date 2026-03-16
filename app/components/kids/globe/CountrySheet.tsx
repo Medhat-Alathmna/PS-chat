@@ -8,6 +8,7 @@ import {
   useLayoutEffect,
 } from "react";
 import type { Country } from "@/lib/data/countries";
+import { COUNTRY_DETAILS } from "@/lib/data/country-details";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface ChatMessage {
@@ -24,6 +25,16 @@ interface CountrySheetProps {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+function formatPopulation(n: number): string {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)} مليار`;
+  if (n >= 1_000_000) return `${Math.round(n / 1_000_000)} مليون`;
+  return n.toLocaleString("ar-EG");
+}
+
+function formatArea(km2: number): string {
+  return `${km2.toLocaleString("ar-EG")} كم²`;
+}
+
 function parseChips(raw: unknown[]): string[] {
   return raw
     .map((c) => (typeof c === "string" ? c : (c as { text?: string })?.text ?? ""))
@@ -335,6 +346,8 @@ function InfoCard({
   country: Country;
   onTopicChip: (chip: string) => void;
 }) {
+  const details = COUNTRY_DETAILS[country.id];
+
   return (
     <div className="flex flex-col gap-4 pt-2" style={{ direction: "rtl" }}>
       {/* Flag hero */}
@@ -361,26 +374,15 @@ function InfoCard({
         <p className="text-sm text-white/50 font-medium" dir="rtl">{country.nameAr}</p>
       </div>
 
-      {/* Country details */}
-      <div
-        className="rounded-2xl px-4 py-3 space-y-2"
-        style={{
-          background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
-        <div className="flex items-center gap-2 text-sm text-white/70">
-          <span>🏛️</span>
-          <span>العاصمة:</span>
-          <span className="text-white font-semibold">{country.capitalAr}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-white/70">
-          <span>🌍</span>
-          <span>القارة:</span>
-          <span className="text-white font-semibold">
-            {CONTINENT_AR[country.continent] ?? country.continent}
-          </span>
-        </div>
+      {/* Country details — 2-column grid */}
+      <div className="grid grid-cols-2 gap-2">
+        <InfoCell icon="🏛️" label="العاصمة" value={country.capitalAr} />
+        <InfoCell icon="🌍" label="القارة" value={CONTINENT_AR[country.continent] ?? country.continent} />
+        {details?.population && <InfoCell icon="👥" label="عدد السكان" value={formatPopulation(details.population)} />}
+        {details?.area       && <InfoCell icon="📐" label="المساحة"    value={formatArea(details.area)} />}
+        {details?.religion   && <InfoCell icon="🕌" label="الديانة"    value={details.religion} />}
+        {details?.language   && <InfoCell icon="🗣️" label="اللغة"      value={details.language} />}
+        {details?.currency   && <InfoCell icon="💰" label="العملة"     value={details.currency} />}
       </div>
 
       {/* Topic chips */}
@@ -405,6 +407,23 @@ function InfoCard({
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function InfoCell({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div
+      className="flex flex-col gap-0.5 rounded-xl px-3 py-2"
+      style={{
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <span className="text-xs text-white/45 flex items-center gap-1">
+        {icon} {label}
+      </span>
+      <span className="text-sm text-white font-semibold leading-snug">{value}</span>
     </div>
   );
 }
