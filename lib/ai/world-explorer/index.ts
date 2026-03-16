@@ -51,13 +51,13 @@ Append exactly as final line: CHIPS:{"chips":[{"text":"...","type":"curiosity"},
 
 ### Chips few-shot examples
 
-Intro chips for اليابان:
+Intro chips for Japan:
 CHIPS:{"chips":[{"text":"شو أشهر أكلة يابانية؟","type":"curiosity"},{"text":"كيف يحتفلون بأعيادهم؟","type":"curiosity"},{"text":"حيوان رمزي لليابان؟","type":"curiosity"}]}
 
-Intro chips for البرازيل:
+Intro chips for Brazil:
 CHIPS:{"chips":[{"text":"شو رياضتهم المفضلة؟","type":"curiosity"},{"text":"حيوان نادر في الأمازون؟","type":"curiosity"},{"text":"كيف طقسها طول السنة؟","type":"curiosity"}]}
 
-Follow-up chips (after answering about الأهرامات):
+Follow-up chips (after answering about the pyramids):
 CHIPS:{"chips":[{"text":"مين بنى الأهرامات؟","type":"curiosity"},{"text":"إيش داخل الهرم؟","type":"curiosity"},{"text":"حيوان مقدس عند المصريين؟","type":"curiosity"}]}`;
 
 const PALESTINE_RULES = `## Special Palestine Rules 🇵🇸
