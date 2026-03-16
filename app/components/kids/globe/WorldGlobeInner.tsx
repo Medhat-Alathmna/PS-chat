@@ -77,6 +77,17 @@ function getCountryColor(
 const polygonSideColor = () => "rgba(0,0,0,0.15)";
 const polygonStrokeColor = () => "rgba(255,255,255,0.2)";
 
+// ── Nearest country by lat/lng (squared Euclidean on country center coords) ─
+function nearestCountry(lat: number, lng: number): Country | null {
+  let best: Country | null = null;
+  let bestDist = Infinity;
+  for (const c of COUNTRIES) {
+    const d = (c.lat - lat) ** 2 + (c.lng - lng) ** 2;
+    if (d < bestDist) { bestDist = d; best = c; }
+  }
+  return best;
+}
+
 // ── Props ──────────────────────────────────────────────────────────────────
 interface WorldGlobeInnerProps {
   onCountryClick: (country: Country) => void;
@@ -85,6 +96,7 @@ interface WorldGlobeInnerProps {
   settings: GlobeSettings;
   width: number;
   height: number;
+  onCountryCenter?: (country: Country | null) => void;
 }
 
 export default function WorldGlobeInner({
@@ -94,6 +106,7 @@ export default function WorldGlobeInner({
   settings,
   width,
   height,
+  onCountryCenter,
 }: WorldGlobeInnerProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
 
@@ -195,61 +208,27 @@ export default function WorldGlobeInner({
     [settings.appearance, selectedCountryId]
   );
 
-  // Capital marker HTML elements — shown when showCountryLabels is enabled
-  const labelsData = useMemo(
-    () => (settings.showCountryLabels ? COUNTRIES : []),
-    [settings.showCountryLabels]
-  );
-
-  const htmlLat = useCallback((d: object) => (d as Country).capitalLat, []);
-  const htmlLng = useCallback((d: object) => (d as Country).capitalLng, []);
-  const htmlAltitude = useCallback(() => 0.015, []);
-
-  const buildMarkerElement = useCallback((d: object) => {
-    const c = d as Country;
-    const flag = countryCodeToFlag(c.code);
-    const isPalestine = c.id === "PSE";
-
-    const wrapper = document.createElement("div");
-    wrapper.style.cssText =
-      "display:flex;flex-direction:column;align-items:center;pointer-events:none;";
-
-    const pill = document.createElement("div");
-    pill.style.cssText = [
-      "display:flex;flex-direction:column;align-items:center;",
-      "background:rgba(0,0,0,0.72);color:#fff;",
-      "padding:3px 7px;border-radius:8px;",
-      "font-family:Cairo,'Noto Sans Arabic',sans-serif;",
-      "direction:rtl;white-space:nowrap;",
-      isPalestine ? "border:1px solid #2D7D46;" : "",
-    ].join("");
-
-    const flagEl = document.createElement("span");
-    flagEl.style.cssText = "font-size:14px;line-height:1.2;";
-    flagEl.textContent = flag;
-
-    const nameEl = document.createElement("span");
-    nameEl.style.cssText = "font-size:9px;font-weight:700;line-height:1.1;";
-    nameEl.textContent = c.nameAr;
-
-    const capitalEl = document.createElement("span");
-    capitalEl.style.cssText = "font-size:8px;opacity:0.85;line-height:1.1;";
-    capitalEl.textContent = c.capitalAr;
-
-    pill.appendChild(flagEl);
-    pill.appendChild(nameEl);
-    pill.appendChild(capitalEl);
-
-    const dot = document.createElement("div");
-    dot.style.cssText = [
-      "width:5px;height:5px;border-radius:50%;margin-top:2px;",
-      isPalestine ? "background:#2D7D46;" : "background:rgba(255,255,255,0.9);",
-    ].join("");
-
-    wrapper.appendChild(pill);
-    wrapper.appendChild(dot);
-    return wrapper;
-  }, []);
+  // RAF loop: report the country currently facing the camera (center of screen)
+  useEffect(() => {
+    if (!onCountryCenter) return;
+    let rafId: number;
+    let lastId: string | null = null;
+    const tick = () => {
+      const g = globeRef.current;
+      if (g) {
+        const { lat, lng } = g.pointOfView();
+        const c = nearestCountry(lat, lng);
+        const id = c?.id ?? null;
+        if (id !== lastId) {
+          lastId = id;
+          onCountryCenter(c ?? null);
+        }
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [onCountryCenter]);
 
   // Apply ocean color to the globe sphere for non-textured modes (cartoon/political).
   // three-globe leaves the sphere with its default white MeshPhongMaterial when globeImageUrl="",
@@ -302,11 +281,6 @@ export default function WorldGlobeInner({
       onPolygonClick={handlePolygonClick}
       onGlobeReady={handleGlobeReady}
       polygonsTransitionDuration={300}
-      htmlElementsData={labelsData}
-      htmlLat={htmlLat}
-      htmlLng={htmlLng}
-      htmlAltitude={htmlAltitude}
-      htmlElement={buildMarkerElement}
       atmosphereColor={atmosphereColor}
       atmosphereAltitude={0.15}
       enablePointerInteraction

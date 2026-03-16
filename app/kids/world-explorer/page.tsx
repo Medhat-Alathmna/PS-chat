@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Country } from "@/lib/data/countries";
+import { countryCodeToFlag } from "@/lib/data/countries";
 import { useGlobeSettings } from "@/lib/hooks/useGlobeSettings";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import WorldGlobe from "@/app/components/kids/globe/WorldGlobe";
@@ -49,6 +50,7 @@ export default function WorldExplorerPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [centeredCountry, setCenteredCountry] = useState<Country | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setHasInteracted(true), 3000);
@@ -161,7 +163,28 @@ export default function WorldExplorerPage() {
           selectedCountryId={selectedCountry?.id ?? null}
           flyToCountryId={flyToCountryId}
           settings={settings}
+          onCountryCenter={setCenteredCountry}
         />
+
+        {/* ── Centered Country Indicator ── */}
+        {centeredCountry && (
+          <div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none
+              flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap"
+            style={{
+              background: "rgba(0,8,20,0.72)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              color: "#fff",
+              fontFamily: "Cairo, 'Noto Sans Arabic', sans-serif",
+              fontSize: 14,
+              direction: "rtl",
+            }}
+          >
+            <span>{countryCodeToFlag(centeredCountry.code)}</span>
+            <span>{centeredCountry.nameAr}</span>
+          </div>
+        )}
       </div>
 
       {/* ── Search Bar ── */}
