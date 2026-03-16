@@ -164,6 +164,7 @@ export default function WorldExplorerPage() {
           flyToCountryId={flyToCountryId}
           settings={settings}
           onCountryCenter={setCenteredCountry}
+          paused={sheetOpen}
         />
 
         {/* ── Center Crosshair ── */}

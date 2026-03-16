@@ -28,6 +28,7 @@ interface WorldGlobeProps {
   flyToCountryId: string | null;
   settings?: GlobeSettings;
   onCountryCenter?: (country: Country | null) => void;
+  paused?: boolean;
 }
 
 export default function WorldGlobe({
@@ -36,6 +37,7 @@ export default function WorldGlobe({
   flyToCountryId,
   settings = DEFAULT_GLOBE_SETTINGS,
   onCountryCenter,
+  paused,
 }: WorldGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -74,6 +76,7 @@ export default function WorldGlobe({
           width={dimensions.width}
           height={dimensions.height}
           onCountryCenter={onCountryCenter}
+          paused={paused}
         />
       )}
     </div>

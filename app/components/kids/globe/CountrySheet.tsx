@@ -54,7 +54,7 @@ const CONTINENT_AR: Record<string, string> = {
   oceania: "أوقيانوسيا",
 };
 
-const TOPIC_CHIPS = ["تاريخها", "ثقافتها وعاداتها", "أشهر معالمها", "حياة ناسها"];
+const TOPIC_CHIPS = ["تاريخها", "ثقافتها وعاداتها", "أشهر معالمها", "حياة ناسها", "طبيعتها ومناخها", "اقتصادها وثرواتها", "أكلتها المشهورة", "فنونها وموسيقاها"];
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function CountrySheet({
@@ -456,6 +456,7 @@ function MessageBubble({
           color: "rgba(255,255,255,0.92)",
           direction: "rtl",
           textAlign: "right",
+          whiteSpace: "pre-wrap",
         }}
       >
         {msg.text}

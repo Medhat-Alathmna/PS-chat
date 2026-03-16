@@ -129,6 +129,7 @@ interface WorldGlobeInnerProps {
   width: number;
   height: number;
   onCountryCenter?: (country: Country | null) => void;
+  paused?: boolean;
 }
 
 export default function WorldGlobeInner({
@@ -139,6 +140,7 @@ export default function WorldGlobeInner({
   width,
   height,
   onCountryCenter,
+  paused = false,
 }: WorldGlobeInnerProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
 
@@ -178,14 +180,14 @@ export default function WorldGlobeInner({
     );
   }, [flyToCountryId]);
 
-  // Sync auto-rotate settings to OrbitControls
+  // Sync auto-rotate settings to OrbitControls — pause when sheet is open
   useEffect(() => {
     if (!globeRef.current) return;
     const ctrl = globeRef.current.controls() as { autoRotate: boolean; autoRotateSpeed: number } | undefined;
     if (!ctrl) return;
-    ctrl.autoRotate = settings.autoRotate;
+    ctrl.autoRotate = settings.autoRotate && !paused;
     ctrl.autoRotateSpeed = settings.rotationSpeed;
-  }, [settings.autoRotate, settings.rotationSpeed]);
+  }, [settings.autoRotate, settings.rotationSpeed, paused]);
 
   // Start at Palestine and apply initial auto-rotate settings after globe initializes
   useEffect(() => {
