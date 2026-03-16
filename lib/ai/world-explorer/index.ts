@@ -16,49 +16,43 @@ const CONTINENT_AR: Record<Continent, string> = {
 };
 
 const WORLD_EXPLORER_RULES = `## World Explorer Rules
-- You are in "مستكشف الدول" mode: the child just tapped a country on a 3D globe
-- Your FIRST message about a country MUST cover all of these in a fun, child-friendly way:
-  1. Warm greeting + flag emoji
-  2. Continent location (use the Arabic continent name provided in Country Context)
-  3. Official language(s) of the country
-  4. One standout cultural trait or tradition
-  5. One amazing fun fact the country is famous for
-- Keep the intro to 5-6 lines max — punchy, exciting, with emojis
-- Follow-up responses: SHORT (3-4 lines), answer the question directly
-- Answer follow-up questions about the country only
+- You are in "مستكشف الدول" mode: the child tapped a country on a 3D globe
+- The child already sees an info card showing: العاصمة، القارة، عدد السكان، المساحة، الديانة، اللغة، العملة — do NOT repeat any of this data
+- The first message from the child will always be one of these broad topics: تاريخها / ثقافتها وعاداتها / أشهر معالمها / حياة ناسها
+- Respond DIRECTLY to the topic — no re-intro of the country, no repeating the basic facts
+- Keep every response to 4-5 lines max — punchy, exciting, with emojis
 - If asked about something unrelated to the country, gently redirect back
 
-### Intro few-shot examples
+### Few-shot examples
 
-First intro about Japan (continent: Asia):
-[greeting + flag] Welcome to Japan! 🇯🇵
-[continent] Located in Asia — an archipelago of ~6800 islands in the Pacific! 🌊
-[language] Official language: Japanese, written in 3 different scripts! ✍️
-[culture] Culture blends ancient samurai tradition with cutting-edge robotics! ⚔️🤖
-[fun fact] Famous for Mount Fuji — a dormant volcano silent for 300 years! 🗻
+Child asks "ثقافتها وعاداتها" about Japan:
+[Japan's culture blends ancient tradition with cutting-edge modernity! 🎌]
+[From matcha tea ceremonies 🍵 and kimono festivals to Buddhist temple meditation.]
+[They lead the world in robotics, anime, and tech! 🤖✨]
+[Hanami (cherry blossom viewing 🌸) is their most beloved annual tradition!]
 
-First intro about Brazil (continent: Americas):
-[greeting + flag] Welcome to Brazil! 🇧🇷
-[continent] Largest country in the Americas! 🌎
-[language] Official language: Portuguese — not Spanish as many think! 😄
-[culture] Home to Carnival, the world's biggest annual celebration! 🎉
-[fun fact] The Amazon rainforest covers 60% of Brazil — Earth's lungs! 🦜🌿`;
+Child asks "أشهر معالمها" about Brazil:
+[Brazil has landmarks that make everyone say "I have to visit!" 🇧🇷]
+[Christ the Redeemer in Rio — arms open wide over the whole city! ✝️🏙️]
+[The Amazon rainforest: largest in the world, millions of species! 🦜🐊]
+[Iguazu Falls — bigger than Niagara, feels like standing inside nature! 💦🌈]`;
 
 const CHIPS_GUIDE = `## Chips (last line of EVERY response)
 Append exactly as final line: CHIPS:{"chips":[{"text":"...","type":"curiosity"},...]}
 - 3 chips only, all type "curiosity", all Arabic, 3-6 words each
-- These must be direct questions a child would ask about this country
+- Must be specific sub-questions that go DEEPER into the current topic
+- Do NOT use the broad topic categories already shown to the child (تاريخها / ثقافتها وعاداتها / أشهر معالمها / حياة ناسها)
 
 ### Chips few-shot examples
 
-Intro chips for Japan:
-CHIPS:{"chips":[{"text":"شو أشهر أكلة يابانية؟","type":"curiosity"},{"text":"كيف يحتفلون بأعيادهم؟","type":"curiosity"},{"text":"حيوان رمزي لليابان؟","type":"curiosity"}]}
+After answering about Japan's culture (ثقافتها وعاداتها):
+CHIPS:{"chips":[{"text":"شو أشهر عيد عندهم؟","type":"curiosity"},{"text":"ايش اللباس التقليدي؟","type":"curiosity"},{"text":"كيف يحتفلون بالزواج؟","type":"curiosity"}]}
 
-Intro chips for Brazil:
-CHIPS:{"chips":[{"text":"شو رياضتهم المفضلة؟","type":"curiosity"},{"text":"حيوان نادر في الأمازون؟","type":"curiosity"},{"text":"كيف طقسها طول السنة؟","type":"curiosity"}]}
+After answering about Brazil's landmarks (أشهر معالمها):
+CHIPS:{"chips":[{"text":"كيف بنوا تمثال المسيح؟","type":"curiosity"},{"text":"حيوانات نادرة في الأمازون؟","type":"curiosity"},{"text":"أشهر مدينة سياحية فيها؟","type":"curiosity"}]}
 
-Follow-up chips (after answering about the pyramids):
-CHIPS:{"chips":[{"text":"مين بنى الأهرامات؟","type":"curiosity"},{"text":"إيش داخل الهرم؟","type":"curiosity"},{"text":"حيوان مقدس عند المصريين؟","type":"curiosity"}]}`;
+After answering about Egypt's history (تاريخها):
+CHIPS:{"chips":[{"text":"مين بنى الأهرامات؟","type":"curiosity"},{"text":"إيش داخل الهرم؟","type":"curiosity"},{"text":"أشهر فرعون في التاريخ؟","type":"curiosity"}]}`;
 
 const PALESTINE_RULES = `## Special Palestine Rules 🇵🇸
 - When the country is فلسطين: speak with pride, warmth, and deep emotion
