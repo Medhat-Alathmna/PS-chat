@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import Globe, { GlobeMethods } from "react-globe.gl";
 import { Country, COUNTRIES, COUNTRIES_BY_ID } from "@/lib/data/countries";
 import { GlobeSettings } from "@/lib/types/globe-settings";
@@ -143,6 +143,25 @@ export default function WorldGlobeInner({
   paused = false,
 }: WorldGlobeInnerProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
+  const [isChangingAppearance, setIsChangingAppearance] = useState(false);
+  const prevAppearanceRef = useRef(settings.appearance);
+
+  useEffect(() => {
+    if (prevAppearanceRef.current === settings.appearance) return;
+    prevAppearanceRef.current = settings.appearance;
+    setIsChangingAppearance(true);
+
+    const textureUrl = TEXTURE_URLS[settings.appearance];
+    if (textureUrl) {
+      const img = new Image();
+      img.src = textureUrl;
+      img.onload = () => setIsChangingAppearance(false);
+      img.onerror = () => setIsChangingAppearance(false);
+    } else {
+      const t = setTimeout(() => setIsChangingAppearance(false), 500);
+      return () => clearTimeout(t);
+    }
+  }, [settings.appearance]);
 
   // Build polygon data: filter out unrecognized territories (would render gray) + inject Palestine
   const polygonsData = useMemo(() => {
@@ -291,25 +310,47 @@ export default function WorldGlobeInner({
 
 
   return (
-    <Globe
-      ref={globeRef}
-      width={width}
-      height={height}
-      backgroundColor={bgColor}
-      globeImageUrl={globeImageUrl}
-      bumpImageUrl={settings.appearance === "realistic" ? "//unpkg.com/three-globe/example/img/earth-topology.png" : ""}
-      polygonsData={polygonsData}
-      polygonCapColor={getPolygonCapColor}
-      polygonSideColor={polygonSideColor}
-      polygonStrokeColor={polygonStrokeColor}
-      polygonAltitude={getPolygonAltitude}
-      onPolygonClick={handlePolygonClick}
-      onGlobeReady={handleGlobeReady}
-      polygonsTransitionDuration={300}
-      atmosphereColor={atmosphereColor}
-      atmosphereAltitude={0.15}
-      enablePointerInteraction
-      animateIn={false}
-    />
+    <div style={{ position: "relative", width, height }}>
+      <Globe
+        ref={globeRef}
+        width={width}
+        height={height}
+        backgroundColor={bgColor}
+        globeImageUrl={globeImageUrl}
+        bumpImageUrl={settings.appearance === "realistic" ? "//unpkg.com/three-globe/example/img/earth-topology.png" : ""}
+        polygonsData={polygonsData}
+        polygonCapColor={getPolygonCapColor}
+        polygonSideColor={polygonSideColor}
+        polygonStrokeColor={polygonStrokeColor}
+        polygonAltitude={getPolygonAltitude}
+        onPolygonClick={handlePolygonClick}
+        onGlobeReady={handleGlobeReady}
+        polygonsTransitionDuration={300}
+        atmosphereColor={atmosphereColor}
+        atmosphereAltitude={0.15}
+        enablePointerInteraction
+        animateIn={false}
+      />
+      {isChangingAppearance && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,8,20,0.75)",
+            backdropFilter: "blur(4px)",
+            gap: 12,
+          }}
+        >
+          <div className="animate-spin-slow" style={{ fontSize: 56 }}>🌍</div>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: 0 }}>
+            جاري تحميل الأرض...
+          </p>
+        </div>
+      )}
+    </div>
   );
 }

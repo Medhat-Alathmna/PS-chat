@@ -97,9 +97,10 @@ export default function CountriesListModal({
   onClose,
   onCountrySelect,
 }: CountriesListModalProps) {
-  const [sortBy, setSortBy] = useState<SortBy>("alpha");
+  const [sortBy, setSortBy] = useState<SortBy>("area");
   const [filterContinent, setFilterContinent] = useState<Continent | null>(null);
   const [filterReligion, setFilterReligion] = useState<ReligionFilter | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const displayed = useMemo(() => {
     let list = MERGED_COUNTRIES;
@@ -195,57 +196,93 @@ export default function CountriesListModal({
         </div>
 
         {/* ── Filters ── */}
-        <div
-          className="flex-shrink-0 px-4 py-3 space-y-3"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
-        >
-          {/* Continent filter */}
-          <div>
-            <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
-              القارة
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-              <Pill active={filterContinent === null} onClick={() => setFilterContinent(null)}>
-                الكل
-              </Pill>
-              {CONTINENTS.map((c) => (
-                <Pill key={c.value} active={filterContinent === c.value} onClick={() => toggleContinent(c.value)}>
-                  {c.emoji} {c.label}
-                </Pill>
-              ))}
+        <div className="flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          {/* Toggle bar */}
+          <button
+            onClick={() => setFiltersOpen((p) => !p)}
+            className="w-full flex items-center justify-between px-4 py-2.5 transition-all active:scale-[0.99]"
+            style={{ background: "transparent" }}
+          >
+            <div className="flex items-center gap-2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+              <span className="text-xs font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>
+                الفلاتر والترتيب
+              </span>
             </div>
-          </div>
+            {(filterContinent || filterReligion || sortBy !== "alpha") && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-bold"
+                style={{ background: "linear-gradient(135deg, #c084fc, #93c5fd)", color: "#000" }}
+              >
+                {[filterContinent, filterReligion, sortBy !== "alpha" ? sortBy : null].filter(Boolean).length} نشط
+              </span>
+            )}
+          </button>
 
-          {/* Religion filter */}
-          <div>
-            <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
-              الديانة
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-              <Pill active={filterReligion === null} onClick={() => setFilterReligion(null)}>
-                الكل
-              </Pill>
-              {RELIGIONS.map((r) => (
-                <Pill key={r} active={filterReligion === r} onClick={() => toggleReligion(r)}>
-                  {r}
-                </Pill>
-              ))}
-            </div>
-          </div>
+          {/* Collapsible content */}
+          {filtersOpen && (
+            <div className="px-4 pb-3 space-y-3">
+              {/* Continent filter */}
+              <div>
+                <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  القارة
+                </p>
+                <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                  <Pill active={filterContinent === null} onClick={() => setFilterContinent(null)}>
+                    الكل
+                  </Pill>
+                  {CONTINENTS.map((c) => (
+                    <Pill key={c.value} active={filterContinent === c.value} onClick={() => toggleContinent(c.value)}>
+                      {c.emoji} {c.label}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
 
-          {/* Sort */}
-          <div>
-            <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
-              الترتيب
-            </p>
-            <div className="flex gap-2">
-              {SORT_OPTIONS.map((s) => (
-                <Pill key={s.value} active={sortBy === s.value} onClick={() => setSortBy(s.value)}>
-                  {s.label}
-                </Pill>
-              ))}
+              {/* Religion filter */}
+              <div>
+                <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  الديانة
+                </p>
+                <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                  <Pill active={filterReligion === null} onClick={() => setFilterReligion(null)}>
+                    الكل
+                  </Pill>
+                  {RELIGIONS.map((r) => (
+                    <Pill key={r} active={filterReligion === r} onClick={() => toggleReligion(r)}>
+                      {r}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort */}
+              <div>
+                <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  الترتيب
+                </p>
+                <div className="flex gap-2">
+                  {SORT_OPTIONS.map((s) => (
+                    <Pill key={s.value} active={sortBy === s.value} onClick={() => setSortBy(s.value)}>
+                      {s.label}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ── Countries List ── */}
