@@ -158,13 +158,6 @@ export default function CountrySheet({
     [sendMessage]
   );
 
-  // ── Back to info card ──────────────────────────────────────────────────
-  const handleBack = useCallback(() => {
-    setMode("info");
-    setMessages([]);
-    setInput("");
-  }, []);
-
   // ── Touch drag on the handle ───────────────────────────────────────────
   const handleDragStart = useCallback((clientY: number) => {
     setIsDragging(true);
@@ -231,34 +224,6 @@ export default function CountrySheet({
       >
         <AuroraBorder isPalestine={isPalestine} />
 
-        {/* Header */}
-        <div className="flex-shrink-0 px-4 pt-4 pb-3">
-          <div className="flex items-center justify-between mb-3">
-            <CountryInfo country={country} headingSize="text-lg" />
-            <div className="flex items-center gap-2">
-              {!isInfo && (
-                <button
-                  onClick={handleBack}
-                  className="text-xs px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/60 hover:text-white"
-                >
-                  ← رجوع
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-white/60 hover:text-white text-sm"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-          {isPalestine && <PalestineBadge />}
-        </div>
-
-        <div
-          className="flex-shrink-0 mx-4 mb-3"
-          style={{ height: 1, background: "rgba(255,255,255,0.08)" }}
-        />
 
         {isInfo ? (
           <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -328,34 +293,6 @@ export default function CountrySheet({
           />
         </div>
 
-        {/* Header */}
-        <div className="flex-shrink-0 px-4 pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {!isInfo && (
-                <button
-                  onClick={handleBack}
-                  className="text-xs px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/60 hover:text-white"
-                >
-                  ← رجوع
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-white/60 text-sm"
-              >
-                ✕
-              </button>
-            </div>
-            <CountryInfo country={country} headingSize="text-base" />
-          </div>
-          {isPalestine && <PalestineBadge className="mt-2" />}
-        </div>
-
-        <div
-          className="flex-shrink-0 mx-4 mb-2"
-          style={{ height: 1, background: "rgba(255,255,255,0.08)" }}
-        />
 
         {isInfo ? (
           <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -633,54 +570,6 @@ function AuroraBorder({ isPalestine, rounded }: { isPalestine: boolean; rounded?
   );
 }
 
-function PalestineBadge({ className }: { className?: string }) {
-  return (
-    <div
-      className={`text-xs text-center py-1 px-3 rounded-full font-bold${className ? ` ${className}` : ""}`}
-      style={{
-        background: "linear-gradient(135deg, #2D7D46, #1a5c30)",
-        color: "#a8f0be",
-        border: "1px solid rgba(45,125,70,0.45)",
-      }}
-    >
-      🇵🇸 بلادنا الحبيبة
-    </div>
-  );
-}
-
-function CountryInfo({ country, headingSize = "text-lg" }: {
-  country: { nameAr: string; capitalAr: string; code: string };
-  headingSize?: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 flex-row-reverse">
-      <div
-        className="flex-shrink-0 rounded-lg overflow-hidden"
-        style={{
-          width: 44,
-          height: 30,
-          border: "1px solid rgba(255,255,255,0.2)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`https://flagcdn.com/w160/${country.code.toLowerCase()}.png`}
-          width={44}
-          height={30}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
-      </div>
-      <div className="text-right">
-        <h2 className={`${headingSize} font-black text-white leading-tight`} dir="rtl">
-          {country.nameAr}
-        </h2>
-        <p className="text-xs text-white/50" dir="rtl">🏛️ {country.capitalAr}</p>
-      </div>
-    </div>
-  );
-}
 
 // ── Shared styles ──────────────────────────────────────────────────────────
 const auroraStyle = `
