@@ -54,7 +54,8 @@
       "Bash(gh pr:*)",
       "Bash(node -e \":*)",
       "Bash(grep '\"\"three\"\"' package.json)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

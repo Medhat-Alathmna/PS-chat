@@ -8,7 +8,6 @@ import {
   useLayoutEffect,
 } from "react";
 import type { Country } from "@/lib/data/countries";
-import { countryCodeToFlag } from "@/lib/data/countries";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface ChatMessage {
@@ -32,9 +31,19 @@ function parseChips(raw: unknown[]): string[] {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
-const SNAP_HALF = 42;  // percent — default "half" position
-const SNAP_FULL = 95;  // percent — full-screen position
-const DRAG_THRESHOLD = 60; // px — how far to drag before snapping
+const SNAP_HALF = 42;
+const SNAP_FULL = 95;
+const DRAG_THRESHOLD = 60;
+
+const CONTINENT_AR: Record<string, string> = {
+  africa: "أفريقيا",
+  asia: "آسيا",
+  europe: "أوروبا",
+  americas: "الأمريكتان",
+  oceania: "أوقيانوسيا",
+};
+
+const TOPIC_CHIPS = ["تاريخها", "ثقافتها وعاداتها", "أشهر معالمها", "حياة ناسها"];
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function CountrySheet({
@@ -43,18 +52,19 @@ export default function CountrySheet({
   onClose,
   isOpen,
 }: CountrySheetProps) {
+  const [mode, setMode] = useState<"info" | "chat">("info");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sheetHeight, setSheetHeight] = useState(SNAP_HALF); // percent
+  const [sheetHeight, setSheetHeight] = useState(SNAP_HALF);
   const [isDragging, setIsDragging] = useState(false);
   const [isMobile, setIsMobile] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(SNAP_HALF);
-  const sheetHeightRef = useRef(SNAP_HALF); // mirrors sheetHeight state, avoids stale closures in drag handlers
-  const messagesRef = useRef<ChatMessage[]>([]); // mirrors messages state, avoids stale closures in sendMessage
+  const sheetHeightRef = useRef(SNAP_HALF);
+  const messagesRef = useRef<ChatMessage[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Detect mobile ──────────────────────────────────────────────────────
@@ -83,54 +93,14 @@ export default function CountrySheet({
     }
   }, [messages, loading]);
 
-  // ── Fetch Medhat intro when country changes ────────────────────────────
+  // ── Reset to info card when country changes ────────────────────────────
   useEffect(() => {
-    if (!country || !isOpen) return;
+    if (!country?.id || !isOpen) return;
     setMessages([]);
     setInput("");
+    setMode("info");
     setSheetHeight(SNAP_HALF);
-
-    let cancelled = false;
-    const fetchIntro = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/world-explorer/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [],
-            countryId: country.id,
-            playerName,
-          }),
-        });
-        if (cancelled) return;
-        const data = await res.json();
-        if (!cancelled && data.text) {
-          setMessages([
-            {
-              role: "assistant",
-              text: data.text,
-              chips: Array.isArray(data.chips) ? parseChips(data.chips) : [],
-            },
-          ]);
-        }
-      } catch {
-        if (!cancelled) {
-          setMessages([
-            {
-              role: "assistant",
-              text: `مرحبا! أنا مدحت 🦁 دعنا نستكشف ${country.nameAr} سوية! 🌍`,
-            },
-          ]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchIntro();
-    return () => { cancelled = true; };
-  }, [country?.id, isOpen, playerName]);
+  }, [country?.id, isOpen]);
 
   // ── Send message ───────────────────────────────────────────────────────
   const sendMessage = useCallback(
@@ -142,7 +112,6 @@ export default function CountrySheet({
       setLoading(true);
 
       try {
-        // Use messagesRef to avoid stale closure; send simple CoreMessage format
         const history = [...messagesRef.current, userMsg].map((m) => ({
           role: m.role,
           content: m.text,
@@ -177,8 +146,24 @@ export default function CountrySheet({
         setLoading(false);
       }
     },
-    [country, loading, playerName]  // messagesRef used instead of messages to avoid stale closure
+    [country, loading, playerName]
   );
+
+  // ── Topic chip → switch to chat mode ──────────────────────────────────
+  const handleTopicChip = useCallback(
+    (chip: string) => {
+      setMode("chat");
+      sendMessage(chip);
+    },
+    [sendMessage]
+  );
+
+  // ── Back to info card ──────────────────────────────────────────────────
+  const handleBack = useCallback(() => {
+    setMode("info");
+    setMessages([]);
+    setInput("");
+  }, []);
 
   // ── Touch drag on the handle ───────────────────────────────────────────
   const handleDragStart = useCallback((clientY: number) => {
@@ -188,7 +173,7 @@ export default function CountrySheet({
   }, []);
 
   const handleDragMove = useCallback((clientY: number) => {
-    const deltaY = dragStartY.current - clientY; // positive = dragging up
+    const deltaY = dragStartY.current - clientY;
     const deltaPercent = (deltaY / window.innerHeight) * 100;
     const next = Math.min(SNAP_FULL, Math.max(5, dragStartHeight.current + deltaPercent));
     sheetHeightRef.current = next;
@@ -213,7 +198,7 @@ export default function CountrySheet({
     }
   }, [onClose]);
 
-  // Attach window-level mouse listeners while dragging so release outside handle works
+  // Attach window-level mouse listeners while dragging
   useEffect(() => {
     if (!isDragging) return;
     const onMove = (e: MouseEvent) => handleDragMove(e.clientY);
@@ -229,8 +214,8 @@ export default function CountrySheet({
   // ── Render ─────────────────────────────────────────────────────────────
   if (!isOpen || !country) return null;
 
-  const flag = countryCodeToFlag(country.code);
   const isPalestine = country.id === "PSE";
+  const isInfo = mode === "info";
 
   // ── Desktop side panel ─────────────────────────────────────────────────
   if (!isMobile) {
@@ -249,13 +234,23 @@ export default function CountrySheet({
         {/* Header */}
         <div className="flex-shrink-0 px-4 pt-4 pb-3">
           <div className="flex items-center justify-between mb-3">
-            <CountryInfo flag={flag} country={country} headingSize="text-lg" />
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-white/60 hover:text-white text-sm"
-            >
-              ✕
-            </button>
+            <CountryInfo country={country} headingSize="text-lg" />
+            <div className="flex items-center gap-2">
+              {!isInfo && (
+                <button
+                  onClick={handleBack}
+                  className="text-xs px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/60 hover:text-white"
+                >
+                  ← رجوع
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-white/60 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
           </div>
           {isPalestine && <PalestineBadge />}
         </div>
@@ -265,26 +260,31 @@ export default function CountrySheet({
           style={{ height: 1, background: "rgba(255,255,255,0.08)" }}
         />
 
-        {/* Chat messages */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 pb-2 space-y-3"
-          style={{ direction: "rtl" }}
-        >
-          {messages.map((msg, i) => (
-            <MessageBubble key={i} msg={msg} onChipClick={sendMessage} />
-          ))}
-          {loading && <TypingIndicator />}
-        </div>
-
-        {/* Input */}
-        <ChatInput
-          value={input}
-          onChange={setInput}
-          onSend={() => sendMessage(input)}
-          disabled={loading}
-          inputRef={inputRef}
-        />
+        {isInfo ? (
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <InfoCard country={country} onTopicChip={handleTopicChip} />
+          </div>
+        ) : (
+          <>
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto px-4 pb-2 space-y-3"
+              style={{ direction: "rtl" }}
+            >
+              {messages.map((msg, i) => (
+                <MessageBubble key={i} msg={msg} onChipClick={sendMessage} />
+              ))}
+              {loading && <TypingIndicator />}
+            </div>
+            <ChatInput
+              value={input}
+              onChange={setInput}
+              onSend={() => sendMessage(input)}
+              disabled={loading}
+              inputRef={inputRef}
+            />
+          </>
+        )}
 
         <style>{auroraStyle}</style>
       </div>
@@ -294,7 +294,6 @@ export default function CountrySheet({
   // ── Mobile bottom sheet ────────────────────────────────────────────────
   return (
     <>
-      {/* Backdrop (dim) */}
       {sheetHeight > 60 && (
         <div
           className="fixed inset-0 z-30 bg-black/40"
@@ -325,24 +324,30 @@ export default function CountrySheet({
         >
           <div
             className="rounded-full"
-            style={{
-              width: 40,
-              height: 4,
-              background: "rgba(255,255,255,0.2)",
-            }}
+            style={{ width: 40, height: 4, background: "rgba(255,255,255,0.2)" }}
           />
         </div>
 
         {/* Header */}
         <div className="flex-shrink-0 px-4 pb-2">
           <div className="flex items-center justify-between">
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-white/60 text-sm"
-            >
-              ✕
-            </button>
-            <CountryInfo flag={flag} country={country} headingSize="text-base" />
+            <div className="flex items-center gap-2">
+              {!isInfo && (
+                <button
+                  onClick={handleBack}
+                  className="text-xs px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/60 hover:text-white"
+                >
+                  ← رجوع
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-white/60 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <CountryInfo country={country} headingSize="text-base" />
           </div>
           {isPalestine && <PalestineBadge className="mt-2" />}
         </div>
@@ -352,26 +357,31 @@ export default function CountrySheet({
           style={{ height: 1, background: "rgba(255,255,255,0.08)" }}
         />
 
-        {/* Chat messages */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 pb-1 space-y-3"
-          style={{ direction: "rtl" }}
-        >
-          {messages.map((msg, i) => (
-            <MessageBubble key={i} msg={msg} onChipClick={sendMessage} />
-          ))}
-          {loading && <TypingIndicator />}
-        </div>
-
-        {/* Input */}
-        <ChatInput
-          value={input}
-          onChange={setInput}
-          onSend={() => sendMessage(input)}
-          disabled={loading}
-          inputRef={inputRef}
-        />
+        {isInfo ? (
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <InfoCard country={country} onTopicChip={handleTopicChip} />
+          </div>
+        ) : (
+          <>
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto px-4 pb-1 space-y-3"
+              style={{ direction: "rtl" }}
+            >
+              {messages.map((msg, i) => (
+                <MessageBubble key={i} msg={msg} onChipClick={sendMessage} />
+              ))}
+              {loading && <TypingIndicator />}
+            </div>
+            <ChatInput
+              value={input}
+              onChange={setInput}
+              onSend={() => sendMessage(input)}
+              disabled={loading}
+              inputRef={inputRef}
+            />
+          </>
+        )}
       </div>
 
       <style>{auroraStyle}</style>
@@ -380,6 +390,87 @@ export default function CountrySheet({
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
+
+function InfoCard({
+  country,
+  onTopicChip,
+}: {
+  country: Country;
+  onTopicChip: (chip: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4 pt-2" style={{ direction: "rtl" }}>
+      {/* Flag hero */}
+      <div className="flex flex-col items-center gap-2 py-3">
+        <div
+          className="flex items-center justify-center rounded-2xl overflow-hidden"
+          style={{
+            width: 120,
+            height: 80,
+            boxShadow: "0 0 32px rgba(165,94,234,0.3), 0 4px 24px rgba(0,0,0,0.5)",
+            border: "2px solid rgba(255,255,255,0.15)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`https://flagcdn.com/w320/${country.code.toLowerCase()}.png`}
+            srcSet={`https://flagcdn.com/w640/${country.code.toLowerCase()}.png 2x`}
+            width={120}
+            height={80}
+            alt={country.nameEn}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        </div>
+        <p className="text-sm text-white/50 font-medium" dir="rtl">{country.nameAr}</p>
+      </div>
+
+      {/* Country details */}
+      <div
+        className="rounded-2xl px-4 py-3 space-y-2"
+        style={{
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <div className="flex items-center gap-2 text-sm text-white/70">
+          <span>🏛️</span>
+          <span>العاصمة:</span>
+          <span className="text-white font-semibold">{country.capitalAr}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-white/70">
+          <span>🌍</span>
+          <span>القارة:</span>
+          <span className="text-white font-semibold">
+            {CONTINENT_AR[country.continent] ?? country.continent}
+          </span>
+        </div>
+      </div>
+
+      {/* Topic chips */}
+      <div>
+        <p className="text-xs text-white/40 mb-2.5 font-medium">
+          تحدث مع مدحت 🦁 عن:
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {TOPIC_CHIPS.map((chip) => (
+            <button
+              key={chip}
+              onClick={() => onTopicChip(chip)}
+              className="text-sm px-4 py-2 rounded-full font-medium transition-all active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, rgba(165,94,234,0.25), rgba(84,160,255,0.15))",
+                border: "1px solid rgba(165,94,234,0.4)",
+                color: "rgba(255,255,255,0.88)",
+              }}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MessageBubble({
   msg,
@@ -557,14 +648,30 @@ function PalestineBadge({ className }: { className?: string }) {
   );
 }
 
-function CountryInfo({ flag, country, headingSize = "text-lg" }: {
-  flag: string;
-  country: { nameAr: string; capitalAr: string };
+function CountryInfo({ country, headingSize = "text-lg" }: {
+  country: { nameAr: string; capitalAr: string; code: string };
   headingSize?: string;
 }) {
   return (
     <div className="flex items-center gap-2 flex-row-reverse">
-      <span className="text-3xl leading-none">{flag}</span>
+      <div
+        className="flex-shrink-0 rounded-lg overflow-hidden"
+        style={{
+          width: 44,
+          height: 30,
+          border: "1px solid rgba(255,255,255,0.2)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://flagcdn.com/w160/${country.code.toLowerCase()}.png`}
+          width={44}
+          height={30}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      </div>
       <div className="text-right">
         <h2 className={`${headingSize} font-black text-white leading-tight`} dir="rtl">
           {country.nameAr}
