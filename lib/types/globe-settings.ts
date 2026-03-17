@@ -15,6 +15,8 @@ export interface GlobeSettings {
   rotationSpeed: number;
   /** Space/background style */
   spaceBackground: SpaceBackground;
+  /** Highlight color for the selected country polygon */
+  selectedCountryColor: string;
 }
 
 export const DEFAULT_GLOBE_SETTINGS: GlobeSettings = {
@@ -22,4 +24,5 @@ export const DEFAULT_GLOBE_SETTINGS: GlobeSettings = {
   autoRotate: true,
   rotationSpeed: 0.3,
   spaceBackground: "stars-dense",
+  selectedCountryColor: "#A55EEA",
 };

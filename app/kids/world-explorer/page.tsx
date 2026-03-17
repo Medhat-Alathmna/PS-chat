@@ -42,6 +42,7 @@ export default function WorldExplorerPage() {
     setAutoRotate,
     setRotationSpeed,
     setSpaceBackground,
+    setSelectedCountryColor,
     resetToDefaults,
   } = useGlobeSettings(activeProfile?.id);
 
@@ -287,6 +288,7 @@ export default function WorldExplorerPage() {
         onAutoRotateChange={setAutoRotate}
         onRotationSpeedChange={setRotationSpeed}
         onSpaceBackgroundChange={setSpaceBackground}
+        onSelectedCountryColorChange={setSelectedCountryColor}
         onResetDefaults={resetToDefaults}
         onClose={() => setShowSettings(false)}
       />

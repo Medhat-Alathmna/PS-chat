@@ -67,12 +67,13 @@ const CARTOON_COLOR_MAP = buildCartoonColorMap();
 function getCountryColor(
   feature: { id?: string },
   appearance: GlobeSettings["appearance"],
-  selectedId: string | null
+  selectedId: string | null,
+  selectedColor: string
 ): string {
   const id = feature.id as string;
 
   if (id === "PSE") return "#2D7D46"; // Palestine always green
-  if (id === selectedId) return "#A55EEA";
+  if (id === selectedId) return selectedColor;
 
   const country = COUNTRIES_BY_ID.get(id);
   if (!country) return "#CCCCCC";
@@ -264,8 +265,8 @@ export default function WorldGlobeInner({
   );
 
   const getPolygonCapColor = useCallback(
-    (d: object) => getCountryColor(d as { id?: string }, settings.appearance, selectedCountryId),
-    [settings.appearance, selectedCountryId]
+    (d: object) => getCountryColor(d as { id?: string }, settings.appearance, selectedCountryId, settings.selectedCountryColor),
+    [settings.appearance, selectedCountryId, settings.selectedCountryColor]
   );
 
   // RAF loop: report the country currently facing the camera (center of screen)

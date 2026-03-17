@@ -13,10 +13,21 @@ interface GlobeSettingsPanelProps {
   onAutoRotateChange: (v: boolean) => void;
   onRotationSpeedChange: (v: number) => void;
   onSpaceBackgroundChange: (v: SpaceBackground) => void;
+  onSelectedCountryColorChange: (v: string) => void;
   onResetDefaults: () => void;
   onClose: () => void;
   isOpen: boolean;
 }
+
+const COUNTRY_COLORS: { value: string; label: string }[] = [
+  { value: "#A55EEA", label: "بنفسجي" },
+  { value: "#FF9F43", label: "برتقالي" },
+  { value: "#54A0FF", label: "أزرق" },
+  { value: "#FFE66D", label: "أصفر" },
+  { value: "#FF9FF3", label: "وردي" },
+  { value: "#FF6B6B", label: "أحمر" },
+  { value: "#4ECDC4", label: "فيروزي" },
+];
 
 // ── Option Data ────────────────────────────────────────────────────────────
 const APPEARANCES: { value: GlobeAppearance; label: string; emoji: string; desc: string }[] = [
@@ -39,6 +50,7 @@ export default function GlobeSettingsPanel({
   onAutoRotateChange,
   onRotationSpeedChange,
   onSpaceBackgroundChange,
+  onSelectedCountryColorChange,
   onResetDefaults,
   onClose,
   isOpen,
@@ -155,6 +167,40 @@ export default function GlobeSettingsPanel({
                   >
                     <span>{opt.emoji}</span>
                     <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <Divider />
+
+          {/* ── Section: لون الدولة المحددة ── */}
+          <section>
+            <SectionLabel icon="🎨" text="لون الدولة المحددة" />
+            <div className="flex flex-wrap gap-3 mt-3">
+              {COUNTRY_COLORS.map((opt) => {
+                const selected = settings.selectedCountryColor === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => onSelectedCountryColorChange(opt.value)}
+                    title={opt.label}
+                    className="flex flex-col items-center gap-1 transition-all active:scale-95"
+                  >
+                    <span
+                      className="block w-8 h-8 rounded-full transition-all"
+                      style={{
+                        background: opt.value,
+                        boxShadow: selected
+                          ? `0 0 0 2px rgba(255,255,255,0.15), 0 0 0 4px ${opt.value}`
+                          : "0 2px 6px rgba(0,0,0,0.4)",
+                        transform: selected ? "scale(1.2)" : "scale(1)",
+                      }}
+                    />
+                    <span className="text-[9px] font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>
+                      {opt.label}
+                    </span>
                   </button>
                 );
               })}

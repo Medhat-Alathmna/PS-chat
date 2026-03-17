@@ -23,6 +23,16 @@ const SPEED_LEVELS: { value: number; label: string }[] = [
   { value: 1.0, label: "سريع" },
 ];
 
+const COUNTRY_COLOR_OPTIONS: { value: string; label: string }[] = [
+  { value: "#A55EEA", label: "بنفسجي" },
+  { value: "#FF9F43", label: "برتقالي" },
+  { value: "#54A0FF", label: "أزرق" },
+  { value: "#FFE66D", label: "أصفر" },
+  { value: "#FF9FF3", label: "وردي" },
+  { value: "#FF6B6B", label: "أحمر" },
+  { value: "#4ECDC4", label: "فيروزي" },
+];
+
 export default function GlobeSettingsContent({ profileId }: { profileId?: string }) {
   const {
     settings,
@@ -30,6 +40,7 @@ export default function GlobeSettingsContent({ profileId }: { profileId?: string
     setAutoRotate,
     setRotationSpeed,
     setSpaceBackground,
+    setSelectedCountryColor,
     resetToDefaults,
   } = useGlobeSettings(profileId);
 
@@ -101,6 +112,36 @@ export default function GlobeSettingsContent({ profileId }: { profileId?: string
           </div>
         </section>
       )}
+
+      {/* Selected Country Color */}
+      <section>
+        <SectionHeader icon="🎨" title="لون الدولة المحددة" />
+        <div className="flex flex-wrap gap-3 pt-1">
+          {COUNTRY_COLOR_OPTIONS.map((opt) => {
+            const selected = settings.selectedCountryColor === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => setSelectedCountryColor(opt.value)}
+                title={opt.label}
+                className="flex flex-col items-center gap-1 transition-all active:scale-95"
+              >
+                <span
+                  className="block w-9 h-9 rounded-full transition-all"
+                  style={{
+                    background: opt.value,
+                    boxShadow: selected
+                      ? `0 0 0 3px white, 0 0 0 5px ${opt.value}`
+                      : "0 2px 6px rgba(0,0,0,0.15)",
+                    transform: selected ? "scale(1.15)" : "scale(1)",
+                  }}
+                />
+                <span className="text-[10px] text-gray-500 font-medium">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Reset */}
       <section className="pt-2">

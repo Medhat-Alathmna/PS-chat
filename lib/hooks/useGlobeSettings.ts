@@ -61,6 +61,7 @@ export function useGlobeSettings(profileId?: string) {
     setAutoRotate: (autoRotate: boolean) => update({ autoRotate }),
     setRotationSpeed: (rotationSpeed: number) => update({ rotationSpeed }),
     setSpaceBackground: (spaceBackground: SpaceBackground) => update({ spaceBackground }),
+    setSelectedCountryColor: (selectedCountryColor: string) => update({ selectedCountryColor }),
     resetToDefaults: () => { setSettings(DEFAULT_GLOBE_SETTINGS); persist(DEFAULT_GLOBE_SETTINGS); },
   };
 }
