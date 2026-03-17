@@ -78,7 +78,7 @@ function getCountryColor(
   if (!country) return "#CCCCCC";
 
   if (appearance === "cartoon") {
-    return CARTOON_COLOR_MAP.get(id) ?? CARTOON_COLORS[0];
+    return CARTOON_COLOR_MAP.get(id) ?? "#AAAAAA";
   }
 
   if (appearance === "political") {
