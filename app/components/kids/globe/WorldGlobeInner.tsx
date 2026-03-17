@@ -43,10 +43,26 @@ const CONTINENT_COLORS: Record<string, string> = {
   oceania:  "#CDB4DB",
 };
 
-const CARTOON_COLORS = [
-  "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
-  "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9",
-];
+// ── Unique color per country (golden ratio hue distribution) ─────────────
+// Each country gets a unique hsl color. The golden ratio conjugate (φ⁻¹) spaces
+// hues maximally apart so consecutive entries look as different as possible.
+function buildCartoonColorMap(): Map<string, string> {
+  const ids = (geoData as { features: object[] }).features
+    .map(f => (f as { id?: string }).id)
+    .filter((id): id is string => !!id)
+    .sort(); // stable alphabetical order → same color per country across renders
+
+  const PHI = 0.618033988749895;
+  const result = new Map<string, string>();
+  ids.forEach((id, i) => {
+    const hue = Math.round(((i * PHI) % 1) * 360);
+    const lightness = 55 + (i % 3) * 8; // 55 / 63 / 71 — mild variation
+    result.set(id, `hsl(${hue}, 60%, ${lightness}%)`);
+  });
+  return result;
+}
+
+const CARTOON_COLOR_MAP = buildCartoonColorMap();
 
 function getCountryColor(
   feature: { id?: string },
@@ -62,8 +78,7 @@ function getCountryColor(
   if (!country) return "#CCCCCC";
 
   if (appearance === "cartoon") {
-    const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return CARTOON_COLORS[hash % CARTOON_COLORS.length];
+    return CARTOON_COLOR_MAP.get(id) ?? CARTOON_COLORS[0];
   }
 
   if (appearance === "political") {
@@ -262,7 +277,7 @@ export default function WorldGlobeInner({
       const g = globeRef.current;
       if (g) {
         const { lat, lng } = g.pointOfView();
-        const c = countryAtPoint(lat, lng, polygonsData) ?? nearestCountry(lat, lng);
+        const c = countryAtPoint(lat, lng, polygonsData);
         const id = c?.id ?? null;
         if (id !== lastId) {
           lastId = id;
