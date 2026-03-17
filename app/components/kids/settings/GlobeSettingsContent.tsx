@@ -29,7 +29,6 @@ export default function GlobeSettingsContent({ profileId }: { profileId?: string
     setAppearance,
     setAutoRotate,
     setRotationSpeed,
-    setShowCountryLabels,
     setSpaceBackground,
     resetToDefaults,
   } = useGlobeSettings(profileId);
@@ -77,12 +76,6 @@ export default function GlobeSettingsContent({ profileId }: { profileId?: string
             label="دوران تلقائي"
             enabled={settings.autoRotate}
             onToggle={() => setAutoRotate(!settings.autoRotate)}
-          />
-          <ToggleRow
-            icon="🏷️"
-            label="أسماء الدول على الكرة"
-            enabled={settings.showCountryLabels}
-            onToggle={() => setShowCountryLabels(!settings.showCountryLabels)}
           />
         </div>
       </section>

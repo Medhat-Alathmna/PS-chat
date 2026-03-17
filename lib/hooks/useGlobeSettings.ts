@@ -60,7 +60,6 @@ export function useGlobeSettings(profileId?: string) {
     setAppearance: (appearance: GlobeAppearance) => update({ appearance }),
     setAutoRotate: (autoRotate: boolean) => update({ autoRotate }),
     setRotationSpeed: (rotationSpeed: number) => update({ rotationSpeed }),
-    setShowCountryLabels: (showCountryLabels: boolean) => update({ showCountryLabels }),
     setSpaceBackground: (spaceBackground: SpaceBackground) => update({ spaceBackground }),
     resetToDefaults: () => { setSettings(DEFAULT_GLOBE_SETTINGS); persist(DEFAULT_GLOBE_SETTINGS); },
   };

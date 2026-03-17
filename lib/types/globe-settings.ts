@@ -13,8 +13,6 @@ export interface GlobeSettings {
   autoRotate: boolean;
   /** Rotation speed multiplier (0.1–2.0) */
   rotationSpeed: number;
-  /** Show country name labels on the globe */
-  showCountryLabels: boolean;
   /** Space/background style */
   spaceBackground: SpaceBackground;
 }
@@ -23,6 +21,5 @@ export const DEFAULT_GLOBE_SETTINGS: GlobeSettings = {
   appearance: "political",
   autoRotate: true,
   rotationSpeed: 0.3,
-  showCountryLabels: false,
   spaceBackground: "stars-dense",
 };

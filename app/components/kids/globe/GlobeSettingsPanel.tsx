@@ -12,7 +12,6 @@ interface GlobeSettingsPanelProps {
   onAppearanceChange: (v: GlobeAppearance) => void;
   onAutoRotateChange: (v: boolean) => void;
   onRotationSpeedChange: (v: number) => void;
-  onShowLabelsChange: (v: boolean) => void;
   onSpaceBackgroundChange: (v: SpaceBackground) => void;
   onResetDefaults: () => void;
   onClose: () => void;
@@ -39,7 +38,6 @@ export default function GlobeSettingsPanel({
   onAppearanceChange,
   onAutoRotateChange,
   onRotationSpeedChange,
-  onShowLabelsChange,
   onSpaceBackgroundChange,
   onResetDefaults,
   onClose,
@@ -196,18 +194,6 @@ export default function GlobeSettingsPanel({
             )}
           </section>
 
-          <Divider />
-
-          {/* ── Section: أسماء الدول ── */}
-          <section>
-            <div className="flex items-center justify-between">
-              <SectionLabel icon="🏷️" text="أسماء الدول على الكرة" />
-              <Toggle
-                value={settings.showCountryLabels}
-                onChange={onShowLabelsChange}
-              />
-            </div>
-          </section>
         </div>
 
         {/* Footer buttons */}
