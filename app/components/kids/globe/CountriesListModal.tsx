@@ -222,12 +222,33 @@ export default function CountriesListModal({
               </span>
             </div>
             {(filterContinent || filterReligion || sortBy !== "alpha") && (
-              <span
-                className="text-xs px-2 py-0.5 rounded-full font-bold"
-                style={{ background: "linear-gradient(135deg, #c084fc, #93c5fd)", color: "#000" }}
-              >
-                {[filterContinent, filterReligion, sortBy !== "alpha" ? sortBy : null].filter(Boolean).length} نشط
-              </span>
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                {filterContinent && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-bold"
+                    style={{ background: "linear-gradient(135deg, #c084fc, #93c5fd)", color: "#000" }}
+                  >
+                    {CONTINENTS.find((c) => c.value === filterContinent)?.emoji}{" "}
+                    {CONTINENTS.find((c) => c.value === filterContinent)?.label}
+                  </span>
+                )}
+                {filterReligion && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-bold"
+                    style={{ background: "linear-gradient(135deg, #c084fc, #93c5fd)", color: "#000" }}
+                  >
+                    {filterReligion}
+                  </span>
+                )}
+                {sortBy !== "alpha" && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-bold"
+                    style={{ background: "linear-gradient(135deg, #c084fc, #93c5fd)", color: "#000" }}
+                  >
+                    {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
+                  </span>
+                )}
+              </div>
             )}
           </button>
 
