@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import { KidsProfile, ProfileColor } from "@/lib/types/games";
 
 const COLOR_HEX: Record<ProfileColor, string> = {
@@ -30,25 +31,172 @@ export default function ProfileSwitcher({
   onDelete,
 }: ProfileSwitcherProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const accentColor = COLOR_HEX[activeProfile.color];
 
+  const modal = open && (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+        onClick={() => { setOpen(false); setConfirmDeleteId(null); }}
+        style={{ animation: "fadeIn 0.2s ease" }}
+      />
+
+      {/* Modal — centered, 50% width on desktop, 90% on mobile */}
+      <div
+        className="fixed top-1/2 left-1/2 z-50 bg-white rounded-3xl shadow-2xl overflow-hidden"
+        style={{
+          width: "min(50%, 360px)",
+          minWidth: "280px",
+          maxHeight: "80vh",
+          transform: "translate(-50%, -50%)",
+          animation: "popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b border-gray-100"
+          style={{ background: `linear-gradient(135deg, ${accentColor}18, ${accentColor}08)` }}
+        >
+          <span className="font-bold text-base text-gray-700">اختر لاعباً</span>
+          <button
+            onClick={() => { setOpen(false); setConfirmDeleteId(null); }}
+            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors text-sm"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Profile list */}
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(80vh - 130px)" }}>
+          {profiles.map((p) => (
+            <div
+              key={p.id}
+              className={`flex items-center gap-3 px-4 py-3 transition-colors border-b border-gray-50 last:border-0 ${
+                p.id === activeProfile.id ? "bg-opacity-10" : "hover:bg-gray-50"
+              }`}
+              style={
+                p.id === activeProfile.id
+                  ? { background: `${COLOR_HEX[p.color]}12` }
+                  : {}
+              }
+            >
+              <button
+                onClick={() => {
+                  onSwitch(p.id);
+                  setOpen(false);
+                }}
+                className="flex items-center gap-3 flex-1 min-w-0"
+              >
+                <span className="text-3xl shrink-0">{p.avatar}</span>
+                <div className="flex-1 min-w-0 text-right">
+                  <div
+                    className="font-bold text-sm truncate"
+                    style={{ color: COLOR_HEX[p.color] }}
+                  >
+                    {p.name || "بطل"}
+                  </div>
+                  <div className="text-xs text-gray-400">{p.age} سنين</div>
+                </div>
+                {p.id === activeProfile.id && (
+                  <span
+                    className="text-sm shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white"
+                    style={{ background: COLOR_HEX[p.color] }}
+                  >
+                    ✓
+                  </span>
+                )}
+              </button>
+
+              {/* Edit / Delete */}
+              {confirmDeleteId === p.id ? (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-xs text-red-500 font-bold">تأكيد؟</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(p.id);
+                      setConfirmDeleteId(null);
+                      setOpen(false);
+                    }}
+                    className="w-8 h-8 rounded-xl bg-red-500 hover:bg-red-600 flex items-center justify-center text-white text-sm font-bold transition-colors"
+                    title="نعم، احذف"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteId(null);
+                    }}
+                    className="w-8 h-8 rounded-xl bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-sm font-bold transition-colors"
+                    title="إلغاء"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-1.5 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(p.id);
+                      setOpen(false);
+                    }}
+                    className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm transition-colors"
+                    title="تعديل"
+                  >
+                    ✏️
+                  </button>
+                  {profiles.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteId(p.id);
+                      }}
+                      className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 flex items-center justify-center text-sm transition-colors"
+                      title="حذف"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Add new */}
+        {profiles.length < 6 && (
+          <button
+            onClick={() => {
+              onAddNew();
+              setOpen(false);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 border-t border-gray-100 text-sm font-bold hover:opacity-80 transition-opacity"
+            style={{ color: accentColor }}
+          >
+            <span>➕</span>
+            <span>إضافة لاعب جديد</span>
+          </button>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes popIn {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+          to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+      `}</style>
+    </>
+  );
+
   return (
-    <div className="relative" ref={ref}>
-      {/* Collapsed pill */}
+    <>
+      {/* Trigger pill */}
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all border-2"
@@ -66,87 +214,7 @@ export default function ProfileSwitcher({
         </span>
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-fade-in-up">
-          {/* Profile list */}
-          <div className="max-h-60 overflow-y-auto">
-            {profiles.map((p) => (
-              <div
-                key={p.id}
-                className={`flex items-center gap-2 px-3 py-2.5 transition-colors ${p.id === activeProfile.id
-                    ? "bg-[var(--kids-purple)]/10"
-                    : "hover:bg-gray-50"
-                  }`}
-              >
-                <button
-                  onClick={() => {
-                    onSwitch(p.id);
-                    setOpen(false);
-                  }}
-                  className="flex items-center gap-2 flex-1 min-w-0"
-                >
-                  <span className="text-2xl shrink-0">{p.avatar}</span>
-                  <div className="flex-1 min-w-0 text-right">
-                    <div
-                      className="font-bold text-sm truncate"
-                      style={{ color: COLOR_HEX[p.color] }}
-                    >
-                      {p.name || "بطل"}
-                    </div>
-                    <div className="text-xs text-gray-400">{p.age} سنين</div>
-                  </div>
-                  {p.id === activeProfile.id && (
-                    <span className="text-[var(--kids-green)] text-sm shrink-0">✓</span>
-                  )}
-                </button>
-
-                {/* Edit / Delete */}
-                <div className="flex gap-1 shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(p.id);
-                      setOpen(false);
-                    }}
-                    className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-xs transition-colors"
-                    title="تعديل"
-                  >
-                    ✏️
-                  </button>
-                  {profiles.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(p.id);
-                        setOpen(false);
-                      }}
-                      className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center text-xs transition-colors"
-                      title="حذف"
-                    >
-                      🗑️
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Add new */}
-          {profiles.length < 6 && (
-            <button
-              onClick={() => {
-                onAddNew();
-                setOpen(false);
-              }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border-t border-gray-100 text-sm font-bold text-[var(--kids-purple)] hover:bg-[var(--kids-purple)]/5 transition-colors"
-            >
-              <span>➕</span>
-              <span>إضافة لاعب جديد</span>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+      {typeof window !== "undefined" && createPortal(modal, document.body)}
+    </>
   );
 }

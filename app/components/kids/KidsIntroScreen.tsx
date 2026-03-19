@@ -23,7 +23,7 @@ interface KidsIntroScreenProps {
   activeProfile?: KidsProfile;
   onSwitchProfile?: (id: string) => void;
   onAddNewProfile?: () => void;
-  onEditProfile?: () => void;
+  onEditProfile?: (id: string) => void;
   onDeleteProfile?: (id: string) => void;
 }
 

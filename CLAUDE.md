@@ -266,3 +266,4 @@ Queries multiple sources (Unsplash, Pexels, Wikimedia, OpenVerse) with fallback 
 - **Prompt caching**: `buildCacheOptions()` in `lib/ai/cache.ts` — use for long system prompts to reduce token costs.
 - **Image preloading**: Game endpoint pre-fetches hint images in parallel (3s timeout) before streaming response.
 - **Mobile-first**: App is RTL-first, designed for kids on tablets/phones. Test viewport at 375×812 (iPhone-size).
+- **Create Component**: Always use front-end design skills when create new component.

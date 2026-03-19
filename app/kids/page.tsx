@@ -20,6 +20,7 @@ export default function KidsHomePage() {
 function KidsHomeInner() {
   const router = useRouter();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
 
   const {
     profiles,
@@ -37,6 +38,22 @@ function KidsHomeInner() {
 
   // Loading state
   if (!isLoaded) return null;
+
+  // Edit existing profile
+  if (editingProfileId) {
+    const profileToEdit = profiles.find((p) => p.id === editingProfileId);
+    return (
+      <ProfileSetup
+        onComplete={(data) => {
+          updateProfile(editingProfileId, data);
+          setEditingProfileId(null);
+        }}
+        existingProfiles={profiles.filter((p) => p.id !== editingProfileId)}
+        onCancel={() => setEditingProfileId(null)}
+        initialData={profileToEdit ? { name: profileToEdit.name, age: profileToEdit.age, avatar: profileToEdit.avatar, color: profileToEdit.color } : undefined}
+      />
+    );
+  }
 
   // No profiles yet - show profile setup
   if (profiles.length === 0 || showProfileSetup) {
@@ -83,7 +100,7 @@ function KidsHomeInner() {
       activeProfile={activeProfile}
       onSwitchProfile={switchProfile}
       onAddNewProfile={() => setShowProfileSetup(true)}
-      onEditProfile={() => setShowProfileSetup(true)}
+      onEditProfile={(id) => setEditingProfileId(id)}
       onDeleteProfile={deleteProfile}
     />
   );

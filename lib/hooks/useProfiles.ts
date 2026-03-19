@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAuthContext } from "@/lib/context/auth-context";
 import { KidsProfile, ProfileAvatar, ProfileColor, ProfilesState } from "@/lib/types/games";
 
 const PROFILES_KEY = "falastin_profiles";
@@ -75,7 +76,6 @@ function migrateOldProfile(): ProfilesState | null {
       const key = localStorage.key(i);
       if (key && key.startsWith(GAME_STATE_PREFIX)) {
         const gameId = key.slice(GAME_STATE_PREFIX.length);
-        // Only migrate if it doesn't already contain a profile id (no underscore after prefix)
         if (!gameId.includes("_")) {
           keysToMigrate.push(key);
         }
@@ -90,7 +90,6 @@ function migrateOldProfile(): ProfilesState | null {
       }
     }
 
-    // Remove old profile key
     localStorage.removeItem(OLD_PROFILE_KEY);
 
     const state: ProfilesState = {
@@ -104,23 +103,82 @@ function migrateOldProfile(): ProfilesState | null {
   }
 }
 
+/** Backend profile shape returned by NestJS */
+interface BackendProfile {
+  id: string;
+  name: string;
+  age: number;
+  avatar: string;
+  color: string;
+  createdAt: string;
+}
+
+function toKidsProfile(p: BackendProfile): KidsProfile {
+  return {
+    id: p.id,
+    name: p.name,
+    age: p.age,
+    avatar: p.avatar as ProfileAvatar,
+    color: p.color as ProfileColor,
+    createdAt: new Date(p.createdAt).getTime(),
+  };
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api/profiles${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...init,
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Backend ${res.status}: ${body}`);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
 const EMPTY_STATE: ProfilesState = { profiles: [], activeProfileId: null };
 
 export function useProfiles() {
+  const { isAuthenticated, isLoading: authLoading } = useAuthContext();
   const [state, setState] = useState<ProfilesState>(EMPTY_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
-
-  // Load on mount
-  useEffect(() => {
-    let loaded = loadProfilesState();
-    if (!loaded) {
-      loaded = migrateOldProfile();
+  // Load profiles — from backend if authenticated, localStorage otherwise
+  const load = useCallback(async (authenticated: boolean) => {
+    if (authenticated) {
+      try {
+        const profiles = await apiFetch<BackendProfile[]>("");
+        const mapped = profiles.map(toKidsProfile);
+        // Preserve activeProfileId from localStorage if it still exists
+        const cached = loadProfilesState();
+        const activeId =
+          cached?.activeProfileId && mapped.find((p) => p.id === cached.activeProfileId)
+            ? cached.activeProfileId
+            : mapped[0]?.id ?? null;
+        const next: ProfilesState = { profiles: mapped, activeProfileId: activeId };
+        setState(next);
+        saveProfilesState(next);
+      } catch {
+        // Fallback to localStorage on error
+        const cached = loadProfilesState();
+        setState(cached || EMPTY_STATE);
+      }
+    } else {
+      let loaded = loadProfilesState();
+      if (!loaded) loaded = migrateOldProfile();
+      setState(loaded || EMPTY_STATE);
     }
-    setState(loaded || EMPTY_STATE);
     setIsLoaded(true);
   }, []);
 
-  // Persist on change (skip initial empty state)
+  // Initial load — wait for auth to resolve
+  useEffect(() => {
+    if (authLoading) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load(isAuthenticated);
+  }, [authLoading, isAuthenticated, load]);
+
+  // Persist activeProfileId changes to localStorage (for both modes)
   useEffect(() => {
     if (isLoaded) {
       saveProfilesState(state);
@@ -130,43 +188,60 @@ export function useProfiles() {
   const activeProfile = state.profiles.find((p) => p.id === state.activeProfileId) || null;
 
   const createProfile = useCallback(
-    (data: { name: string; age: number; avatar: ProfileAvatar; color: ProfileColor }) => {
-      const id = generateId();
-      const profile: KidsProfile = {
-        id,
-        ...data,
-        createdAt: Date.now(),
-      };
-      setState((prev) => ({
-        profiles: [...prev.profiles, profile],
-        activeProfileId: id,
-      }));
-      return profile;
+    async (data: { name: string; age: number; avatar: ProfileAvatar; color: ProfileColor }) => {
+      if (isAuthenticated) {
+        const created = await apiFetch<BackendProfile>("", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        const profile = toKidsProfile(created);
+        setState((prev) => ({
+          profiles: [...prev.profiles, profile],
+          activeProfileId: profile.id,
+        }));
+        return profile;
+      } else {
+        // localStorage-only path
+        const id = generateId();
+        const profile: KidsProfile = { id, ...data, createdAt: Date.now() };
+        setState((prev) => ({
+          profiles: [...prev.profiles, profile],
+          activeProfileId: id,
+        }));
+        return profile;
+      }
     },
-    []
+    [isAuthenticated]
   );
 
   const updateProfile = useCallback(
-    (id: string, updates: Partial<Pick<KidsProfile, "name" | "age" | "avatar" | "color">>) => {
+    async (id: string, updates: Partial<Pick<KidsProfile, "name" | "age" | "avatar" | "color">>) => {
+      if (isAuthenticated) {
+        await apiFetch(`/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(updates),
+        });
+      }
       setState((prev) => ({
         ...prev,
-        profiles: prev.profiles.map((p) =>
-          p.id === id ? { ...p, ...updates } : p
-        ),
+        profiles: prev.profiles.map((p) => (p.id === id ? { ...p, ...updates } : p)),
       }));
     },
-    []
+    [isAuthenticated]
   );
 
   const deleteProfile = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      if (isAuthenticated) {
+        await apiFetch(`/${id}`, { method: "DELETE" });
+      }
+
       // Clean up per-profile localStorage data
       if (typeof window !== "undefined") {
         localStorage.removeItem(`falastin_kids_rewards_${id}`);
         localStorage.removeItem(`falastin_kids_chat_context_${id}`);
         localStorage.removeItem(`falastin_kids_map_settings_${id}`);
         localStorage.removeItem(`falastin_stories_${id}`);
-        // Remove game states for this profile
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -190,7 +265,7 @@ export function useProfiles() {
         };
       });
     },
-    []
+    [isAuthenticated]
   );
 
   const switchProfile = useCallback((id: string) => {

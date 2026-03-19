@@ -4,6 +4,7 @@ import { createContext, useContext } from "react";
 import { Geist, Geist_Mono, Noto_Sans_Arabic, Cairo, Tajawal, Changa } from "next/font/google";
 import "./globals.css";
 import { useBackgroundMusic } from "@/lib/hooks/useBackgroundMusic";
+import { AuthProvider } from "@/lib/context/auth-context";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -74,12 +75,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} ${cairo.variable} ${tajawal.variable} ${changa.variable} antialiased font-[family-name:var(--font-arabic)]`}
         suppressHydrationWarning
       >
-        <BackgroundMusicContext.Provider value={music}>
-          <Toaster position="top-center" richColors />
-          <div className="min-h-dvh bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
-            {children}
-          </div>
-        </BackgroundMusicContext.Provider>
+        <AuthProvider>
+          <BackgroundMusicContext.Provider value={music}>
+            <Toaster position="top-center" richColors />
+            <div className="min-h-dvh bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
+              {children}
+            </div>
+          </BackgroundMusicContext.Provider>
+        </AuthProvider>
       </body>
     </html>
   );

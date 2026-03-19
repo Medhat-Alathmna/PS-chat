@@ -25,14 +25,15 @@ interface ProfileSetupProps {
   onComplete: (data: { name: string; age: number; avatar: ProfileAvatar; color: ProfileColor }) => void;
   existingProfiles?: KidsProfile[];
   onCancel?: () => void;
+  initialData?: { name: string; age: number; avatar: ProfileAvatar; color: ProfileColor };
 }
 
-export default function ProfileSetup({ onComplete, existingProfiles, onCancel }: ProfileSetupProps) {
+export default function ProfileSetup({ onComplete, existingProfiles, onCancel, initialData }: ProfileSetupProps) {
   const [step, setStep] = useState<Step>("name");
-  const [name, setName] = useState("");
-  const [age, setAge] = useState(7);
-  const [avatar, setAvatar] = useState<ProfileAvatar>("🌟");
-  const [color, setColor] = useState<ProfileColor>("purple");
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [age, setAge] = useState(initialData?.age ?? 7);
+  const [avatar, setAvatar] = useState<ProfileAvatar>(initialData?.avatar ?? "🌟");
+  const [color, setColor] = useState<ProfileColor>(initialData?.color ?? "purple");
 
   const stepIndex = STEPS.indexOf(step);
 

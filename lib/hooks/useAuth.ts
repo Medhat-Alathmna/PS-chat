@@ -1,0 +1,96 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
+import { useAuthContext } from "@/lib/context/auth-context";
+
+export function useAuth() {
+  const { user, isLoading, isAuthenticated, refresh, clearAuth } =
+    useAuthContext();
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setError(null);
+      setIsPending(true);
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setError(
+            data?.message ?? "فشل تسجيل الدخول، تحقق من البريد وكلمة المرور"
+          );
+          return false;
+        }
+
+        await refresh();
+        return true;
+      } catch {
+        setError("حدث خطأ، حاول مرة أخرى");
+        return false;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [refresh]
+  );
+
+  const register = useCallback(
+    async (email: string, password: string) => {
+      setError(null);
+      setIsPending(true);
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setError(data?.message ?? "فشل إنشاء الحساب");
+          return false;
+        }
+
+        await refresh();
+        return true;
+      } catch {
+        setError("حدث خطأ، حاول مرة أخرى");
+        return false;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [refresh]
+  );
+
+  const logout = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    clearAuth();
+    router.push("/auth/login");
+  }, [clearAuth, router]);
+
+  const loginWithGoogle = useCallback(() => {
+    window.location.href = "/api/auth/google";
+  }, []);
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated,
+    error,
+    isPending,
+    login,
+    register,
+    logout,
+    loginWithGoogle,
+    clearError: () => setError(null),
+  };
+}
