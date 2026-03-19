@@ -143,14 +143,20 @@ export function useProfiles() {
   const { isAuthenticated, isLoading: authLoading } = useAuthContext();
   const [state, setState] = useState<ProfilesState>(EMPTY_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
-  // Load profiles — from backend if authenticated, localStorage otherwise
+  // Load profiles — from backend if authenticated and no cache, localStorage otherwise
   const load = useCallback(async (authenticated: boolean) => {
     if (authenticated) {
+      // Use localStorage cache if profiles already exist — skip the API call
+      const cached = loadProfilesState();
+      if (cached && cached.profiles.length > 0) {
+        setState(cached);
+        setIsLoaded(true);
+        return;
+      }
+      // No cache → fetch from backend
       try {
         const profiles = await apiFetch<BackendProfile[]>("");
         const mapped = profiles.map(toKidsProfile);
-        // Preserve activeProfileId from localStorage if it still exists
-        const cached = loadProfilesState();
         const activeId =
           cached?.activeProfileId && mapped.find((p) => p.id === cached.activeProfileId)
             ? cached.activeProfileId
@@ -159,8 +165,6 @@ export function useProfiles() {
         setState(next);
         saveProfilesState(next);
       } catch {
-        // Fallback to localStorage on error
-        const cached = loadProfilesState();
         setState(cached || EMPTY_STATE);
       }
     } else {
