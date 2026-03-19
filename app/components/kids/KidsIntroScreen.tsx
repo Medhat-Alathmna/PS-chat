@@ -49,6 +49,8 @@ export default function KidsIntroScreen({
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [showLottie, setShowLottie] = useState(false);
+  const [isTabletOrAbove, setIsTabletOrAbove] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const [prompts, setPrompts] = useState<KidsPrompt[]>([]);
 
   // Play intro voice once per session
@@ -84,17 +86,30 @@ export default function KidsIntroScreen({
     setPrompts(getRandomPrompts(4));
   }, []);
 
-  // Load Lottie animations after content
+  // Detect screen size — Lottie must NOT load on mobile at all
   useEffect(() => {
-    setTimeout(() => setShowLottie(true), 800);
+    const update = () => {
+      setIsTabletOrAbove(window.innerWidth >= 640);
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
+
+  // Load Lottie animations after content (only on tablet+)
+  useEffect(() => {
+    if (!isTabletOrAbove) return;
+    const t = setTimeout(() => setShowLottie(true), 800);
+    return () => clearTimeout(t);
+  }, [isTabletOrAbove]);
 
   return (
     <AnimatedBackground variant="sky" showClouds showBirds>
       {/* خريطة فلسطين - يمين الشاشة */}
-      {showLottie && (
+      {showLottie && isDesktop && (
         <div
-          className="hidden lg:block absolute right-8 xl:right-12 top-1/4 z-10 pointer-events-none animate-lottie-float"
+          className="absolute right-8 xl:right-12 top-1/4 z-10 pointer-events-none animate-lottie-float"
           role="img"
           aria-label="خريطة فلسطين التفاعلية"
         >
@@ -244,9 +259,9 @@ export default function KidsIntroScreen({
       </div>
 
       {/* علم فلسطين - سارية في الأسفل */}
-      {showLottie && (
+      {showLottie && isTabletOrAbove && (
         <div
-          className="hidden sm:flex fixed bottom-4 sm:bottom-6 left-4 sm:left-8 z-30 flex-col items-center animate-gentle-sway"
+          className="flex fixed bottom-4 sm:bottom-6 left-4 sm:left-8 z-30 flex-col items-center animate-gentle-sway"
           role="img"
           aria-label="علم فلسطين - رمز الحرية والكرامة"
         >

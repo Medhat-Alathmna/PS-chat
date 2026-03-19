@@ -33,7 +33,7 @@ function isExpired(token: string): boolean {
   return Date.now() / 1000 > exp;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Always allow public paths

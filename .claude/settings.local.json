@@ -57,7 +57,9 @@
       "Bash(gh api:*)",
       "Bash(npm run:*)",
       "Bash(wc -l c:/Work/React/PS-chat/app/kids/world-explorer/page.tsx c:/Work/React/PS-chat/app/components/kids/globe/*.tsx c:/Work/React/PS-chat/lib/data/countries.ts c:/Work/React/PS-chat/lib/types/globe-settings.ts c:/Work/React/PS-chat/app/api/world-explorer/chat/route.ts)",
-      "Bash(npx @nestjs/cli new ps-cat-backend --package-manager npm --skip-git --strict)"
+      "Bash(npx @nestjs/cli new ps-cat-backend --package-manager npm --skip-git --strict)",
+      "Bash(npx @next/codemod@canary middleware-to-proxy .)",
+      "Bash(npx @next/codemod@canary middleware-to-proxy . --force)"
     ]
   }
 }
