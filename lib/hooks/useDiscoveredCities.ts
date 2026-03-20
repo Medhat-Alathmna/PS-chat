@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { CITIES } from "@/lib/data/cities";
+import { discoverCityBackend } from "@/lib/api/games-backend";
 
 const STORAGE_KEY = "falastin_discovered_cities";
 
@@ -12,8 +13,9 @@ function getStorageKey(profileId?: string): string {
 /**
  * Persists discovered city IDs per profile.
  * Cities won't repeat until all are discovered or the user resets.
+ * When authenticated, new discoveries are also synced to the backend (fire-and-forget).
  */
-export function useDiscoveredCities(profileId?: string) {
+export function useDiscoveredCities(profileId?: string, isAuthenticated?: boolean) {
   const [discoveredIds, setDiscoveredIds] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -53,8 +55,12 @@ export function useDiscoveredCities(profileId?: string) {
         persist(next);
         return next;
       });
+      // Sync to backend (fire-and-forget, 409 treated as success)
+      if (isAuthenticated && profileId) {
+        discoverCityBackend(profileId, cityId);
+      }
     },
-    [persist]
+    [persist, isAuthenticated, profileId]
   );
 
   /** Reset all discovered cities (start fresh) */

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { GameId, GameState, GameStatus, GameDifficulty, GameSessionSummary } from "@/lib/types/games";
 // GameDifficulty kept for optional backward-compat fields in GameState/GameSessionSummary
 import { getGameConfig } from "@/lib/data/games";
+import { createGameSession, updateGameSession } from "@/lib/api/games-backend";
 
 const STORAGE_KEY_PREFIX = "falastin_game_state_";
 
@@ -29,7 +30,12 @@ function createInitialState(gameId: GameId, difficulty?: GameDifficulty): GameSt
   };
 }
 
-export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profileId?: string) {
+export function useGameState(
+  gameId: GameId,
+  difficulty?: GameDifficulty,
+  profileId?: string,
+  isAuthenticated?: boolean,
+) {
   const [state, setState] = useState<GameState>(() => {
     // Try to resume from localStorage
     if (typeof window !== "undefined") {
@@ -54,6 +60,22 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
       localStorage.setItem(getStorageKey(gameId, profileId), JSON.stringify(state));
     }
   }, [state, gameId, profileId]);
+
+  // Create backend session once when the game starts (status transitions to "playing")
+  useEffect(() => {
+    if (!isAuthenticated || !profileId || state.sessionId !== undefined) return;
+    if (state.status !== "playing") return;
+
+    createGameSession(profileId, gameId, state.difficulty).then((id) => {
+      if (id) {
+        setState((prev) => ({ ...prev, sessionId: id }));
+      } else {
+        // Mark as null so we don't retry on every render
+        setState((prev) => ({ ...prev, sessionId: null }));
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, profileId, gameId, state.status]);
 
   // Process a correct answer
   // advanceRound=false for games that use advance_round tool (avoids double increment)
@@ -132,13 +154,24 @@ export function useGameState(gameId: GameId, difficulty?: GameDifficulty, profil
 
     setSummary(gameSummary);
 
+    // Sync final stats to backend (fire-and-forget)
+    if (isAuthenticated && profileId && state.sessionId) {
+      updateGameSession(profileId, state.sessionId, {
+        score: totalScore,
+        correctAnswers,
+        wrongAnswers: state.wrongAnswers,
+        hintsUsed: state.hintsUsed,
+        status: "finished",
+      });
+    }
+
     // Clear saved state
     if (typeof window !== "undefined") {
       localStorage.removeItem(getStorageKey(gameId, profileId));
     }
 
     return gameSummary;
-  }, [gameId, profileId, state.hintsUsed, state.difficulty, state.startedAt]);
+  }, [gameId, profileId, isAuthenticated, state.hintsUsed, state.difficulty, state.startedAt, state.sessionId, state.wrongAnswers]);
 
   // Reset game
   const resetGame = useCallback(() => {

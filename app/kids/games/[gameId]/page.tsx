@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo, FormEvent, KeyboardEvent, useCall
 import { GameId, GameConfig } from "@/lib/types/games";
 import { GAME_CONFIGS } from "@/lib/data/games";
 import { useProfiles } from "@/lib/hooks/useProfiles";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { useGameState } from "@/lib/hooks/useGameState";
 import { useGameRewards } from "@/lib/hooks/useGameRewards";
 import { useChatContext } from "@/lib/hooks/useChatContext";
@@ -123,6 +124,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   // Profiles
   const { profiles, activeProfile, isLoaded, createProfile, updateProfile } = useProfiles();
   const profileId = activeProfile?.id;
+  const { isAuthenticated } = useAuth();
 
   const { soundEnabled, playSound } = useSounds();
   const {
@@ -134,9 +136,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const { settings: textSettings } = useTextSettings(profileId);
   const textStyle = getTextStyleValues(textSettings);
   const { settings: chatSettings } = useChatSettings(profileId);
-  const gameState = useGameState(gameId, undefined, profileId);
+  const gameState = useGameState(gameId, undefined, profileId, isAuthenticated);
   const gameRewards = useGameRewards(profileId);
-  const discoveredCities = useDiscoveredCities(profileId);
+  const discoveredCities = useDiscoveredCities(profileId, isAuthenticated);
 
   // Chat state — simple array of messages, no streaming
   const [messages, setMessages] = useState<GameMessage[]>([]);

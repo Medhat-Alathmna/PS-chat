@@ -37,6 +37,8 @@ export type GameState = {
   difficulty?: GameDifficulty;
   startedAt: number;
   finishedAt?: number;
+  /** Backend session ID — set after createGameSession succeeds, null when not authenticated */
+  sessionId?: string | null;
 };
 
 export type GameSessionSummary = {
