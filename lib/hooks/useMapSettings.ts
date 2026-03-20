@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useAuthContext } from "@/lib/context/auth-context";
+import { fetchBackendSettings, patchBackendSettings } from "@/lib/api/settings-fetch";
 import type {
   MapSettings,
   InfoDisplayMode,
@@ -25,26 +27,53 @@ export const DEFAULT_MAP_SETTINGS: MapSettings = {
 };
 
 export function useMapSettings(profileId?: string) {
+  const { isAuthenticated, isLoading: authLoading } = useAuthContext();
   const [settings, setSettings] = useState<MapSettings>(DEFAULT_MAP_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage
+  const patchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const accumulatedRef = useRef<Partial<MapSettings>>({});
+
   useEffect(() => {
+    return () => {
+      if (patchTimerRef.current) clearTimeout(patchTimerRef.current);
+    };
+  }, []);
+
+  // Load: show localStorage immediately, then override with backend if authenticated
+  useEffect(() => {
+    if (authLoading) return;
+
     try {
       const stored = localStorage.getItem(getStorageKey(profileId));
       if (stored) {
-        const parsed = JSON.parse(stored);
-        setSettings({ ...DEFAULT_MAP_SETTINGS, ...parsed });
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSettings({ ...DEFAULT_MAP_SETTINGS, ...JSON.parse(stored) });
       } else {
         setSettings(DEFAULT_MAP_SETTINGS);
       }
     } catch {
       setSettings(DEFAULT_MAP_SETTINGS);
     }
-    setIsLoaded(true);
-  }, [profileId]);
 
-  // Persist helper
+    if (isAuthenticated && profileId) {
+      fetchBackendSettings(profileId)
+        .then((data) => {
+          if (!data?.map) return;
+          const merged = { ...DEFAULT_MAP_SETTINGS, ...data.map };
+          setSettings(merged as MapSettings);
+          try {
+            localStorage.setItem(getStorageKey(profileId), JSON.stringify(merged));
+          } catch {
+            // ignore
+          }
+        })
+        .finally(() => setIsLoaded(true));
+    } else {
+      setIsLoaded(true);
+    }
+  }, [authLoading, isAuthenticated, profileId]);
+
   const persist = useCallback(
     (next: MapSettings) => {
       try {
@@ -56,6 +85,22 @@ export function useMapSettings(profileId?: string) {
     [profileId]
   );
 
+  const schedulePatch = useCallback(
+    (partial: Partial<MapSettings>) => {
+      if (!isAuthenticated || !profileId) return;
+      accumulatedRef.current = { ...accumulatedRef.current, ...partial };
+      if (patchTimerRef.current) clearTimeout(patchTimerRef.current);
+      patchTimerRef.current = setTimeout(() => {
+        const toSend = accumulatedRef.current;
+        accumulatedRef.current = {};
+        patchBackendSettings(profileId, "map", toSend as Record<string, unknown>).catch(
+          (err) => console.error("[useMapSettings] PATCH failed:", err)
+        );
+      }, 300);
+    },
+    [isAuthenticated, profileId]
+  );
+
   const update = useCallback(
     (partial: Partial<MapSettings>) => {
       setSettings((prev) => {
@@ -63,8 +108,9 @@ export function useMapSettings(profileId?: string) {
         persist(next);
         return next;
       });
+      schedulePatch(partial);
     },
-    [persist]
+    [persist, schedulePatch]
   );
 
   const setInfoDisplayMode = useCallback(
@@ -100,7 +146,8 @@ export function useMapSettings(profileId?: string) {
   const resetToDefaults = useCallback(() => {
     setSettings(DEFAULT_MAP_SETTINGS);
     persist(DEFAULT_MAP_SETTINGS);
-  }, [persist]);
+    schedulePatch(DEFAULT_MAP_SETTINGS);
+  }, [persist, schedulePatch]);
 
   return {
     settings,

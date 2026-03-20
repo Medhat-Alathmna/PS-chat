@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useAuthContext } from "@/lib/context/auth-context";
+import { fetchBackendSettings, patchBackendSettings } from "@/lib/api/settings-fetch";
 import type { TextSettings, FontFamily, TextSize } from "@/lib/types/text-settings";
 
 const STORAGE_KEY = "falastin_kids_text_settings";
@@ -38,26 +40,56 @@ export function getTextStyleValues(settings: TextSettings): {
 }
 
 export function useTextSettings(profileId?: string) {
+  const { isAuthenticated, isLoading: authLoading } = useAuthContext();
   const [settings, setSettings] = useState<TextSettings>(DEFAULT_TEXT_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage
+  const patchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const accumulatedRef = useRef<Partial<TextSettings>>({});
+
+  // Cleanup debounce timer on unmount
   useEffect(() => {
+    return () => {
+      if (patchTimerRef.current) clearTimeout(patchTimerRef.current);
+    };
+  }, []);
+
+  // Load: show localStorage immediately, then override with backend if authenticated
+  useEffect(() => {
+    if (authLoading) return;
+
+    // Instant startup from localStorage
     try {
       const stored = localStorage.getItem(getStorageKey(profileId));
       if (stored) {
-        const parsed = JSON.parse(stored);
-        setSettings({ ...DEFAULT_TEXT_SETTINGS, ...parsed });
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSettings({ ...DEFAULT_TEXT_SETTINGS, ...JSON.parse(stored) });
       } else {
         setSettings(DEFAULT_TEXT_SETTINGS);
       }
     } catch {
       setSettings(DEFAULT_TEXT_SETTINGS);
     }
-    setIsLoaded(true);
-  }, [profileId]);
 
-  // Persist helper
+    if (isAuthenticated && profileId) {
+      fetchBackendSettings(profileId)
+        .then((data) => {
+          if (!data?.text) return;
+          const merged = { ...DEFAULT_TEXT_SETTINGS, ...data.text };
+          setSettings(merged as TextSettings);
+          try {
+            localStorage.setItem(getStorageKey(profileId), JSON.stringify(merged));
+          } catch {
+            // ignore
+          }
+        })
+        .finally(() => setIsLoaded(true));
+    } else {
+      setIsLoaded(true);
+    }
+  }, [authLoading, isAuthenticated, profileId]);
+
+  // Persist to localStorage
   const persist = useCallback(
     (next: TextSettings) => {
       try {
@@ -69,6 +101,23 @@ export function useTextSettings(profileId?: string) {
     [profileId]
   );
 
+  // Debounced PATCH — accumulates rapid changes into a single request
+  const schedulePatch = useCallback(
+    (partial: Partial<TextSettings>) => {
+      if (!isAuthenticated || !profileId) return;
+      accumulatedRef.current = { ...accumulatedRef.current, ...partial };
+      if (patchTimerRef.current) clearTimeout(patchTimerRef.current);
+      patchTimerRef.current = setTimeout(() => {
+        const toSend = accumulatedRef.current;
+        accumulatedRef.current = {};
+        patchBackendSettings(profileId, "text", toSend as Record<string, unknown>).catch(
+          (err) => console.error("[useTextSettings] PATCH failed:", err)
+        );
+      }, 300);
+    },
+    [isAuthenticated, profileId]
+  );
+
   const update = useCallback(
     (partial: Partial<TextSettings>) => {
       setSettings((prev) => {
@@ -76,8 +125,9 @@ export function useTextSettings(profileId?: string) {
         persist(next);
         return next;
       });
+      schedulePatch(partial);
     },
-    [persist]
+    [persist, schedulePatch]
   );
 
   const setFontFamily = useCallback(
@@ -93,7 +143,8 @@ export function useTextSettings(profileId?: string) {
   const resetToDefaults = useCallback(() => {
     setSettings(DEFAULT_TEXT_SETTINGS);
     persist(DEFAULT_TEXT_SETTINGS);
-  }, [persist]);
+    schedulePatch(DEFAULT_TEXT_SETTINGS);
+  }, [persist, schedulePatch]);
 
   return {
     settings,
