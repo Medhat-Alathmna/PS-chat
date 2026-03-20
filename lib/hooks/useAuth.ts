@@ -72,9 +72,18 @@ export function useAuth() {
   );
 
   const logout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    clearAuth();
-    router.push("/auth/login");
+    setIsPending(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // تسجيل الخروج المحلي حتى لو فشل الطلب
+    } finally {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("falastin_"))
+        .forEach((k) => localStorage.removeItem(k));
+      clearAuth();
+      router.push("/auth/login");
+    }
   }, [clearAuth, router]);
 
   const loginWithGoogle = useCallback(() => {
