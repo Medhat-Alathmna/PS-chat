@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { KidsProfile, ProfileColor } from "@/lib/types/games";
+import { useAuth } from "@/lib/hooks/useAuth";
+import LogoutConfirmModal from "./LogoutConfirmModal";
 
 const COLOR_HEX: Record<ProfileColor, string> = {
   purple: "#6C5CE7",
@@ -32,21 +34,29 @@ export default function ProfileSwitcher({
 }: ProfileSwitcherProps) {
   const [open, setOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const { logout, isPending, user } = useAuth();
 
   const accentColor = COLOR_HEX[activeProfile.color];
+
+  const closeModal = () => {
+    setOpen(false);
+    setConfirmDeleteId(null);
+    setConfirmLogout(false);
+  };
 
   const modal = open && (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-        onClick={() => { setOpen(false); setConfirmDeleteId(null); }}
+        onClick={closeModal}
         style={{ animation: "fadeIn 0.2s ease" }}
       />
 
       {/* Modal — centered, 50% width on desktop, 90% on mobile */}
       <div
-        className="fixed top-1/2 left-1/2 z-50 bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="fixed top-1/2 left-1/2 z-50 bg-white rounded-3xl shadow-2xl flex flex-col"
         style={{
           width: "min(50%, 360px)",
           minWidth: "280px",
@@ -62,7 +72,7 @@ export default function ProfileSwitcher({
         >
           <span className="font-bold text-base text-gray-700">اختر لاعباً</span>
           <button
-            onClick={() => { setOpen(false); setConfirmDeleteId(null); }}
+            onClick={closeModal}
             className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors text-sm"
           >
             ✕
@@ -70,7 +80,7 @@ export default function ProfileSwitcher({
         </div>
 
         {/* Profile list */}
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(80vh - 130px)" }}>
+        <div className="overflow-y-auto flex-1">
           {profiles.map((p) => (
             <div
               key={p.id}
@@ -168,28 +178,30 @@ export default function ProfileSwitcher({
           ))}
         </div>
 
-        {/* Add new */}
-        {profiles.length < 6 && (
+        {/* Actions row */}
+        <div className="flex border-t border-gray-100 shrink-0">
+          {profiles.length < 6 && (
+            <button
+              onClick={() => { onAddNew(); setOpen(false); }}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-3.5 text-sm font-bold hover:opacity-80 transition-opacity border-l border-gray-100"
+              style={{ color: accentColor }}
+            >
+              <span>➕</span>
+              <span>إضافة لاعب</span>
+            </button>
+          )}
           <button
-            onClick={() => {
-              onAddNew();
-              setOpen(false);
-            }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 border-t border-gray-100 text-sm font-bold hover:opacity-80 transition-opacity"
-            style={{ color: accentColor }}
+            onClick={() => setConfirmLogout(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-3.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors"
           >
-            <span>➕</span>
-            <span>إضافة لاعب جديد</span>
+            <span>🚪</span>
+            <span>تسجيل الخروج</span>
           </button>
-        )}
+        </div>
       </div>
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes popIn {
-          from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
-          to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
       `}</style>
     </>
   );
@@ -215,6 +227,14 @@ export default function ProfileSwitcher({
       </button>
 
       {typeof window !== "undefined" && createPortal(modal, document.body)}
+      {confirmLogout && (
+        <LogoutConfirmModal
+          email={user?.email}
+          isPending={isPending}
+          onCancel={() => setConfirmLogout(false)}
+          onConfirm={logout}
+        />
+      )}
     </>
   );
 }

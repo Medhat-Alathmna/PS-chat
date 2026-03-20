@@ -28,7 +28,7 @@ export async function setAuthCookies(
     secure: IS_PROD,
     sameSite: "lax",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60, // 7 days — matches NestJS JWT_REFRESH_EXPIRES
+    maxAge: 30 * 24 * 60 * 60, // 30 days — matches NestJS JWT_REFRESH_EXPIRES
   });
 }
 

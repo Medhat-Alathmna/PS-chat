@@ -105,8 +105,6 @@ function KidsChatPageInner() {
           onToggleMusic={music.toggle}
           onBack={() => router.back()}
           onOpenMap={() => map.setShowMobileMap(true)}
-          onNavigateToSettings={() => router.push("/settings")}
-          onNavigateToGames={() => router.push("/kids/games")}
         />
 
         {/* Two-column layout: Map beside Chat */}

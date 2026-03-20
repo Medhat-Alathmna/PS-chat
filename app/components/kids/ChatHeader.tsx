@@ -1,7 +1,7 @@
 "use client";
 
-import { RewardLevel, UnlockedSticker } from "@/lib/types";
-import ProfileSwitcher from "./ProfileSwitcher";
+import { RewardLevel } from "@/lib/types";
+import SettingsMenu from "./SettingsMenu";
 import RewardsBar from "./RewardsBar";
 import type { KidsProfile } from "@/lib/types/games";
 
@@ -42,8 +42,6 @@ interface ChatHeaderProps {
   // Navigation
   onBack: () => void;
   onOpenMap: () => void;
-  onNavigateToSettings: () => void;
-  onNavigateToGames: () => void;
 }
 
 /**
@@ -75,8 +73,6 @@ export default function ChatHeader({
   onToggleMusic,
   onBack,
   onOpenMap,
-  onNavigateToSettings,
-  onNavigateToGames,
 }: ChatHeaderProps) {
   // DRY: Define rewardsBarProps once, used in both mobile and desktop
   const rewardsBarProps = {
@@ -147,13 +143,14 @@ export default function ChatHeader({
           <span className="text-xl">{isMusicPlaying ? "🎵" : "🔇"}</span>
         </button>
 
-        <button
-          onClick={onNavigateToSettings}
-          className="shrink-0 flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-xl"
-          aria-label="الإعدادات"
-        >
-          <span className="text-xl">{"\u2699\uFE0F"}</span>
-        </button>
+        <SettingsMenu
+          profiles={profiles}
+          activeProfile={activeProfile}
+          onSwitch={onSwitchProfile}
+          onAddNew={onAddNewProfile}
+          onEdit={onEditProfile}
+          onDelete={onDeleteProfile}
+        />
       </div>
     </header>
   );
