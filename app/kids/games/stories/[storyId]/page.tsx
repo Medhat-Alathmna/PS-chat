@@ -28,14 +28,14 @@ function StoryReaderInner() {
 
   const { activeProfile, isLoaded } = useProfiles();
   const profileId = activeProfile?.id;
-  const { getStory, addPage, addChoicePoint, selectChoice, completeStory } =
+  const { getStory, addPage, addChoicePoint, selectChoice, completeStory, isLoaded: storiesLoaded } =
     useStories(profileId);
   const { settings: textSettings } = useTextSettings(profileId);
   const textStyle = getTextStyleValues(textSettings);
 
   const story = getStory(storyId);
 
-  if (!isLoaded) return null;
+  if (!isLoaded || !storiesLoaded) return null;
 
   if (!activeProfile) {
     router.push("/kids/games");
@@ -87,7 +87,7 @@ interface StorySessionProps {
   addPage: (storyId: string, page: StoryPage) => void;
   addChoicePoint: (storyId: string, cp: StoryChoicePoint) => void;
   selectChoice: (storyId: string, afterPage: number, choiceId: string) => void;
-  completeStory: (storyId: string, titleAr: string) => void;
+  completeStory: (storyId: string, titleAr: string) => void | Promise<void>;
 }
 
 function StorySession({

@@ -17,7 +17,7 @@ import {
 } from "@/lib/data/stories/config";
 
 interface StoryWizardProps {
-  onComplete: (config: StoryConfig) => void;
+  onComplete: (config: StoryConfig) => void | Promise<void>;
   onBack: () => void;
   /** Pre-selected genre from quick-start chip; wizard starts at step 1 (companion) */
   preSelectedGenre?: StoryGenre;

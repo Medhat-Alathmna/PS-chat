@@ -41,8 +41,8 @@ function CreateStory() {
       ? (genreParam as StoryGenre)
       : undefined;
 
-  const handleComplete = (config: StoryConfig) => {
-    const storyId = createStory(config);
+  const handleComplete = async (config: StoryConfig) => {
+    const storyId = await createStory(config);
     router.push(`/kids/games/stories/${storyId}?new=true`);
   };
 

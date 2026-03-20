@@ -67,7 +67,6 @@ export interface SyncImportPayload {
 const MAX_PROFILES = 10;
 const MAX_STICKERS = 200;
 const MAX_CITIES = 500;
-const MAX_STORIES = 100;
 const MAX_TOPICS = 5;
 
 // ── Helpers ──
@@ -117,27 +116,8 @@ function collectProfileData(profile: KidsProfile): SyncProfilePayload {
     []
   ).slice(0, MAX_CITIES);
 
-  // Stories — flatten config into top-level fields
-  const rawStories = safeParseJSON<SavedStory[]>(
-    `falastin_stories_${id}`,
-    []
-  );
-  const stories: SyncStoryDTO[] = rawStories
-    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-    .slice(0, MAX_STORIES)
-    .map((s) => ({
-      id: s.id,
-      genre: s.config?.genre ?? "adventure",
-      companion: s.config?.companion ?? "medhat",
-      length: s.config?.length ?? "short",
-      mode: s.config?.mode ?? "interactive",
-      titleAr: s.titleAr,
-      pages: s.pages ?? [],
-      choicePoints: s.choicePoints ?? [],
-      completed: s.completed ?? false,
-      createdAt: s.createdAt ?? Date.now(),
-      completedAt: s.completedAt,
-    }));
+  // Stories — now managed via direct CRUD (useStories hook), no longer synced
+  const stories: SyncStoryDTO[] = [];
 
   // Settings
   const settings: SyncSettingsDTO = {

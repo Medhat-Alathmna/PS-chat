@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useStories } from "@/lib/hooks/useStories";
@@ -38,6 +39,7 @@ function StoriesHome() {
   const { activeProfile, isLoaded } = useProfiles();
   const profileId = activeProfile?.id;
   const { stories, isLoaded: storiesLoaded, deleteStory, createStory } = useStories(profileId);
+  const [isCreating, setIsCreating] = useState(false);
 
   if (!isLoaded || !storiesLoaded) return null;
 
@@ -49,10 +51,18 @@ function StoriesHome() {
   const completedStories = stories.filter((s) => s.completed);
   const inProgressStories = stories.filter((s) => !s.completed);
 
-  const handleSurpriseMe = () => {
-    const config = randomConfig();
-    const storyId = createStory(config);
-    router.push(`/kids/games/stories/${storyId}?new=true`);
+  const handleSurpriseMe = async () => {
+    if (isCreating) return;
+    setIsCreating(true);
+    try {
+      const config = randomConfig();
+      const storyId = await createStory(config);
+      router.push(`/kids/games/stories/${storyId}?new=true`);
+    } catch (err) {
+      console.error("[stories] Failed to create story:", err);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleGenreQuickStart = (genre: StoryGenre) => {
@@ -86,7 +96,8 @@ function StoriesHome() {
             {/* ── Surprise Me hero card ── */}
             <button
               onClick={handleSurpriseMe}
-              className="w-full p-5 rounded-2xl text-white font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border-2 border-white/25 overflow-hidden relative touch-manipulation"
+              disabled={isCreating}
+              className="w-full p-5 rounded-2xl text-white font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border-2 border-white/25 overflow-hidden relative touch-manipulation disabled:opacity-60 disabled:pointer-events-none"
               style={{
                 background: "linear-gradient(135deg, #7C3AED 0%, #DB2777 50%, #F59E0B 100%)",
               }}
