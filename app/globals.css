@@ -588,6 +588,48 @@ code {
 }
 
 /* =========================================
+   SPLASH SCREEN ANIMATIONS
+   ========================================= */
+
+/* Typewriter clip reveal for "PS Kids" */
+@keyframes splashTypewriterClip {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.animate-splash-typewriter {
+  clip-path: inset(0 100% 0 0);
+  animation: splashTypewriterClip 1s steps(7, end) 800ms forwards;
+}
+
+/* Tagline fade in - reuses existing fadeInUp keyframe */
+.animate-splash-tagline {
+  opacity: 0;
+  animation: fadeInUp 700ms ease-out 1800ms forwards;
+}
+
+/* Exit - fade out with slight scale up */
+@keyframes splashExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+.animate-splash-exit {
+  animation: splashExit 500ms ease-in forwards;
+  pointer-events: none;
+}
+
+/* =========================================
    VOICE CHAT ANIMATIONS
    ========================================= */
 
@@ -852,7 +894,18 @@ code {
   .animate-slide-in-from-right,
   .animate-fade-in-reveal,
   .story-card-leave,
-  .story-card-enter {
+  .story-card-enter,
+  .animate-splash-typewriter,
+  .animate-splash-tagline,
+  .animate-splash-exit {
     animation: none;
+  }
+
+  .animate-splash-tagline {
+    opacity: 1;
+  }
+
+  .animate-splash-typewriter {
+    clip-path: none;
   }
 }
