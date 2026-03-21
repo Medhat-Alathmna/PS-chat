@@ -6,6 +6,7 @@ import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useStories } from "@/lib/hooks/useStories";
 import AnimatedBackground from "../../../components/kids/AnimatedBackground";
 import StoryBookCover from "../../../components/kids/stories/StoryBookCover";
+import ProfilesLoadingOverlay from "../../../components/kids/ProfilesLoadingOverlay";
 import ErrorBoundary from "../../../components/ErrorBoundary";
 import { STORY_GENRES } from "@/lib/data/stories/config";
 import type { StoryGenre, StoryConfig } from "@/lib/types/stories";
@@ -36,12 +37,12 @@ function randomConfig(): StoryConfig {
 
 function StoriesHome() {
   const router = useRouter();
-  const { activeProfile, isLoaded } = useProfiles();
+  const { activeProfile, isLoaded, isApiPending } = useProfiles();
   const profileId = activeProfile?.id;
   const { stories, isLoaded: storiesLoaded, deleteStory, createStory } = useStories(profileId);
   const [isCreating, setIsCreating] = useState(false);
 
-  if (!isLoaded || !storiesLoaded) return null;
+  if (!isLoaded || !storiesLoaded) return <ProfilesLoadingOverlay />;
 
   if (!activeProfile) {
     router.push("/kids/games");
@@ -70,6 +71,8 @@ function StoriesHome() {
   };
 
   return (
+    <>
+    {isApiPending && <ProfilesLoadingOverlay />}
     <AnimatedBackground variant="night" showStars showClouds={false} showBirds={false}>
       <div className="relative flex h-screen flex-col overflow-hidden" dir="rtl">
         {/* Header */}
@@ -204,5 +207,6 @@ function StoriesHome() {
         </main>
       </div>
     </AnimatedBackground>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import { getGamesByCategory } from "@/lib/data/games";
 import AnimatedBackground from "../../components/kids/AnimatedBackground";
 import GameCard from "../../components/kids/games/GameCard";
 import ProfileSetup from "../../components/kids/ProfileSetup";
+import ProfilesLoadingOverlay from "../../components/kids/ProfilesLoadingOverlay";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useSounds } from "@/lib/hooks/useSounds";
@@ -36,16 +37,16 @@ function GamesHub() {
     profiles,
     activeProfile,
     isLoaded,
+    isApiPending,
     createProfile,
     updateProfile,
-
   } = useProfiles();
 
   const profileId = activeProfile?.id;
 
   const { settings: mapSettings } = useMapSettings(profileId);
 
-  if (!isLoaded) return null;
+  if (!isLoaded) return <ProfilesLoadingOverlay />;
 
   if (profiles.length === 0 || showProfileSetup) {
     return (
@@ -76,6 +77,8 @@ function GamesHub() {
   const games = getGamesByCategory(activeCategory);
 
   return (
+    <>
+    {isApiPending && <ProfilesLoadingOverlay />}
     <AnimatedBackground variant="sky" showClouds>
       <div className="relative flex h-dvh flex-col overflow-hidden">
     
@@ -256,5 +259,6 @@ function GamesHub() {
         </div>
       </div>
     </AnimatedBackground>
+    </>
   );
 }

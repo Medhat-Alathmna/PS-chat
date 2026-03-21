@@ -6,6 +6,7 @@ import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useRewards } from "@/lib/hooks/useRewards";
 import ProfileSetup from "../components/kids/ProfileSetup";
 import KidsIntroScreen from "../components/kids/KidsIntroScreen";
+import ProfilesLoadingOverlay from "../components/kids/ProfilesLoadingOverlay";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { useBackgroundMusicContext } from "./layout";
 
@@ -26,6 +27,7 @@ function KidsHomeInner() {
     profiles,
     activeProfile,
     isLoaded,
+    isApiPending,
     createProfile,
     updateProfile,
     switchProfile,
@@ -37,7 +39,7 @@ function KidsHomeInner() {
   const { isPlaying: isMusicPlaying, toggle: toggleMusic, isLoaded: isMusicLoaded } = useBackgroundMusicContext();
 
   // Loading state
-  if (!isLoaded) return null;
+  if (!isLoaded) return <ProfilesLoadingOverlay />;
 
   // Edit existing profile
   if (editingProfileId) {
@@ -85,6 +87,8 @@ function KidsHomeInner() {
 
   // Show intro screen with navigation to chat
   return (
+    <>
+    {isApiPending && <ProfilesLoadingOverlay />}
     <KidsIntroScreen
       onSelect={(text) => {
         // Navigate to chat with the selected question
@@ -103,5 +107,6 @@ function KidsHomeInner() {
       onEditProfile={(id) => setEditingProfileId(id)}
       onDeleteProfile={deleteProfile}
     />
+    </>
   );
 }

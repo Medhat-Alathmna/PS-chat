@@ -143,6 +143,7 @@ export function useProfiles() {
   const { isAuthenticated, isLoading: authLoading } = useAuthContext();
   const [state, setState] = useState<ProfilesState>(EMPTY_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isApiPending, setIsApiPending] = useState(false);
   // Load profiles — from backend if authenticated and no cache, localStorage otherwise
   const load = useCallback(async (authenticated: boolean) => {
     if (authenticated) {
@@ -154,6 +155,7 @@ export function useProfiles() {
         return;
       }
       // No cache → fetch from backend
+      setIsApiPending(true);
       try {
         const profiles = await apiFetch<BackendProfile[]>("");
         const mapped = profiles.map(toKidsProfile);
@@ -166,6 +168,8 @@ export function useProfiles() {
         saveProfilesState(next);
       } catch {
         setState(cached || EMPTY_STATE);
+      } finally {
+        setIsApiPending(false);
       }
     } else {
       let loaded = loadProfilesState();
@@ -194,16 +198,21 @@ export function useProfiles() {
   const createProfile = useCallback(
     async (data: { name: string; age: number; avatar: ProfileAvatar; color: ProfileColor }) => {
       if (isAuthenticated) {
-        const created = await apiFetch<BackendProfile>("", {
-          method: "POST",
-          body: JSON.stringify(data),
-        });
-        const profile = toKidsProfile(created);
-        setState((prev) => ({
-          profiles: [...prev.profiles, profile],
-          activeProfileId: profile.id,
-        }));
-        return profile;
+        setIsApiPending(true);
+        try {
+          const created = await apiFetch<BackendProfile>("", {
+            method: "POST",
+            body: JSON.stringify(data),
+          });
+          const profile = toKidsProfile(created);
+          setState((prev) => ({
+            profiles: [...prev.profiles, profile],
+            activeProfileId: profile.id,
+          }));
+          return profile;
+        } finally {
+          setIsApiPending(false);
+        }
       } else {
         // localStorage-only path
         const id = generateId();
@@ -221,10 +230,15 @@ export function useProfiles() {
   const updateProfile = useCallback(
     async (id: string, updates: Partial<Pick<KidsProfile, "name" | "age" | "avatar" | "color">>) => {
       if (isAuthenticated) {
-        await apiFetch(`/${id}`, {
-          method: "PATCH",
-          body: JSON.stringify(updates),
-        });
+        setIsApiPending(true);
+        try {
+          await apiFetch(`/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(updates),
+          });
+        } finally {
+          setIsApiPending(false);
+        }
       }
       setState((prev) => ({
         ...prev,
@@ -237,7 +251,12 @@ export function useProfiles() {
   const deleteProfile = useCallback(
     async (id: string) => {
       if (isAuthenticated) {
-        await apiFetch(`/${id}`, { method: "DELETE" });
+        setIsApiPending(true);
+        try {
+          await apiFetch(`/${id}`, { method: "DELETE" });
+        } finally {
+          setIsApiPending(false);
+        }
       }
 
       // Clean up per-profile localStorage data
@@ -280,6 +299,7 @@ export function useProfiles() {
     profiles: state.profiles,
     activeProfile,
     isLoaded,
+    isApiPending,
     createProfile,
     updateProfile,
     deleteProfile,
