@@ -8,18 +8,26 @@ interface QuotaState {
   remaining: number;
 }
 
+// Module-level deduplication: all concurrent callers share one in-flight request
+let inflightPromise: Promise<QuotaState | null> | null = null;
+
+async function fetchQuota(): Promise<QuotaState | null> {
+  if (inflightPromise) return inflightPromise;
+  inflightPromise = fetch("/api/backend/token-usage")
+    .then((res) => (res.ok ? (res.json() as Promise<QuotaState>) : null))
+    .catch(() => null)
+    .finally(() => { inflightPromise = null; });
+  return inflightPromise;
+}
+
 export function useTokenQuota() {
   const [quota, setQuota] = useState<QuotaState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/backend/token-usage");
-      if (res.ok) {
-        setQuota(await res.json());
-      }
-    } catch {
-      // Backend unreachable — leave quota as-is
+      const data = await fetchQuota();
+      if (data) setQuota(data);
     } finally {
       setIsLoading(false);
     }

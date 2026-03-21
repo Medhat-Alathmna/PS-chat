@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
 import ProfileSwitcher from "./ProfileSwitcher";
+import TokenQuotaIndicator from "./TokenQuotaIndicator";
 import { RewardLevel } from "@/lib/types";
 import { KidsProfile } from "@/lib/types/games";
 import { getRandomPrompts, KidsPrompt } from "@/lib/data/kids-prompts";
@@ -167,6 +168,8 @@ export default function KidsIntroScreen({
             >
               <span className="text-2xl sm:text-3xl">{"\u2699\uFE0F"}</span>
             </button>
+
+            <TokenQuotaIndicator />
 
             {level && points > 0 && (
               <>

@@ -15,7 +15,6 @@ import Confetti from "@/app/components/kids/Confetti";
 import { PointsPopup, LevelUpCelebration } from "@/app/components/kids/RewardsBar";
 import StickerCollection, { StickerUnlockedPopup } from "@/app/components/kids/StickerCollection";
 import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
-import TokenQuotaBar from "@/app/components/kids/TokenQuotaBar";
 import MedhatBlockedMessage from "@/app/components/kids/MedhatBlockedMessage";
 
 export default function KidsChatPage() {
@@ -165,14 +164,6 @@ function KidsChatPageInner() {
               <MedhatBlockedMessage className="mx-2 mb-2" />
             ) : (
               <>
-                {tokenQuota.quota && (
-                  <TokenQuotaBar
-                    percentUsed={tokenQuota.percentUsed}
-                    remaining={tokenQuota.quota.remaining}
-                    tokenLimit={tokenQuota.quota.tokenLimit}
-                    className="mx-4 mb-1"
-                  />
-                )}
                 <ChatInputArea
                   input={chat.input}
                   onInputChange={chat.setInput}
