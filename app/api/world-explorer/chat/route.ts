@@ -6,6 +6,7 @@ import { buildWorldExplorerSystemPrompt } from "@/lib/ai/world-explorer";
 import { getWorldExplorerModelInstance } from "@/lib/ai/config";
 import { COUNTRIES_BY_ID } from "@/lib/data/countries";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
+import { enforceQuota, recordUsage } from "@/lib/api/token-quota";
 import { logError } from "@/lib/utils/error-handler";
 
 type SimpleMessage = { role: "user" | "assistant"; content: string };
@@ -22,6 +23,10 @@ type WorldExplorerRequest = {
  */
 export async function POST(req: NextRequest) {
   try {
+    const quotaResult = await enforceQuota("world-explorer");
+    if ("response" in quotaResult) return quotaResult.response;
+    const { quota } = quotaResult;
+
     const body = (await req.json()) as WorldExplorerRequest;
     const { messages = [], countryId, playerName } = body;
 
@@ -48,6 +53,8 @@ export async function POST(req: NextRequest) {
       messages: coreMessages,
     });
 
+    const updatedQuota = await recordUsage(quota, result.usage?.totalTokens ?? 0, "world-explorer");
+
     const chips = extractChipsFromText(result.text);
     const chipsPos = result.text.search(/\nCHIPS:/i);
     const text =
@@ -56,6 +63,7 @@ export async function POST(req: NextRequest) {
     return Response.json({
       text,
       chips: chips?.chips ?? [],
+      quota: updatedQuota,
     });
   } catch (error) {
     logError("world-explorer-chat", error);

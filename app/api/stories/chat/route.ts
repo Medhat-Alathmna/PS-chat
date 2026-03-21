@@ -5,6 +5,7 @@ import { buildStoryTools } from "@/lib/ai/stories/tools";
 import { buildStorySystemPrompt } from "@/lib/ai/stories/prompts";
 import { StoryConfig, StoryPage } from "@/lib/types/stories";
 import { KidsProfile } from "@/lib/types/games";
+import { enforceQuota, recordUsage } from "@/lib/api/token-quota";
 import { logError } from "@/lib/utils/error-handler";
 import { buildCacheOptions, formatCacheUsage } from "@/lib/ai/cache";
 
@@ -19,6 +20,10 @@ type StoryChatRequest = {
 export async function POST(req: NextRequest) {
   console.log("[stories-route] ===== POST called =====");
   try {
+    const quotaResult = await enforceQuota("stories");
+    if ("response" in quotaResult) return quotaResult.response;
+    const { quota } = quotaResult;
+
     const body = (await req.json()) as StoryChatRequest;
     const { messages = [], storyConfig, kidsProfile, previousPages, lastChoiceText } = body;
 
@@ -58,6 +63,8 @@ export async function POST(req: NextRequest) {
       ...buildCacheOptions(cacheKey),
     });
 
+    const updatedQuota = await recordUsage(quota, result.usage?.totalTokens ?? 0, "stories");
+
     const cache = formatCacheUsage(result.usage as Record<string, unknown>);
     console.log("[stories] Generation finished", {
       stepsCount: result.steps.length,
@@ -85,7 +92,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return Response.json({ pages, choicePoint, ended });
+    return Response.json({ pages, choicePoint, ended, quota: updatedQuota });
   } catch (error) {
     logError("stories-chat-route", error);
     const isDev = process.env.NODE_ENV === "development";

@@ -9,6 +9,8 @@ import {
 } from "react";
 import type { Country } from "@/lib/data/countries";
 import { COUNTRY_DETAILS } from "@/lib/data/country-details";
+import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
+import MedhatBlockedMessage from "@/app/components/kids/MedhatBlockedMessage";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface ChatMessage {
@@ -63,6 +65,7 @@ export default function CountrySheet({
   onClose,
   isOpen,
 }: CountrySheetProps) {
+  const tokenQuota = useTokenQuota();
   const [mode, setMode] = useState<"info" | "chat">("info");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -137,6 +140,12 @@ export default function CountrySheet({
             playerName,
           }),
         });
+        if (res.status === 429) {
+          const body = await res.json().catch(() => null);
+          if (body?.quota) tokenQuota.updateFromResponse(body.quota);
+          else tokenQuota.refresh();
+          return;
+        }
         const data = await res.json();
         if (data.text) {
           setMessages((prev) => [
@@ -252,13 +261,17 @@ export default function CountrySheet({
               ))}
               {loading && <TypingIndicator />}
             </div>
-            <ChatInput
-              value={input}
-              onChange={setInput}
-              onSend={() => sendMessage(input)}
-              disabled={loading}
-              inputRef={inputRef}
-            />
+            {tokenQuota.isBlocked ? (
+              <MedhatBlockedMessage className="mx-4 mb-3" />
+            ) : (
+              <ChatInput
+                value={input}
+                onChange={setInput}
+                onSend={() => sendMessage(input)}
+                disabled={loading}
+                inputRef={inputRef}
+              />
+            )}
           </>
         )}
 
@@ -321,13 +334,17 @@ export default function CountrySheet({
               ))}
               {loading && <TypingIndicator />}
             </div>
-            <ChatInput
-              value={input}
-              onChange={setInput}
-              onSend={() => sendMessage(input)}
-              disabled={loading}
-              inputRef={inputRef}
-            />
+            {tokenQuota.isBlocked ? (
+              <MedhatBlockedMessage className="mx-4 mb-3" />
+            ) : (
+              <ChatInput
+                value={input}
+                onChange={setInput}
+                onSend={() => sendMessage(input)}
+                disabled={loading}
+                inputRef={inputRef}
+              />
+            )}
           </>
         )}
       </div>

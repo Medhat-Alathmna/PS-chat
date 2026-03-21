@@ -10,6 +10,7 @@ import { buildMainSystemPrompt } from "@/lib/ai/main";
 import { getMainChatModelInstance } from "@/lib/ai/config";
 import { kidsTools } from "@/lib/ai/tools";
 import { isImagesEnabled } from "@/lib/config/features";
+import { enforceQuota, recordUsage } from "@/lib/api/token-quota";
 import { logError } from "@/lib/utils/error-handler";
 import { extractChipsFromText } from "@/lib/utils/messageConverter";
 import { buildCacheOptions } from "@/lib/ai/cache";
@@ -35,6 +36,10 @@ type KidsChatRequest = {
  */
 export async function POST(req: NextRequest) {
   try {
+    const quotaResult = await enforceQuota("chat");
+    if ("response" in quotaResult) return quotaResult.response;
+    const { quota } = quotaResult;
+
     const body = (await req.json()) as KidsChatRequest;
     const { messages = [], config, playerName } = body;
 
@@ -60,6 +65,8 @@ export async function POST(req: NextRequest) {
       ...buildCacheOptions("main-chat"),
     });
 
+    const updatedQuota = await recordUsage(quota, result.usage?.totalTokens ?? 0, "chat");
+
     const chips = extractChipsFromText(result.text);
 
     // Strip CHIPS suffix from display text
@@ -71,6 +78,7 @@ export async function POST(req: NextRequest) {
       chips: chips?.chips || [],
       finishReason: result.finishReason,
       usage: result.usage,
+      quota: updatedQuota,
     });
   } catch (error) {
     logError("kids-chat-route", error);

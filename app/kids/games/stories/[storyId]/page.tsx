@@ -154,6 +154,11 @@ function StorySession({
         });
 
         if (!res.ok) {
+          if (res.status === 429) {
+            const body = await res.json().catch(() => null);
+            setErrorMessage(body?.message ?? "يا صديقي! لقد استخدمنا كل الرسائل المتاحة لنا. اطلب من والديك المساعدة!");
+            return;
+          }
           const body = await res.json().catch(() => ({}));
           const msg = body?.error || "حدث خطأ أثناء توليد القصة";
           console?.error("[stories] API error:", res.status, msg);

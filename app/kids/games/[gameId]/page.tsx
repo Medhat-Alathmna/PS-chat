@@ -26,6 +26,8 @@ import SpeechInput from "../../../components/kids/SpeechInput";
 import { CITIES } from "@/lib/data/cities";
 import ExpandableMap from "../../../components/kids/ExpandableMap";
 import type { GameResponse } from "@/lib/ai/games/city-explorer";
+import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
+import MedhatBlockedMessage from "../../../components/kids/MedhatBlockedMessage";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -139,6 +141,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const gameState = useGameState(gameId, undefined, profileId, isAuthenticated);
   const gameRewards = useGameRewards(profileId);
   const discoveredCities = useDiscoveredCities(profileId, isAuthenticated);
+  const tokenQuota = useTokenQuota();
 
   // Chat state — simple array of messages, no streaming
   const [messages, setMessages] = useState<GameMessage[]>([]);
@@ -183,6 +186,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       });
 
       if (!res.ok) {
+        if (res.status === 429) {
+          const body = await res.json().catch(() => null);
+          if (body?.quota) tokenQuota.updateFromResponse(body.quota);
+          else tokenQuota.refresh();
+          return;
+        }
         const errBody = await res.json().catch(() => ({}));
         throw new Error(`API error ${res.status}: ${errBody.detail ?? errBody.error ?? ""}`);
       }
@@ -540,6 +549,9 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
             {/* Input area */}
             <div className="shrink-0 p-3 sm:p-4 z-20">
               <div className={`mx-auto flex flex-col gap-2 ${isCityExplorer ? "max-w-3xl" : "max-w-2xl"}`}>
+                {tokenQuota.isBlocked ? (
+                  <MedhatBlockedMessage className="mx-2 mb-2" />
+                ) : (
                 <form onSubmit={(event) => void handleSubmit(event)}>
                   <div className={`flex items-end gap-2 sm:gap-3 rounded-[2rem] bg-white/90 backdrop-blur-xl border border-white/50 p-2 sm:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all focus-within:shadow-[0_8px_32px_rgba(108,92,231,0.2)] focus-within:bg-white ${hasActiveOptions ? "opacity-90 grayscale-[0.5]" : ""}`}>
                     {isYoungKid && (
@@ -595,6 +607,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
                     </button>
                   </div>
                 </form>
+                )}
               </div>
             </div>
           </div>

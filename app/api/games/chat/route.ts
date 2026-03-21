@@ -14,6 +14,7 @@ import { ImageResult } from "@/lib/types";
 import { KidsChatContext, KidsProfile } from "@/lib/types/games";
 import { searchImagesMultiSource } from "@/lib/services/multi-image-search";
 import { isImagesEnabled } from "@/lib/config/features";
+import { enforceQuota, recordUsage } from "@/lib/api/token-quota";
 import { logError } from "@/lib/utils/error-handler";
 import { buildCacheOptions } from "@/lib/ai/cache";
 
@@ -39,6 +40,10 @@ function trimMessages(messages: SimpleMessage[], maxMessages = 8): SimpleMessage
 
 export async function POST(req: NextRequest) {
   try {
+    const quotaResult = await enforceQuota("games");
+    if ("response" in quotaResult) return quotaResult.response;
+    const { quota } = quotaResult;
+
     const body = (await req.json()) as GameChatRequest;
     const { messages = [], chatContext, kidsProfile, discoveredCityIds, currentCityId, currentRound } = body;
 
@@ -108,14 +113,16 @@ export async function POST(req: NextRequest) {
 
     const trimmedMessages = trimMessages(messages);
 
-    const { object: turn } = await generateObject({
+    const generateResult = await generateObject({
       model: getCityExploreModelInstance(),
       schema: GameResponseSchema,
       system: systemPrompt,
       messages: trimmedMessages.map(m => ({ role: m.role, content: m.content })),
       ...buildCacheOptions("game"),
     });
+    const turn = generateResult.object;
 
+    const updatedQuota = await recordUsage(quota, generateResult.usage?.totalTokens ?? 0, "games");
 
     // Pick hint: if correct answer was given, inject next city's hint
     const hint = isCorrect ? nextHint : currentHint;
@@ -144,6 +151,7 @@ export async function POST(req: NextRequest) {
       hint: hint.hint,
       hintImages: cleanHintImages,
       isCorrect,
+      quota: updatedQuota,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

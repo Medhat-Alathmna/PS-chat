@@ -14,6 +14,9 @@ import ChatInputArea from "@/app/components/kids/ChatInputArea";
 import Confetti from "@/app/components/kids/Confetti";
 import { PointsPopup, LevelUpCelebration } from "@/app/components/kids/RewardsBar";
 import StickerCollection, { StickerUnlockedPopup } from "@/app/components/kids/StickerCollection";
+import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
+import TokenQuotaBar from "@/app/components/kids/TokenQuotaBar";
+import MedhatBlockedMessage from "@/app/components/kids/MedhatBlockedMessage";
 
 export default function KidsChatPage() {
   return (
@@ -42,6 +45,7 @@ function KidsChatPageInner() {
     refs,
     handlers,
   } = useChatPage();
+  const tokenQuota = useTokenQuota();
 
   // Loading state
   if (!profile.isLoaded) return null;
@@ -156,18 +160,32 @@ function KidsChatPageInner() {
               chatContainerRef={refs.chatContainerRef}
             />
 
-            {/* Input Area */}
-            <ChatInputArea
-              input={chat.input}
-              onInputChange={chat.setInput}
-              onSubmit={handlers.handleSubmit}
-              onKeyDown={handlers.handleKeyDown}
-              isLoading={chat.isLoading}
-              isSpeaking={voice.isSpeaking}
-              canSend={chat.canSend}
-              hasActiveChips={chat.hasActiveChips}
-              textareaRef={refs.textareaRef}
-            />
+            {/* Input Area or Blocked Message */}
+            {tokenQuota.isBlocked ? (
+              <MedhatBlockedMessage className="mx-2 mb-2" />
+            ) : (
+              <>
+                {tokenQuota.quota && (
+                  <TokenQuotaBar
+                    percentUsed={tokenQuota.percentUsed}
+                    remaining={tokenQuota.quota.remaining}
+                    tokenLimit={tokenQuota.quota.tokenLimit}
+                    className="mx-4 mb-1"
+                  />
+                )}
+                <ChatInputArea
+                  input={chat.input}
+                  onInputChange={chat.setInput}
+                  onSubmit={handlers.handleSubmit}
+                  onKeyDown={handlers.handleKeyDown}
+                  isLoading={chat.isLoading}
+                  isSpeaking={voice.isSpeaking}
+                  canSend={chat.canSend}
+                  hasActiveChips={chat.hasActiveChips}
+                  textareaRef={refs.textareaRef}
+                />
+              </>
+            )}
           </div>
         </div>
 
