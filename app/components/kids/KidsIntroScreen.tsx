@@ -10,7 +10,6 @@ import { RewardLevel } from "@/lib/types";
 import { KidsProfile } from "@/lib/types/games";
 import { getRandomPrompts, KidsPrompt } from "@/lib/data/kids-prompts";
 
-const INTRO_VOICE_KEY = "falastin_intro_voice_played";
 
 interface KidsIntroScreenProps {
   onSelect: (text: string) => void;
@@ -54,26 +53,35 @@ export default function KidsIntroScreen({
   const [isDesktop, setIsDesktop] = useState(false);
   const [prompts, setPrompts] = useState<KidsPrompt[]>([]);
 
-  // Play intro voice once per session
+  // Play intro voice — gated by music/sounds preference, cancelled on unmount
   useEffect(() => {
-    if (sessionStorage.getItem(INTRO_VOICE_KEY)) return;
+    const musicEnabled = localStorage.getItem("falastin_music_playing") !== "false";
+    if (!musicEnabled) return;
 
+    let cancelled = false;
     const audio = new Audio("/sounds/medhat-voice/main tts.ogg");
-    const markPlayed = () => sessionStorage.setItem(INTRO_VOICE_KEY, "1");
-    const tryPlay = () => { audio.play().then(markPlayed).catch(() => {}); };
+
+    const tryPlay = () => {
+      if (cancelled) return;
+      audio.play().catch(() => {});
+    };
 
     const timer = setTimeout(() => {
-      audio.play().then(markPlayed).catch(() => {
-        // Autoplay blocked — wait for interaction inside this screen only
+      if (cancelled) return;
+      audio.play().catch(() => {
+        // Autoplay blocked — wait for first interaction inside this screen only
         const el = containerRef.current;
-        if (!el) return;
+        if (!el || cancelled) return;
         el.addEventListener("click", tryPlay, { once: true });
         el.addEventListener("touchstart", tryPlay, { once: true });
       });
     }, 600);
 
     return () => {
+      cancelled = true;
       clearTimeout(timer);
+      audio.pause();
+      audio.src = "";
       const el = containerRef.current;
       if (el) {
         el.removeEventListener("click", tryPlay);
