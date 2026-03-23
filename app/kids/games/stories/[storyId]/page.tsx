@@ -25,8 +25,6 @@ function StoryReaderInner() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuthContext();
-  const { showVerificationModal } = useEmailVerification();
   const storyId = params.storyId as string;
   const isNew = searchParams.get("new") === "true";
 
@@ -106,6 +104,8 @@ function StorySession({
   completeStory,
 }: StorySessionProps) {
   const router = useRouter();
+  const { user } = useAuthContext();
+  const { showVerificationModal } = useEmailVerification();
 
   const [livePages, setLivePages] = useState<StoryPage[]>(story.pages);
   const [liveChoicePoints, setLiveChoicePoints] = useState<StoryChoicePoint[]>(
