@@ -10,6 +10,8 @@ import StoryReader from "../../../../components/kids/stories/StoryReader";
 import ErrorBoundary from "../../../../components/ErrorBoundary";
 import type { SavedStory, StoryPage, StoryChoicePoint } from "@/lib/types/stories";
 import type { KidsProfile } from "@/lib/types/games";
+import { useAuthContext } from "@/lib/context/auth-context";
+import { useEmailVerification } from "../../../../components/kids/EmailVerificationGuard";
 
 export default function StoryReaderPage() {
   return (
@@ -23,6 +25,8 @@ function StoryReaderInner() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuthContext();
+  const { showVerificationModal } = useEmailVerification();
   const storyId = params.storyId as string;
   const isNew = searchParams.get("new") === "true";
 
@@ -138,6 +142,12 @@ function StorySession({
 
   const generateNextBatch = useCallback(
     async (userMessage: string, lastChoiceText?: string) => {
+      // Block if email not verified
+      if (user && !user.isEmailVerified) {
+        showVerificationModal();
+        return;
+      }
+
       setIsLoading(true);
       setErrorMessage(null);
       try {
@@ -197,7 +207,7 @@ function StorySession({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [livePages, story.config, activeProfile, storyId, addPage, addChoicePoint, completeStory]
+    [livePages, story.config, activeProfile, storyId, addPage, addChoicePoint, completeStory, user, showVerificationModal]
   );
 
   // Auto-start for new stories

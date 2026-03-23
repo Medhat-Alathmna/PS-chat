@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/hooks/useAuth";
 
 /* ─────────────────────────────────────────────
@@ -181,6 +182,18 @@ function LoginPageInner() {
                 dir="ltr"
                 required
               />
+
+              {/* Forgot password link (login only) */}
+              {mode === "login" && (
+                <div className="text-left -mt-1">
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-[0.78rem] font-medium text-[var(--kids-purple)] hover:underline"
+                  >
+                    نسيت كلمة المرور؟
+                  </Link>
+                </div>
+              )}
 
               {/* Password strength (register only) */}
               {mode === "register" && password.length > 0 && (

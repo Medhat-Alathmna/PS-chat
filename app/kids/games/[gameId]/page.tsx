@@ -28,6 +28,7 @@ import ExpandableMap from "../../../components/kids/ExpandableMap";
 import type { GameResponse } from "@/lib/ai/games/city-explorer";
 import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
 import MedhatBlockedMessage from "../../../components/kids/MedhatBlockedMessage";
+import { useEmailVerification } from "../../../components/kids/EmailVerificationGuard";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -95,6 +96,8 @@ function GamePageInner() {
 
 function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig }) {
   const router = useRouter();
+  const { user } = useAuth();
+  const { showVerificationModal } = useEmailVerification();
   const [gameStarted, setGameStarted] = useState(false);
   const [input, setInput] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -163,6 +166,12 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   // Core send function — POSTs to API, handles JSON response
   const sendGameMessage = useCallback(async (text: string) => {
     if (isLoading) return;
+
+    // Block if email not verified
+    if (user && !user.isEmailVerified) {
+      showVerificationModal();
+      return;
+    }
 
     const userMsg: GameMessage = { id: `u-${Date.now()}`, role: "user", content: text };
     const updatedMessages = [...messages, userMsg];
@@ -278,6 +287,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     discoveredCities.discoveredIds, discoveredCities.addCity,
     gameState, gameRewards, config.pointsPerCorrect,
     activeProfile, getContext, playSound,
+    user, showVerificationModal,
   ]);
 
   // Auto-send "Start!" message

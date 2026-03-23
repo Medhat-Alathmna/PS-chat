@@ -37,6 +37,8 @@ import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings
 import { useChatSettings } from "@/lib/hooks/useChatSettings";
 import { useBackgroundMusicContext } from "@/app/layout";
 import { useMedhatVoices } from "@/lib/hooks/useMedhatVoices";
+import { useAuthContext } from "@/lib/context/auth-context";
+import { useEmailVerification } from "@/app/components/kids/EmailVerificationGuard";
 
 // Dynamic import for map component
 const PalestineLeafletMap = dynamic(
@@ -178,6 +180,8 @@ export interface UseChatPageReturn {
 export function useChatPage(): UseChatPageReturn {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuthContext();
+  const { showVerificationModal } = useEmailVerification();
   const [input, setInput] = useState("");
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
@@ -285,6 +289,12 @@ export function useChatPage(): UseChatPageReturn {
 
   const sendMessage = useCallback(
     async (message: { text: string; files?: { type: "file"; mediaType: string; url: string }[] }) => {
+      // Block if email not verified
+      if (user && !user.isEmailVerified) {
+        showVerificationModal();
+        return;
+      }
+
       // Add user message to state
       const userMessageId = `user-${Date.now()}`;
       const userMessage = { id: userMessageId, role: "user", parts: [{ type: "text", text: message.text }] as unknown[] };
@@ -345,7 +355,7 @@ export function useChatPage(): UseChatPageReturn {
         setStatus("idle");
       }
     },
-    [aiMessages, systemPrompt, activeProfile?.name]
+    [aiMessages, systemPrompt, activeProfile?.name, user, showVerificationModal]
   );
 
   const isLoading = status === "streaming" || status === "submitted";

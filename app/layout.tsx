@@ -5,6 +5,7 @@ import { Geist, Geist_Mono, Noto_Sans_Arabic, Cairo, Tajawal, Changa } from "nex
 import "./globals.css";
 import { useBackgroundMusic } from "@/lib/hooks/useBackgroundMusic";
 import { AuthProvider } from "@/lib/context/auth-context";
+import { EmailVerificationGuard } from "./components/kids/EmailVerificationGuard";
 import { Toaster } from "sonner";
 import SplashScreen from "./components/kids/SplashScreen";
 
@@ -77,13 +78,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <AuthProvider>
-          <BackgroundMusicContext.Provider value={music}>
-            <Toaster position="top-center" richColors />
-            <div className="min-h-dvh bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
-              {children}
-            </div>
-            <SplashScreen />
-          </BackgroundMusicContext.Provider>
+          <EmailVerificationGuard>
+            <BackgroundMusicContext.Provider value={music}>
+              <Toaster position="top-center" richColors />
+              <div className="min-h-dvh bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
+                {children}
+              </div>
+              <SplashScreen />
+            </BackgroundMusicContext.Provider>
+          </EmailVerificationGuard>
         </AuthProvider>
       </body>
     </html>

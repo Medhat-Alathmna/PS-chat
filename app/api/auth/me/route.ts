@@ -18,6 +18,7 @@ export async function GET() {
     return NextResponse.json({
       userId: payload.sub as string,
       email: payload.email as string,
+      isEmailVerified: (payload.isEmailVerified as boolean) ?? false,
     });
   } catch {
     return NextResponse.json({ message: "Invalid token" }, { status: 401 });

@@ -3,7 +3,7 @@
  * Checks and records token usage against the NestJS backend.
  */
 
-import { backendFetch } from "@/lib/api/backend";
+import { backendFetch, decodeJwtPayload } from "@/lib/api/backend";
 import { getAccessToken } from "@/lib/api/cookies";
 
 const BLOCKED_MESSAGE =
@@ -67,6 +67,20 @@ type QuotaGuardSuccess = { quota: QuotaCheckResult };
 export async function enforceQuota(
   routeLabel: string
 ): Promise<QuotaGuardBlocked | QuotaGuardSuccess> {
+  // Check email verification from JWT before anything else
+  const accessToken = await getAccessToken();
+  if (accessToken) {
+    const payload = decodeJwtPayload(accessToken);
+    if (payload.isEmailVerified === false) {
+      return {
+        response: Response.json(
+          { emailNotVerified: true, message: "يجب تفعيل البريد الإلكتروني أولاً" },
+          { status: 403 },
+        ),
+      };
+    }
+  }
+
   let quota: QuotaCheckResult | null = null;
   try {
     quota = await checkTokenQuota();

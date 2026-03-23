@@ -11,6 +11,8 @@ import type { Country } from "@/lib/data/countries";
 import { COUNTRY_DETAILS } from "@/lib/data/country-details";
 import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
 import MedhatBlockedMessage from "@/app/components/kids/MedhatBlockedMessage";
+import { useAuthContext } from "@/lib/context/auth-context";
+import { useEmailVerification } from "@/app/components/kids/EmailVerificationGuard";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface ChatMessage {
@@ -66,6 +68,8 @@ export default function CountrySheet({
   isOpen,
 }: CountrySheetProps) {
   const tokenQuota = useTokenQuota();
+  const { user } = useAuthContext();
+  const { showVerificationModal } = useEmailVerification();
   const [mode, setMode] = useState<"info" | "chat">("info");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -120,6 +124,12 @@ export default function CountrySheet({
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || !country || loading) return;
+
+      // Block if email not verified
+      if (user && !user.isEmailVerified) {
+        showVerificationModal();
+        return;
+      }
       const userMsg: ChatMessage = { role: "user", text: text.trim() };
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
@@ -166,7 +176,7 @@ export default function CountrySheet({
         setLoading(false);
       }
     },
-    [country, loading, playerName]
+    [country, loading, playerName, user, showVerificationModal]
   );
 
   // ── Topic chip → switch to chat mode ──────────────────────────────────

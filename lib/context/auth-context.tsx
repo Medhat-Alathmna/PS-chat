@@ -11,6 +11,7 @@ import {
 export interface AuthUser {
   userId: string;
   email: string;
+  isEmailVerified: boolean;
 }
 
 interface AuthState {
