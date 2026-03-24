@@ -3,10 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 /** Routes that are accessible without authentication */
 const PUBLIC_PATHS = [
   "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/verify-email",
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/refresh",
   "/api/auth/google",          // includes /callback sub-path
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/verify-email",
   "/_next",
   "/favicon.ico",
   "/sitemap.xml",
