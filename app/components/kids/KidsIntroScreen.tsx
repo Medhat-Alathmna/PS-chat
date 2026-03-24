@@ -168,7 +168,7 @@ export default function KidsIntroScreen({
             )}
 
             <Link
-              href="/kids/settings"
+              href="/settings"
               className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl"
               aria-label="الإعدادات"
               title="الإعدادات"
