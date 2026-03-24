@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useProfiles } from "@/lib/hooks/useProfiles";
 import { useRewards } from "@/lib/hooks/useRewards";
+import { useEmailVerification } from "@/app/components/kids/EmailVerificationGuard";
 import ProfileSetup from "../components/kids/ProfileSetup";
 import KidsIntroScreen from "../components/kids/KidsIntroScreen";
 import ProfilesLoadingOverlay from "../components/kids/ProfilesLoadingOverlay";
@@ -37,6 +38,14 @@ function KidsHomeInner() {
   const profileId = activeProfile?.id;
   const { points, level } = useRewards(profileId);
   const { isPlaying: isMusicPlaying, toggle: toggleMusic, isLoaded: isMusicLoaded } = useBackgroundMusicContext();
+  const { showVerificationReminder } = useEmailVerification();
+
+  // Show email verification reminder when kids intro screen is displayed
+  useEffect(() => {
+    if (isLoaded && activeProfile?.name && !showProfileSetup && !editingProfileId) {
+      showVerificationReminder();
+    }
+  }, [isLoaded, activeProfile?.name, showProfileSetup, editingProfileId, showVerificationReminder]);
 
   // Loading state
   if (!isLoaded) return <ProfilesLoadingOverlay />;

@@ -13,6 +13,8 @@ import EmailVerificationModal from "./EmailVerificationModal";
 interface EmailVerificationContextValue {
   /** Show the verification modal in "blocked" mode (for LLM attempts) */
   showVerificationModal: () => void;
+  /** Show the verification reminder modal once per session (for kids intro screen) */
+  showVerificationReminder: () => void;
 }
 
 const EmailVerificationContext =
@@ -30,18 +32,17 @@ export function EmailVerificationGuard({
     null
   );
 
-  // Session-start reminder: show once per browser session
-  useEffect(() => {
+  const showVerificationModal = useCallback(() => {
+    setModalMode("blocked");
+  }, []);
+
+  const showVerificationReminder = useCallback(() => {
     if (!user || user.isEmailVerified) return;
     if (sessionStorage.getItem(SESSION_KEY)) return;
 
     setModalMode("reminder");
     sessionStorage.setItem(SESSION_KEY, "1");
   }, [user]);
-
-  const showVerificationModal = useCallback(() => {
-    setModalMode("blocked");
-  }, []);
 
   const handleClose = useCallback(() => {
     setModalMode(null);
@@ -52,7 +53,7 @@ export function EmailVerificationGuard({
   }, []);
 
   return (
-    <EmailVerificationContext.Provider value={{ showVerificationModal }}>
+    <EmailVerificationContext.Provider value={{ showVerificationModal, showVerificationReminder }}>
       {children}
       {modalMode && user && !user.isEmailVerified && (
         <EmailVerificationModal
