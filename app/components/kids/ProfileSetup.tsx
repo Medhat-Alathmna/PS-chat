@@ -87,9 +87,12 @@ export default function ProfileSetup({ onComplete, existingProfiles, onCancel, i
                   autoFocus
                 />
                 <p className="text-xs text-gray-400 mt-1">{name.length}/20</p>
+                {name.trim().length === 1 && (
+                  <p className="text-amber-500 text-xs mt-1">🤔 الاسم قصير شوي، ممكن تكتب أكثر؟</p>
+                )}
                 <button
                   onClick={goNext}
-                  disabled={!name.trim()}
+                  disabled={name.trim().length < 2}
                   className="w-full mt-4 py-3 bg-[var(--kids-green)] text-white rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-transform shadow-md disabled:opacity-40 disabled:hover:scale-100"
                 >
                   التالي ←

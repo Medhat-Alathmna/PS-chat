@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
     "idle"
   );
@@ -74,11 +75,19 @@ export default function ForgotPasswordPage() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                  onBlur={() => {
+                    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                      setEmailError("البريد الإلكتروني غير صحيح — مثال: name@email.com 📧");
+                    }
+                  }}
                   placeholder="example@email.com"
                   dir="ltr"
                   className="w-full px-4 py-3 rounded-2xl text-sm bg-slate-50/60 border-2 border-slate-200/70 text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[var(--kids-purple,#6C5CE7)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(165,94,234,0.1)]"
                 />
+                {emailError && (
+                  <p className="text-red-400 text-xs px-1 mt-1">{emailError}</p>
+                )}
 
                 {status === "error" && (
                   <div className="bg-red-50/80 border border-red-200/60 text-red-600 rounded-2xl px-4 py-3 text-sm">

@@ -43,12 +43,12 @@ function LoginPageInner() {
     setLocalError(null);
 
     if (mode === "register") {
-      if (password !== confirmPassword) {
-        setLocalError("كلمتا المرور غير متطابقتين");
+      if (password.length < 8) {
+        setLocalError("كلمة المرور قصيرة — اكتب 8 حروف على الأقل 🔐");
         return;
       }
-      if (password.length < 8) {
-        setLocalError("كلمة المرور يجب أن تكون 8 أحرف على الأقل");
+      if (password !== confirmPassword) {
+        setLocalError("كلمتا المرور مختلفتان — تأكد من الكتابة بشكل صحيح 🔑");
         return;
       }
       const ok = await register(email, password);
@@ -181,6 +181,7 @@ function LoginPageInner() {
                 placeholder="••••••••"
                 dir="ltr"
                 required
+                showToggle
               />
 
               {/* Forgot password link (login only) */}
@@ -213,7 +214,21 @@ function LoginPageInner() {
                     placeholder="••••••••"
                     dir="ltr"
                     required
+                    showToggle
                   />
+                  {confirmPassword.length > 0 && (
+                    <p
+                      className={`text-xs px-1 mt-1 transition-colors ${
+                        password === confirmPassword
+                          ? "text-emerald-500"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {password === confirmPassword
+                        ? "✅ كلمتا المرور متطابقتان"
+                        : "❌ كلمتا المرور مختلفتان"}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -327,6 +342,7 @@ function InputField({
   placeholder,
   dir,
   required,
+  showToggle,
 }: {
   id: string;
   type: string;
@@ -337,7 +353,11 @@ function InputField({
   placeholder: string;
   dir?: string;
   required?: boolean;
+  showToggle?: boolean;
 }) {
+  const [visible, setVisible] = useState(false);
+  const actualType = showToggle ? (visible ? "text" : "password") : type;
+
   return (
     <div>
       <label
@@ -347,22 +367,35 @@ function InputField({
         <span className="text-xs">{icon}</span>
         {label}
       </label>
-      <input
-        id={id}
-        type={type}
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        dir={dir}
-        className="w-full px-4 py-3 rounded-2xl text-sm
-          bg-slate-50/60 border-2 border-slate-200/70
-          text-slate-800 placeholder:text-slate-400
-          outline-none transition-all duration-200
-          focus:border-[var(--kids-purple)]
-          focus:bg-white
-          focus:shadow-[0_0_0_4px_rgba(165,94,234,0.1)]"
-      />
+      <div className="relative">
+        <input
+          id={id}
+          type={actualType}
+          required={required}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          dir={dir}
+          className={`w-full px-4 py-3 rounded-2xl text-sm
+            bg-slate-50/60 border-2 border-slate-200/70
+            text-slate-800 placeholder:text-slate-400
+            outline-none transition-all duration-200
+            focus:border-[var(--kids-purple)]
+            focus:bg-white
+            focus:shadow-[0_0_0_4px_rgba(165,94,234,0.1)]
+            ${showToggle ? "pl-10" : ""}`}
+        />
+        {showToggle && (
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 text-base leading-none"
+            aria-label={visible ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+          >
+            {visible ? "🙈" : "👁️"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

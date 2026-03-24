@@ -18,6 +18,8 @@ function ResetPasswordInner() {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
@@ -29,11 +31,11 @@ function ResetPasswordInner() {
     setLocalError(null);
 
     if (password.length < 8) {
-      setLocalError("كلمة المرور يجب أن تكون 8 أحرف على الأقل");
+      setLocalError("كلمة المرور قصيرة — اكتب 8 حروف على الأقل 🔐");
       return;
     }
     if (password !== confirmPassword) {
-      setLocalError("كلمتا المرور غير متطابقتين");
+      setLocalError("كلمتا المرور مختلفتان — تأكد من الكتابة بشكل صحيح 🔑");
       return;
     }
 
@@ -170,15 +172,25 @@ function ResetPasswordInner() {
                 <span className="text-xs">🔑</span>
                 كلمة المرور الجديدة
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                dir="ltr"
-                className="w-full px-4 py-3 rounded-2xl text-sm bg-slate-50/60 border-2 border-slate-200/70 text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[var(--kids-purple,#6C5CE7)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(165,94,234,0.1)]"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  dir="ltr"
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl text-sm bg-slate-50/60 border-2 border-slate-200/70 text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[var(--kids-purple,#6C5CE7)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(165,94,234,0.1)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 text-base leading-none"
+                  aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
             </div>
 
             {password.length > 0 && <PasswordStrengthBar password={password} />}
@@ -188,15 +200,36 @@ function ResetPasswordInner() {
                 <span className="text-xs">🔒</span>
                 تأكيد كلمة المرور
               </label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                dir="ltr"
-                className="w-full px-4 py-3 rounded-2xl text-sm bg-slate-50/60 border-2 border-slate-200/70 text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[var(--kids-purple,#6C5CE7)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(165,94,234,0.1)]"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  dir="ltr"
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl text-sm bg-slate-50/60 border-2 border-slate-200/70 text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[var(--kids-purple,#6C5CE7)] focus:bg-white focus:shadow-[0_0_0_4px_rgba(165,94,234,0.1)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 text-base leading-none"
+                  aria-label={showConfirm ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                >
+                  {showConfirm ? "🙈" : "👁️"}
+                </button>
+              </div>
+              {confirmPassword.length > 0 && (
+                <p
+                  className={`text-xs px-1 mt-1 transition-colors ${
+                    password === confirmPassword ? "text-emerald-500" : "text-red-400"
+                  }`}
+                >
+                  {password === confirmPassword
+                    ? "✅ كلمتا المرور متطابقتان"
+                    : "❌ كلمتا المرور مختلفتان"}
+                </p>
+              )}
             </div>
 
             {localError && (
