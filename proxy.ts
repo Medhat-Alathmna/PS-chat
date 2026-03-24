@@ -9,6 +9,11 @@ const PUBLIC_PATHS = [
   "/api/auth/google",          // includes /callback sub-path
   "/_next",
   "/favicon.ico",
+  "/sitemap.xml",
+  "/robots.txt",
+  "/og-image.png",
+  "/apple-touch-icon.png",
+  "/manifest.json",
 ];
 
 function isPublic(pathname: string): boolean {
