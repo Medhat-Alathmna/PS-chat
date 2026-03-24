@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
 import ProfileSwitcher from "./ProfileSwitcher";
@@ -45,7 +45,6 @@ export default function KidsIntroScreen({
   onEditProfile,
   onDeleteProfile,
 }: KidsIntroScreenProps) {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [showLottie, setShowLottie] = useState(false);
@@ -168,14 +167,14 @@ export default function KidsIntroScreen({
               </div>
             )}
 
-            <button
-              onClick={() => router.push("/settings")}
+            <Link
+              href="/kids/settings"
               className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/80 backdrop-blur-sm rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg hover:shadow-xl"
               aria-label="الإعدادات"
               title="الإعدادات"
             >
               <span className="text-2xl sm:text-3xl">{"\u2699\uFE0F"}</span>
-            </button>
+            </Link>
 
             <TokenQuotaIndicator />
 
@@ -244,15 +243,15 @@ export default function KidsIntroScreen({
             </div>
 
             {/* Games button */}
-            <button
-              onClick={() => router.push("/kids/games")}
+            <Link
+              href="/kids/games"
               className="mt-6 sm:mt-8 w-full max-w-xl mx-auto flex items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[var(--kids-purple)] to-[var(--kids-blue)] text-white font-bold text-base sm:text-lg shadow-lg hover:scale-105 active:scale-95 transition-all animate-fade-in-up"
               style={{ animationDelay: "400ms" }}
             >
               <span className="text-xl sm:text-2xl">🎮</span>
               يلا نلعب ألعاب!
               <span className="text-xl sm:text-2xl">🎯</span>
-            </button>
+            </Link>
 
             {/* Or type your own */}
             <div className="mt-4 sm:mt-6 text-gray-500 text-sm animate-fade-in delay-500">

@@ -1,11 +1,13 @@
 {
-  "name": "فلسطين Chat | Falastin Assistant",
-  "short_name": "Falastin",
-  "description": "مساعدك الذكي للتعرف على فلسطين",
+  "name": "PS-Kids | تعلم مع مدحت - Learn with Medhat",
+  "short_name": "PS-Kids",
+  "description": "تطبيق تعليمي ممتع للأطفال عن فلسطين - An engaging educational app for kids about Palestine",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#87CEEB",
-  "theme_color": "#009736",
+  "theme_color": "#6C5CE7",
+  "lang": "ar",
+  "dir": "rtl",
   "icons": [
     {
       "src": "/pss.webp",

@@ -7,7 +7,7 @@ import { useRewards } from "@/lib/hooks/useRewards";
 import ProfileSetup from "@/app/components/kids/ProfileSetup";
 import KidsIntroScreen from "@/app/components/kids/KidsIntroScreen";
 import ErrorBoundary from "@/app/components/ErrorBoundary";
-import { useBackgroundMusicContext } from "./layout";
+import { useBackgroundMusicContext } from "@/app/components/ClientProviders";
 
 export default function KidsHomePage() {
   return (

@@ -35,7 +35,7 @@ import { useVoiceSynthesis } from "@/lib/hooks/useVoiceSynthesis";
 import { useMapSettings } from "@/lib/hooks/useMapSettings";
 import { useTextSettings, getTextStyleValues } from "@/lib/hooks/useTextSettings";
 import { useChatSettings } from "@/lib/hooks/useChatSettings";
-import { useBackgroundMusicContext } from "@/app/layout";
+import { useBackgroundMusicContext } from "@/app/components/ClientProviders";
 import { useMedhatVoices } from "@/lib/hooks/useMedhatVoices";
 import { useAuthContext } from "@/lib/context/auth-context";
 import { useEmailVerification } from "@/app/components/kids/EmailVerificationGuard";

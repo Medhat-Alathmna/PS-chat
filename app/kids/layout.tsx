@@ -1,12 +1,13 @@
-"use client";
+import type { Metadata } from "next";
 
-// Re-export from root layout so consumers get the single shared music instance
-export { useBackgroundMusicContext } from "@/app/layout";
+export { useBackgroundMusicContext } from "@/app/components/ClientProviders";
+
+export const metadata: Metadata = {
+  title: "عالم مدحت - Medhat's World",
+  description: "تعلم عن فلسطين مع مدحت - الألعاب والقصص والمحادثات - Learn about Palestine with Medhat",
+  alternates: { canonical: "/kids" },
+};
 
 export default function KidsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-dvh bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }

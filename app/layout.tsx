@@ -1,13 +1,8 @@
-"use client";
-
-import { createContext, useContext } from "react";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Arabic, Cairo, Tajawal, Changa } from "next/font/google";
 import "./globals.css";
-import { useBackgroundMusic } from "@/lib/hooks/useBackgroundMusic";
-import { AuthProvider } from "@/lib/context/auth-context";
-import { EmailVerificationGuard } from "./components/kids/EmailVerificationGuard";
-import { Toaster } from "sonner";
-import SplashScreen from "./components/kids/SplashScreen";
+import ClientProviders from "./components/ClientProviders";
+import JsonLd from "./components/JsonLd";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,51 +38,59 @@ const changa = Changa({
   weight: ["400", "500", "600", "700"],
 });
 
-interface BackgroundMusicContextType {
-  isPlaying: boolean;
-  isLoaded: boolean;
-  toggle: () => void;
-  play: () => void;
-  pause: () => void;
-}
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ps-kids.school";
 
-const BackgroundMusicContext = createContext<BackgroundMusicContextType | null>(null);
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "PS-Kids | تعلم مع مدحت - Learn with Medhat",
+    template: "%s | PS-Kids",
+  },
+  description: "تطبيق تعليمي ممتع للأطفال عن فلسطين - An engaging educational app for kids about Palestine",
+  keywords: ["فلسطين", "تعليم أطفال", "Palestine", "kids education", "مدحت", "ألعاب تعليمية", "educational games"],
+  authors: [{ name: "PS-Kids" }],
+  openGraph: {
+    type: "website",
+    locale: "ar_SA",
+    alternateLocale: "en_US",
+    siteName: "PS-Kids",
+    title: "PS-Kids | تعلم مع مدحت",
+    description: "تطبيق تعليمي ممتع للأطفال عن فلسطين",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "PS-Kids - تعلم مع مدحت" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PS-Kids | تعلم مع مدحت",
+    description: "تطبيق تعليمي ممتع للأطفال عن فلسطين",
+    images: ["/og-image.png"],
+  },
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  alternates: {
+    canonical: "/",
+  },
+};
 
-export function useBackgroundMusicContext() {
-  const context = useContext(BackgroundMusicContext);
-  if (!context) {
-    throw new Error("useBackgroundMusicContext must be used within RootLayout");
-  }
-  return context;
-}
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#6C5CE7",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // Initialize background music for entire app
-  const music = useBackgroundMusic();
-
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#6C5CE7" />
-        <title>PS-Kids | تعلم مع مدحت - Learn with Medhat</title>
-        <meta name="description" content="تطبيق تعليمي ممتع للأطفال عن فلسطين - An engaging educational app for kids about Palestine" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} ${cairo.variable} ${tajawal.variable} ${changa.variable} antialiased font-[family-name:var(--font-arabic)]`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <EmailVerificationGuard>
-            <BackgroundMusicContext.Provider value={music}>
-              <Toaster position="top-center" richColors />
-              <div className="min-h-dvh bg-gradient-to-b from-sky-300 via-sky-200 to-cyan-50">
-                {children}
-              </div>
-              <SplashScreen />
-            </BackgroundMusicContext.Provider>
-          </EmailVerificationGuard>
-        </AuthProvider>
+        <JsonLd />
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

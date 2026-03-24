@@ -2,7 +2,7 @@
 
 import { GameConfig, GameState, GameDifficulty } from "@/lib/types/games";
 import VoiceToggle from "../VoiceToggle";
-import { useBackgroundMusicContext } from "@/app/kids/layout";
+import { useBackgroundMusicContext } from "@/app/components/ClientProviders";
 
 const DIFFICULTY_LABELS: Record<GameDifficulty, { ar: string; stars: string; color: string }> = {
   easy: { ar: "سهل", stars: "⭐", color: "#00B894" },

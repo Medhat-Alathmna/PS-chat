@@ -8,7 +8,7 @@ import ProfileSetup from "../components/kids/ProfileSetup";
 import KidsIntroScreen from "../components/kids/KidsIntroScreen";
 import ProfilesLoadingOverlay from "../components/kids/ProfilesLoadingOverlay";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { useBackgroundMusicContext } from "./layout";
+import { useBackgroundMusicContext } from "@/app/components/ClientProviders";
 
 export default function KidsHomePage() {
   return (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { GameCategory } from "@/lib/types/games";
 import { getGamesByCategory } from "@/lib/data/games";
 import AnimatedBackground from "../../components/kids/AnimatedBackground";
@@ -141,11 +142,9 @@ function GamesHub() {
               {/* Special World Explorer card — visible in educational category */}
               {activeCategory === "educational" && (
                 <div className="animate-fade-in-up">
-                  <button
-                    onClick={() => {
-                      playClick();
-                      router.push("/kids/world-explorer");
-                    }}
+                  <Link
+                    href="/kids/world-explorer"
+                    onClick={playClick}
                     className="relative p-3 sm:p-4 rounded-xl sm:rounded-2xl text-right backdrop-blur-sm border-2 sm:border-3 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-xl group w-full flex flex-col items-center sm:items-stretch h-full"
                     style={{
                       borderColor: "#54A0FF40",
@@ -171,17 +170,15 @@ function GamesHub() {
                       className="absolute bottom-0 left-4 right-4 h-1 rounded-full opacity-60"
                       style={{ backgroundColor: "#54A0FF" }}
                     />
-                  </button>
+                  </Link>
                 </div>
               )}
               {/* Special Stories card — visible in creative category */}
               {activeCategory === "creative" && (
                 <div className="animate-fade-in-up">
-                  <button
-                    onClick={() => {
-                      playClick();
-                      router.push("/kids/games/stories");
-                    }}
+                  <Link
+                    href="/kids/games/stories"
+                    onClick={playClick}
                     className="relative p-3 sm:p-4 rounded-xl sm:rounded-2xl text-right backdrop-blur-sm border-2 sm:border-3 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-xl group w-full flex flex-col items-center sm:items-stretch h-full"
                     style={{
                       borderColor: "#6366f140",
@@ -207,7 +204,7 @@ function GamesHub() {
                       className="absolute bottom-0 left-4 right-4 h-1 rounded-full opacity-60"
                       style={{ backgroundColor: "#818cf8" }}
                     />
-                  </button>
+                  </Link>
                 </div>
               )}
               {games.map((game, index) => (
@@ -246,15 +243,15 @@ function GamesHub() {
         {/* Floating Back button */}
         <div className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none">
           <div className="mx-auto max-w-sm pointer-events-auto">
-            <button
-              onClick={() => router.push("/")}
+            <Link
+              href="/"
               className="w-full py-3.5 bg-[var(--kids-purple)] text-white border-2 border-[var(--kids-purple)] rounded-2xl font-black text-base shadow-[0_8px_20px_rgba(108,92,231,0.3)] hover:scale-[1.02] active:scale-95 transition-all hover:bg-[var(--kids-purple)]/90 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
               رجوع للرئيسية
-            </button>
+            </Link>
           </div>
         </div>
       </div>
