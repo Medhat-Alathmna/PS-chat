@@ -74,6 +74,7 @@ function StoryReaderInner() {
       addChoicePoint={addChoicePoint}
       selectChoice={selectChoice}
       completeStory={completeStory}
+      refreshProfiles={refreshProfiles}
     />
   );
 }
@@ -90,6 +91,7 @@ interface StorySessionProps {
   addChoicePoint: (storyId: string, cp: StoryChoicePoint) => void;
   selectChoice: (storyId: string, afterPage: number, choiceId: string) => void;
   completeStory: (storyId: string, titleAr: string) => void | Promise<void>;
+  refreshProfiles: () => Promise<void>;
 }
 
 function StorySession({
@@ -102,6 +104,7 @@ function StorySession({
   addChoicePoint,
   selectChoice,
   completeStory,
+  refreshProfiles,
 }: StorySessionProps) {
   const router = useRouter();
   const { user } = useAuthContext();
