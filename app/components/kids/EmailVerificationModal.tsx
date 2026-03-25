@@ -1,7 +1,9 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const COOLDOWN_SECONDS = 60;
 
 interface EmailVerificationModalProps {
   /** "reminder" allows closing; "blocked" only allows resend */
@@ -18,13 +20,24 @@ export default function EmailVerificationModal({
   onResend,
 }: EmailVerificationModalProps) {
   const [isResending, setIsResending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
 
   const handleResend = async () => {
     setIsResending(true);
     try {
       await onResend();
-      setSent(true);
+      setCooldown(COOLDOWN_SECONDS);
+      timerRef.current = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) { clearInterval(timerRef.current!); return 0; }
+          return prev - 1;
+        });
+      }, 1000);
     } finally {
       setIsResending(false);
     }
@@ -59,24 +72,24 @@ export default function EmailVerificationModal({
               : "فعّل بريدك الإلكتروني عشان تقدر تستخدم كل ميزات التطبيق!"}
           </p>
 
-          {sent ? (
+          {cooldown > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-2xl py-3 px-4 mb-4">
               <p className="text-sm text-green-700 font-semibold">
                 تم إرسال رابط التفعيل! تحقق من بريدك الإلكتروني 📬
               </p>
             </div>
-          ) : null}
+          )}
 
           <div className="flex flex-col gap-2.5">
             <button
               onClick={handleResend}
-              disabled={isResending || sent}
+              disabled={isResending || cooldown > 0}
               className="w-full py-2.5 rounded-2xl bg-[var(--kids-purple,#6C5CE7)] hover:bg-[#5a4bd6] text-white font-semibold text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
             >
               {isResending ? (
                 <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              ) : sent ? (
-                "تم الإرسال ✓"
+              ) : cooldown > 0 ? (
+                `أعد الإرسال بعد ${cooldown} ثانية`
               ) : (
                 "أعد إرسال رابط التفعيل"
               )}

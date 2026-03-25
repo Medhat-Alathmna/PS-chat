@@ -318,7 +318,12 @@ export function useChatPage(): UseChatPageReturn {
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          const error = await response.json().catch(() => ({}));
+          if (response.status === 403 && error?.emailNotVerified) {
+            showVerificationModal();
+            setStatus("idle");
+            return;
+          }
           toast.error(error.error || "حدث خطأ. يرجى المحاولة مرة أخرى.");
           setStatus("idle");
           return;

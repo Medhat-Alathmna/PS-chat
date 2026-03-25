@@ -164,6 +164,10 @@ function StorySession({
         });
 
         if (!res.ok) {
+          if (res.status === 403) {
+            const body = await res.json().catch(() => ({}));
+            if (body?.emailNotVerified) { showVerificationModal(); return; }
+          }
           if (res.status === 429) {
             const body = await res.json().catch(() => null);
             setErrorMessage(body?.message ?? "يا صديقي! لقد استخدمنا كل الرسائل المتاحة لنا. اطلب من والديك المساعدة!");

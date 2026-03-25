@@ -195,6 +195,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
       });
 
       if (!res.ok) {
+        if (res.status === 403) {
+          const errBody = await res.json().catch(() => ({}));
+          if (errBody?.emailNotVerified) { showVerificationModal(); return; }
+        }
         if (res.status === 429) {
           const body = await res.json().catch(() => null);
           if (body?.quota) tokenQuota.updateFromResponse(body.quota);

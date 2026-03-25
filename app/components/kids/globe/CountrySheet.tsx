@@ -150,10 +150,17 @@ export default function CountrySheet({
             playerName,
           }),
         });
-        if (res.status === 429) {
-          const body = await res.json().catch(() => null);
-          if (body?.quota) tokenQuota.updateFromResponse(body.quota);
-          else tokenQuota.refresh();
+        if (!res.ok) {
+          if (res.status === 403) {
+            const body = await res.json().catch(() => ({}));
+            if (body?.emailNotVerified) { showVerificationModal(); return; }
+          }
+          if (res.status === 429) {
+            const body = await res.json().catch(() => null);
+            if (body?.quota) tokenQuota.updateFromResponse(body.quota);
+            else tokenQuota.refresh();
+            return;
+          }
           return;
         }
         const data = await res.json();

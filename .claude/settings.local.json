@@ -60,7 +60,30 @@
       "Bash(npx @nestjs/cli new ps-cat-backend --package-manager npm --skip-git --strict)",
       "Bash(npx @next/codemod@canary middleware-to-proxy .)",
       "Bash(npx @next/codemod@canary middleware-to-proxy . --force)",
-      "Bash(find /c/Work/React/PS-chat/app -type f \\\\\\(-name *forgot* -o -name *reset* \\\\\\))"
+      "Bash(find /c/Work/React/PS-chat/app -type f \\\\\\(-name *forgot* -o -name *reset* \\\\\\))",
+      "Read(//c/Work/ps-chat-backend//**)",
+      "Write(//c/Work/ps-chat-backend//**)",
+      "Read(//c/Work//**)",
+      "Bash(bash -c \"cd /c/Work/ps-chat-backend && npx tsc --noEmit 2>&1 | head -50\")",
+      "Bash(bash -c \"cd /c/Work/ps-chat-backend && npx tsc --noEmit 2>&1\")",
+      "Bash(bash -c \"npx tsc --noEmit 2>&1 | grep -E ''error TS|Found'' | head -20\")",
+      "Bash(for file:*)",
+      "Bash(do echo:*)",
+      "Bash(bash -c \"cd /c/Work/ps-chat-backend && npx tsc --noEmit 2>&1 | head -10\")",
+      "Bash(git rm:*)",
+      "Skill(code-review:code-review)",
+      "Skill(code-review:code-review:*)",
+      "Read(//c/Work/React/PS-chat/**)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:patch-diff.githubusercontent.com)",
+      "WebFetch(domain:github.com)"
+    ],
+    "additionalDirectories": [
+      "c:\\Work\\ps-chat-backend\\src\\AI\\shared",
+      "c:\\Work\\ps-chat-backend\\src\\AI\\tools",
+      "C:\\Work\\ps-chat-backend\\src\\AI\\prompts\\games",
+      "c:\\Work\\ps-chat-backend\\src\\AI",
+      "c:\\Work\\ps-chat-backend\\src"
     ]
   }
 }

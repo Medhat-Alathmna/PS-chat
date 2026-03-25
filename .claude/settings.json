@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "c:\\Work\\ps-chat-backend\\src\\common\\guards"
+    ]
+  }
+}

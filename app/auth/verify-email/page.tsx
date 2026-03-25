@@ -42,8 +42,10 @@ function VerifyEmailInner() {
         if (res.ok) {
           setStatus("success");
           setMessage(data.message ?? "تم تفعيل بريدك الإلكتروني بنجاح!");
-          // Refresh auth context so isEmailVerified updates
-          refresh();
+          // Refresh the access token first (so JWT contains isEmailVerified: true),
+          // then re-read the new token into auth context.
+          await fetch("/api/auth/refresh", { method: "POST" });
+          await refresh();
         } else {
           setStatus("error");
           setMessage(data.message ?? "رمز التحقق غير صالح أو منتهي الصلاحية");
