@@ -144,7 +144,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const gameState = useGameState(gameId, undefined, profileId, isAuthenticated);
   const gameRewards = useGameRewards(profileId);
   const discoveredCities = useDiscoveredCities(profileId, isAuthenticated);
-  const tokenQuota = useTokenQuota();
+  const tokenQuota = useTokenQuota(profileId);
 
   // Chat state — simple array of messages, no streaming
   const [messages, setMessages] = useState<GameMessage[]>([]);

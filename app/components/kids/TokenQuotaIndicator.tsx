@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
+import { useProfiles } from "@/lib/hooks/useProfiles";
 import TokenQuotaBar from "./TokenQuotaBar";
 
 export default function TokenQuotaIndicator() {
-  const { quota, isLoading, percentUsed } = useTokenQuota();
+  const { activeProfile } = useProfiles();
+  const { quota, isLoading, percentUsed } = useTokenQuota(activeProfile?.id);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

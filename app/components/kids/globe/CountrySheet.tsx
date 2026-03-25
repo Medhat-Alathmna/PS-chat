@@ -68,8 +68,8 @@ export default function CountrySheet({
   onClose,
   isOpen,
 }: CountrySheetProps) {
-  const tokenQuota = useTokenQuota();
   const { activeProfile } = useProfiles();
+  const tokenQuota = useTokenQuota(activeProfile?.id);
   const { user } = useAuthContext();
   const { showVerificationModal } = useEmailVerification();
   const [mode, setMode] = useState<"info" | "chat">("info");

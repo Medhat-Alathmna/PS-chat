@@ -44,7 +44,7 @@ function KidsChatPageInner() {
     refs,
     handlers,
   } = useChatPage();
-  const tokenQuota = useTokenQuota();
+  const tokenQuota = useTokenQuota(profile.activeProfile?.id);
 
   // Loading state
   if (!profile.isLoaded) return null;
