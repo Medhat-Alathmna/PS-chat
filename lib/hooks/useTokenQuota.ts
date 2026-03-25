@@ -14,7 +14,7 @@ const inflightPromises = new Map<string, Promise<QuotaState | null>>();
 async function fetchQuota(profileId?: string): Promise<QuotaState | null> {
   const key = profileId ?? "__default__";
   if (inflightPromises.has(key)) return inflightPromises.get(key)!;
-
+  
   const promise = fetch("/api/backend/token-usage", {
     headers: profileId ? { "X-Profile-Id": profileId } : {},
   })
@@ -33,6 +33,7 @@ export function useTokenQuota(profileId?: string) {
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (!profileId) return;
     try {
       const data = await fetchQuota(profileId);
       if (data) setQuota(data);
@@ -42,6 +43,10 @@ export function useTokenQuota(profileId?: string) {
   }, [profileId]);
 
   useEffect(() => {
+    if (!profileId) {
+      setIsLoading(false);
+      return;
+    }
     refresh();
   }, [refresh, profileId]);
 
