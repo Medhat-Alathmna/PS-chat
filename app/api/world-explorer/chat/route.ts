@@ -15,11 +15,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const profileId = req.headers.get("x-profile-id");
 
     const result = await backendFetch("/ai/world-explorer/chat", {
       method: "POST",
       body: JSON.stringify(body),
       accessToken,
+      headers: profileId ? { "X-Profile-Id": profileId } : {},
     });
 
     return Response.json(result);

@@ -37,7 +37,10 @@ export function fetchBackendSettings(
   }
 
   const p = fetch(`/api/profiles/${profileId}/settings`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Profile-Id": profileId,
+    },
   })
     .then(async (res) => {
       if (res.status === 404) return null;
@@ -68,7 +71,10 @@ export async function patchBackendSettings(
 
   const res = await fetch(`/api/profiles/${profileId}/settings`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Profile-Id": profileId,
+    },
     body,
   });
 
@@ -78,7 +84,10 @@ export async function patchBackendSettings(
     if (refreshRes.ok) {
       await fetch(`/api/profiles/${profileId}/settings`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Profile-Id": profileId,
+        },
         body,
       });
     }

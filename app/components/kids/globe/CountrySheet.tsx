@@ -10,6 +10,7 @@ import {
 import type { Country } from "@/lib/data/countries";
 import { COUNTRY_DETAILS } from "@/lib/data/country-details";
 import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
+import { useProfiles } from "@/lib/hooks/useProfiles";
 import MedhatBlockedMessage from "@/app/components/kids/MedhatBlockedMessage";
 import { useAuthContext } from "@/lib/context/auth-context";
 import { useEmailVerification } from "@/app/components/kids/EmailVerificationGuard";
@@ -68,6 +69,7 @@ export default function CountrySheet({
   isOpen,
 }: CountrySheetProps) {
   const tokenQuota = useTokenQuota();
+  const { activeProfile } = useProfiles();
   const { user } = useAuthContext();
   const { showVerificationModal } = useEmailVerification();
   const [mode, setMode] = useState<"info" | "chat">("info");
@@ -143,7 +145,10 @@ export default function CountrySheet({
 
         const res = await fetch("/api/world-explorer/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(activeProfile?.id ? { "X-Profile-Id": activeProfile.id } : {}),
+          },
           body: JSON.stringify({
             messages: history,
             countryId: country.id,
@@ -183,7 +188,7 @@ export default function CountrySheet({
         setLoading(false);
       }
     },
-    [country, loading, playerName, user, showVerificationModal]
+    [country, loading, playerName, user, showVerificationModal, activeProfile]
   );
 
   // ── Topic chip → switch to chat mode ──────────────────────────────────

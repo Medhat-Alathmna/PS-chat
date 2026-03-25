@@ -8,34 +8,42 @@ interface QuotaState {
   remaining: number;
 }
 
-// Module-level deduplication: all concurrent callers share one in-flight request
-let inflightPromise: Promise<QuotaState | null> | null = null;
+// Module-level deduplication: per-profile in-flight requests
+const inflightPromises = new Map<string, Promise<QuotaState | null>>();
 
-async function fetchQuota(): Promise<QuotaState | null> {
-  if (inflightPromise) return inflightPromise;
-  inflightPromise = fetch("/api/backend/token-usage")
+async function fetchQuota(profileId?: string): Promise<QuotaState | null> {
+  const key = profileId ?? "__default__";
+  if (inflightPromises.has(key)) return inflightPromises.get(key)!;
+
+  const promise = fetch("/api/backend/token-usage", {
+    headers: profileId ? { "X-Profile-Id": profileId } : {},
+  })
     .then((res) => (res.ok ? (res.json() as Promise<QuotaState>) : null))
     .catch(() => null)
-    .finally(() => { inflightPromise = null; });
-  return inflightPromise;
+    .finally(() => {
+      setTimeout(() => { inflightPromises.delete(key); }, 5000);
+    });
+
+  inflightPromises.set(key, promise);
+  return promise;
 }
 
-export function useTokenQuota() {
+export function useTokenQuota(profileId?: string) {
   const [quota, setQuota] = useState<QuotaState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
-      const data = await fetchQuota();
+      const data = await fetchQuota(profileId);
       if (data) setQuota(data);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [profileId]);
 
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, profileId]);
 
   /** Update quota state from API response (avoids extra fetch) */
   const updateFromResponse = useCallback((quotaData: QuotaState) => {

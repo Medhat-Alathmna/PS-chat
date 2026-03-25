@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-npm run dev          # Start dev server at http://localhost:3000
+npm run dev          # Start Next.js dev server at http://localhost:3000
+                     # Requires NestJS backend running at http://localhost:3001
 npm run build        # Build for production
 npm start            # Start production server (after build)
 npm run lint         # Run ESLint
@@ -14,256 +15,368 @@ npm run lint -- app/ # Lint specific directory
 
 ## Environment Setup
 
-Create a `.env.local` file with required API keys:
+Create a `.env.local` file with the following variables:
 
 ```env
-OPENAI_API_KEY=sk-...           # Required: OpenAI API key for all features
-OPENROUTER_API_KEY=sk-...       # Optional: For alternate provider
+# Backend (NestJS) — required for all features
+BACKEND_URL=http://localhost:3001
+
+# Image search providers (optional — disable all with ENABLE_IMAGES=false)
+UNSPLASH_API_KEY=...                 # Unsplash API key
+PEXELS_API_KEY=...                   # Pexels API key
+WIKIMEDIA_API_KEY=...                # Wikimedia Commons (optional)
+
+# OAuth (optional — for Google sign-in)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=...     # Public Google OAuth client ID
+GOOGLE_CLIENT_SECRET=...             # Backend uses this
+
+# Site configuration (for SEO, canonical links)
+NEXT_PUBLIC_SITE_URL=https://ps-kids.school
 ```
-
-Optional per-feature model configuration (defaults to `gpt-5-mini`):
-- `MAIN_CHAT_PROVIDER`, `MAIN_CHAT_MODEL`, `MAIN_CHAT_MODEL_OR`
-- `CITY_EXPLORE_PROVIDER`, `CITY_EXPLORE_MODEL`, `CITY_EXPLORE_MODEL_OR`
-- `STORIES_PROVIDER`, `STORIES_MODEL`, `STORIES_MODEL_OR`
-
-Set `ENABLE_STREAMING=false` to disable streaming (rarely needed).
 
 ## Project Architecture
 
 ### Overview
 
-**PS-Kids** is a Next.js bilingual (Arabic/English) educational app for children aged 7-12, focused on Palestinian geography and culture. It features:
-- Main chat with AI mascot Medhat
-- 13 AI-powered games (city exploration, quizzes, riddles, etc.)
-- Story generation with images
-- World explorer with interactive globe
-- Multi-profile system with personalization (avatars, colors, text settings)
+**PS-Kids** is a Next.js + NestJS bilingual (Arabic/English) educational platform for children aged 7-12, focused on Palestinian geography and culture.
 
-**Tech Stack**: Next.js 16, React 19, TypeScript, Tailwind CSS, Vercel AI SDK v6 (with streaming), Leaflet/React-Globe for maps.
+**Frontend Features**:
+- Multi-profile system with authentication (email, Google OAuth)
+- Main chat interface with AI mascot Medhat
+- City explorer game (guessing cities with AI hints)
+- Story generation with AI-generated images
+- World explorer with interactive globe
+- Customizable text settings (4 font families, 3 sizes)
+- Web Audio API sound system (no audio files)
+
+**Tech Stack**:
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4, Sonner (toasts)
+- **Backend**: NestJS (separate repository) — handles AI, auth, profiles, game sessions, persistence
+- **Maps**: Leaflet (city explorer), React-Globe.GL (world explorer)
+- **Media**: Multi-source image search (Unsplash, Pexels, Wikimedia, OpenVerse), YouTube integration
+- **Auth**: JWT (accessToken/refreshToken cookies), Google OAuth
 
 ### High-Level Directory Structure
 
 ```
 app/
   api/
-    chat/                  # Main chat endpoint (Medhat)
-    games/chat/            # Game endpoint (city explorer, quizzes, etc.)
-    stories/chat/          # Story generation endpoint
-    world-explorer/chat/   # Globe interaction endpoint
+    auth/                  # OAuth & token management (proxy to NestJS backend)
+      login/, register/, logout/, google/, refresh/, verify-email/
+    chat/                  # Main chat endpoint (proxy to backend /ai/chat)
+    games/                 # Game endpoints (proxy to backend /games/*)
+    profiles/              # Profile CRUD (proxy to backend /profiles/*)
     images/, tts/, geocode/ # Supporting endpoints
+    backend/[...path]/     # Catch-all proxy route to NestJS
   components/
-    kids/                  # Kids UI (chat, games, profiles, settings, globe)
-    layout.tsx             # Root layout (RTL-first, fonts, context providers)
-  chat/, [kids/]page.tsx   # Main pages
+    ClientProviders.tsx    # Auth/theme context wrapping
+    JsonLd.tsx             # SEO structured data
+    kids/                  # Kids-specific UI components
+      - Chat, games, profiles, settings, globe
+  auth/                    # Auth pages (login, register, verify-email, forgot-password)
+  kids/                    # Protected kids app routes
+  chat/, page.tsx          # Landing & main pages
 
 lib/
-  ai/
-    config.ts              # Model instance getters (feature-scoped)
-    cache.ts               # Prompt caching setup
-    tools.ts               # Shared tools (image_search, location_search)
-    main/
-      index.ts, chat.ts    # Main chat system prompt & logic
-    kids/
-      index.ts, character.ts, constitution.ts  # Medhat personality & rules
-    games/
-      city-explorer/       # City guessing game logic
-    world-explorer/        # Globe interaction logic
-    stories/
-      prompts.ts, tools.ts # Story generation
+  api/
+    backend.ts             # DRY wrapper for NestJS calls — all requests use backendFetch()
+    cookies.ts             # Token management (getAccessToken, setAuthCookies)
+    games-backend.ts       # Game-specific backend calls
+    settings-fetch.ts      # Settings/preferences backend calls
 
   hooks/
-    useChat*, useGame*, useProfile*, useText* etc.  # State & context management
+    useAuth.ts             # Auth state (login, logout, register, refresh)
+    useProfiles.ts         # Multi-profile management (CRUD, sync from backend)
+    useGameState.ts        # Game progress tracking
+    useGameRewards.ts      # Points/stickers per profile
+    useRewards.ts          # Overall rewards
+    useStories.ts          # Story generation state
+    useTextSettings.ts     # Font & size preferences (localStorage + backend sync)
+    useMapSettings.ts      # Map/globe preferences
+    useChatContext.ts      # Chat conversation history
+    useSounds.ts           # Web Audio API sound effects
+    useBackgroundMusic.ts  # Background music toggle
+    useTokenQuota.ts       # Token usage limits
 
-  types/
-    games.ts, stories.ts, text-settings.ts, globe-settings.ts  # Type defs
-
-  data/
-    games/, cities.ts, countries.ts  # Game configs & geo data
+  context/
+    auth-context.tsx       # Auth state provider (user, isAuthenticated, refresh)
 
   services/
-    images/, maps/, multi-image-search.ts  # External service integrations
+    multi-image-search.ts  # Unified image search across multiple sources
+    images/*.ts            # Individual image providers (unsplash, pexels, wikimedia, openverse)
+    maps/*.ts              # Map services (geocoding, OSM, Google Maps)
+    story-image-generation.ts # Image generation for stories
+    video/youtube.ts       # YouTube search/embed
+
+  data/
+    games/                 # Game configurations, questions, difficulty settings
+    cities.ts, countries.ts, country-details.ts # Geo data
+    stickers.ts, kids-prompts.ts # Content data
+
+  types/
+    games.ts               # Game types (GameState, GameConfig, GameResponse)
+    stories.ts, text-settings.ts, map-settings.ts, globe-settings.ts
+    chat-settings.ts, types.ts # Shared types
+
+  config/
+    features.ts            # Feature flags (ENABLE_IMAGES, etc.)
+
+  utils/
+    sound-generator.ts     # Procedural sound synthesis
+    messageConverter.ts    # UIMessage/SimpleMessage conversion
+    language-detect.ts     # Language detection
+    error-handler.ts       # Error handling utilities
 ```
 
 ### Key Architectural Patterns
 
-#### 1. AI Model Management (`lib/ai/config.ts`)
+#### 1. Frontend-Backend Communication (Critical)
 
-Each feature gets its own model instance getter:
-- `getMainChatModelInstance()` — Main chat with Medhat
-- `getCityExploreModelInstance()` — City explorer game
-- `getStoriesModelInstance()` — Story generation
+**Architecture**: Next.js frontend is a **thin proxy** to NestJS backend. Client never calls backend directly.
 
-**Never hardcode model names or API keys.** Use:
+**Pattern**:
 ```ts
-import { getMainChatModelInstance } from "@/lib/ai/config";
-const model = getMainChatModelInstance(); // Returns provider(model) instance
+// lib/api/backend.ts — DRY wrapper for all backend calls
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:3001';
+
+export async function backendFetch<T>(path: string, options: BackendFetchOptions): Promise<T> {
+  // Adds Content-Type, Authorization headers
+  // Handles both JSON and text responses
+  // Wraps errors in BackendError with status + body
+}
+
+// Usage in API routes:
+const data = await backendFetch('/profiles', { accessToken, method: 'GET' });
 ```
 
-Configuration flows through `.env.local` → `resolveFeature()` → per-feature getter. Allows swapping providers (OpenAI/OpenRouter) without code changes.
+**API Routes as Proxies**:
+- `app/api/chat/route.ts` → calls `backendFetch('/ai/chat', ...)`
+- `app/api/games/chat/route.ts` → calls `backendFetch('/games/chat', ...)`
+- `app/api/profiles/[id]/route.ts` → calls `backendFetch('/profiles/:id', ...)`
 
-#### 2. Vercel AI SDK v6 Streaming Patterns
+**Why proxy through Next.js**?
+- All requests authenticated with JWT (accessToken in cookies)
+- Profile context passed via headers (`X-Profile-Id`)
+- Centralized error handling
+- Consistent request/response format
 
-**Main Chat** (`app/api/chat/route.ts`):
-- Uses `generateText()` + `convertToModelMessages()` (UIMessage format)
-- Merges multiple concurrent streams via `mergeStreams()` (text + tools + chips)
-- Extracts **Chips** (quick replies) from inline `\nCHIPS:{...}` marker at end of response
+#### 2. Authentication Flow (JWT + OAuth)
 
-**Games** (`app/api/games/chat/route.ts`):
-- Uses `generateObject()` for structured GameResponseSchema output
-- Extracts **Game Turn** from inline `\nGAME_TURN:{...}` marker
-- Pre-computes hint images, injects as `data-game-turn` stream chunk
-
-**Never use `Output.object` for text-generation features** — reasoning models (gpt-5-mini) output only JSON when using Output.object, causing blank chat bubbles and lost conversational text.
-
-#### 3. LocalStorage State Management
-
-All client-side state persisted to localStorage with **`falastin_` prefix**:
-- `falastin_profiles` — Multi-profile data (names, avatars, colors, ages)
-- `falastin_discovered_cities` — Game progress per profile
-- `falastin_kids_text_settings` — Font family & size choices
-- `falastin_kids_map_settings` — Map zoom/layer preferences
-- `falastin_kids_chat_context` — Chat conversation memory
-- `falastin_rewards_${profileId}` — Points/stickers per profile
-
-Custom hooks in `lib/hooks/` handle reads/writes (e.g., `useProfiles()`, `useGameState()`).
-
-#### 4. Multi-Profile System (`lib/hooks/useProfiles.ts`)
-
-Each profile has:
-- `id` (UUID) — Profile identifier
-- `name`, `age` — Player info
-- `avatar`, `color` — Visual customization
-- Per-profile state keys (game progress, rewards) use `_${profileId}` suffix
-
-Hooks support optional `profileId` parameter:
+**Token Management**:
 ```ts
-const rewards = useRewards(currentProfileId);
-const gameState = useGameState(gameId, currentProfileId);
+// lib/api/cookies.ts
+getAccessToken() → reads httpOnly cookie 'accessToken'
+setAuthCookies(access, refresh) → sets both cookies (httpOnly, sameSite=strict)
+clearAuthCookies() → clears tokens on logout
 ```
 
-Profiles managed via ProfileSetup wizard (4 steps: name → age → avatar → color) and ProfileSwitcher pill in header.
+**Auth Routes**:
+- `POST /api/auth/login` → calls backend, sets cookies
+- `POST /api/auth/register` → creates account on backend
+- `POST /api/auth/google/callback` → OAuth callback, exchanges code for tokens
+- `POST /api/auth/refresh` → refreshes expired accessToken with refreshToken
 
-#### 5. Game Architecture
-
-**Games System** (`lib/ai/games/city-explorer/index.ts`):
-- **Tools only**: `advance_round`, `end_game` (check_answer/give_hint removed — hints pre-computed server-side)
-- **Output format**: Model appends `\nGAME_TURN:{...}` with options array at end of response
-- **Server injection**: API extracts GAME_TURN, fetches pre-computed hint + images, injects `data-game-turn` into stream
-- **Client reads**: Looks for `{ type: "data-game-turn" }` in message.parts
-- **Correct answer signal**: `advance_round` tool fires → client plays sound/confetti/points
-
-Game configs stored in `lib/data/games/` with rules, questions, difficulty settings. Pre-computed hints in `buildPrecomputedHint()` strategy.
-
-#### 6. Chat System Prompt
-
-Split across modular files in `lib/ai/`:
-- `main/index.ts` — Core system prompt for main chat
-- `kids/constitution.ts` — Medhat personality rules
-- `kids/character.ts` — Medhat background story
-- `buildKidsSystemPrompt(playerName?)` — Assembles prompt with optional name injection
-
-Similar structure for games in `buildGameSystemPrompt(difficulty, gameType, playerName?)`.
-
-#### 7. Text Settings System (`lib/hooks/useTextSettings.ts`)
-
-Offers 4 font families (selectable in `/kids/settings`):
-- `noto-sans-arabic` (default) — CSS var `--font-arabic`
-- `cairo`, `tajawal`, `changa` — CSS vars `--font-cairo`, etc. (loaded in `app/layout.tsx`)
-
-3 text sizes: small=14px, medium=17px, large=21px.
-
-Used in `KidsChatBubble` and `GameChatBubble` via `textStyle` prop:
+**Client Hook**:
 ```ts
-const textSettings = useTextSettings();
-const styles = getTextStyleValues(textSettings);
-<KidsChatBubble textStyle={styles} />
+const { user, isAuthenticated, login, logout, refresh, error, isPending } = useAuth();
 ```
 
-#### 8. Sound & Audio System (`lib/hooks/useSounds.ts`)
+On login → `prefetchProfiles()` syncs all backend profiles to localStorage under `falastin_profiles`.
 
-- Web Audio API (no audio files) — oscillators generate sounds procedurally
+#### 3. Multi-Profile System
+
+**State Flow**:
+- Backend stores profiles (id, name, age, avatar, color, settings, created_at)
+- On login → profiles fetched + cached in localStorage (`falastin_profiles`)
+- `useProfiles()` hook reads/writes both localStorage + backend
+- Current active profile in `activeProfileId`
+
+**Per-Profile Persistence**:
+- Game progress: `falastin_discovered_cities_${profileId}`
+- Rewards/points: `falastin_rewards_${profileId}`
+- Settings synced to backend
+
+**Profile Selection**:
+- ProfileSwitcher pill in header
+- ProfileSetup wizard (name → age → avatar → color)
+- Each profile can have unique settings, game progress, rewards
+
+#### 4. API Route Patterns
+
+**All API routes**:
+1. Extract accessToken from cookies
+2. Check authentication (return 401 if missing)
+3. Get profileId from `X-Profile-Id` header (optional, passed by client)
+4. Call `backendFetch()` with accessToken + headers
+5. Return response or error
+
+**Example** (`app/api/chat/route.ts`):
+```ts
+export async function POST(req: NextRequest) {
+  const accessToken = await getAccessToken();
+  if (!accessToken) return Response.json({ error: "Not authenticated" }, { status: 401 });
+
+  const body = await req.json();
+  const profileId = req.headers.get("x-profile-id");
+
+  const result = await backendFetch("/ai/chat", {
+    method: "POST",
+    body: JSON.stringify(body),
+    accessToken,
+    headers: profileId ? { "X-Profile-Id": profileId } : {},
+  });
+
+  return Response.json(result);
+}
+```
+
+#### 5. Image Search Integration
+
+**Multi-Source Search** (`lib/services/multi-image-search.ts`):
+- Queries Unsplash, Pexels, Wikimedia, OpenVerse in parallel
+- Fallback strategy: if one source fails, tries the next
+- Optional kid-safe filtering (removes adult content)
+- Returns first N results across all sources
+
+**Feature Flag**:
+- Set `ENABLE_IMAGES=false` to disable all image fetching
+- Used in games for hint images, stories, profile avatars
+
+#### 6. Game Architecture
+
+**Game Session Flow**:
+1. User selects game + difficulty from `/kids/games`
+2. Client creates game session via backend (`POST /games/sessions`)
+3. Session ID stored in `useGameState()` hook
+4. Each turn → `POST /api/games/chat` with messages + sessionId
+5. Backend AI generates hint + options, returns as `GameResponse`
+6. Client displays options, waits for next user action
+7. On correct answer → `advance_round()` tool, points awarded
+8. On finish → session ends, stickers/bonuses unlocked
+
+**Hint Pre-computation**:
+- Backend pre-fetches hint images in parallel (3s timeout)
+- Images embedded in game turn response
+- Client displays hint + images on hint button click
+
+#### 7. Settings & Preferences
+
+**Text Settings** (`lib/hooks/useTextSettings.ts`):
+- Font family: noto-sans-arabic (default), cairo, tajawal, changa
+- Font size: small (14px), medium (17px), large (21px)
+- Stored in: localStorage `falastin_kids_text_settings` + backend
+- Applied globally via CSS var: `font-family: var(--font-${family})`
+
+**Map Settings** (`lib/hooks/useMapSettings.ts`):
+- Zoom level, layer type, center coordinates
+- Per-profile, synced to backend
+
+**Chat Settings** (`lib/hooks/useChatContext.ts`):
+- Message history (last 3 for context)
+- Dialect preference (Arabic/English)
+- Per-profile localStorage: `falastin_kids_chat_context_${profileId}`
+
+#### 8. Sound System (No Audio Files)
+
+**Web Audio API** (`lib/hooks/useSounds.ts`):
+- Procedural sound generation via oscillators
 - Singleton AudioContext pattern
-- Background music toggle in root layout
-- Game-specific sounds (correct/wrong/level-up) via `useSounds()` hook
+- Game sounds: correct/wrong/level-up/bonus
+- Background music: toggle via `useBackgroundMusic()` hook
 
-#### 9. Image Search Integration (`lib/services/multi-image-search.ts`)
+**Audio Context Lifetime**:
+- Single shared context across app
+- Created on first sound play (not in layout, avoids startup overhead)
+- Reused for all subsequent sounds
 
-Queries multiple sources (Unsplash, Pexels, Wikimedia, OpenVerse) with fallback strategy. Optional kid-safe filtering via `searchImagesMultiSource(query, kidSafe: true)`.
+#### 9. State Management
 
-#### 10. Chips (Quick Replies) System
+**localStorage** (client-only, prefixed `falastin_`):
+- `falastin_profiles` — All profiles + active profile ID
+- `falastin_kids_text_settings` — Font/size preferences
+- `falastin_kids_chat_context_${profileId}` — Chat history per profile
+- `falastin_rewards_${profileId}` — Points per profile
+- `falastin_discovered_cities_${profileId}` — Game progress per profile
 
-- **Not a tool** — model appends `\nCHIPS:{...}` inline with text response
-- Extracted server-side and written as `{ type: 'data-chips' }` stream chunk
-- Client reads from `msg.parts`, displays as button row
-- Uses normalized `chipSchema` for type safety
+**Context Providers** (`app/components/ClientProviders.tsx`):
+- `AuthContext` — User, tokens, auth methods
+- `ThemeContext` — Dark/light mode
+- Wrapped at root layout
+
+**Backend State** (persisted):
+- Profiles, settings, game sessions, story history, rewards
+- All mutations go through API routes
 
 ### File Conventions
 
 #### Page Routes
-- `/` — Landing
-- `/chat` — Main chat with Medhat
-- `/kids` — Kids hub
-- `/kids/games` — Game selection
+- `/` — Landing page
+- `/auth/login` — Login form
+- `/auth/register` — Registration form
+- `/auth/verify-email` — Email verification
+- `/auth/forgot-password` — Password reset
+- `/chat` — Main chat with Medhat (requires auth)
+- `/kids` — Kids hub/home (protected)
+- `/kids/games` — Game selection & difficulty
 - `/kids/games/[gameId]` — Individual game page
-- `/kids/world-explorer` — Globe interaction
-- `/kids/settings` — Text & map settings
 - `/kids/games/stories` — Story generation hub
+- `/kids/games/stories/create` — Story creator
+- `/kids/world-explorer` — Interactive globe
+- `/kids/settings` — Customization (text, map settings)
 
 #### Component Naming
-- `Kids*` (e.g., `KidsChatBubble`) — Kids-specific UI
-- `Game*` (e.g., `GameChatBubble`) — Game-specific UI
-- Components in `app/components/kids/` use CSS variables `--kids-purple`, `--kids-green`, etc.
+- `Kids*` — Kids-specific UI (e.g., `KidsChatBubble`)
+- `Game*` — Game-specific UI (e.g., `GameChatBubble`)
+- Auth components in `/app/auth/` (login, register forms)
+- Shared UI in `app/components/`
 
 #### Hook Naming
-- `use*Settings` — Preferences (text, map, globe, chat)
-- `use*Context` — State/messaging context
-- `use*State` — Game-specific state
-- `use*Rewards` — Points/stickers
-- `useSounds`, `useBackgroundMusic` — Audio
+- `use*Settings` — Preferences (text, map, chat, globe)
+- `use*State` — Game/feature state (useGameState, useStories)
+- `use*Context` — Context consumers (useAuthContext)
+- `use*` — Utilities (useSounds, useBackgroundMusic, useSpeechRecognition)
 
 ### Testing & Debugging
 
-- **ESLint**: `npm run lint` — Check for code quality issues
-- **Dev mode**: `npm run dev` — Full hot-reload, easier debugging
-- **Network inspection**: Check `/api/*` route responses in DevTools Network tab
-- **LocalStorage**: Inspect via DevTools Application → Local Storage (keys prefixed `falastin_`)
-- **Console errors**: Check browser console for AI SDK or React errors
+**Dev Server Issues**:
+- Ensure backend running: `BACKEND_URL=http://localhost:3001`
+- Check browser DevTools → Network for proxy calls to `/api/*`
+- Check backend logs for 4xx/5xx errors
 
-### Common Development Tasks
+**Debugging**:
+- **localStorage**: DevTools → Application → Local Storage (search `falastin_`)
+- **Cookies**: DevTools → Storage → Cookies (look for `accessToken`, `refreshToken`)
+- **Console**: Check for API errors, auth failures, image search warnings
+- **Network**: `/api/auth/*` should return tokens, `/api/chat` should proxy to backend
 
-**Adding a new game**:
-1. Create game config in `lib/data/games/`
-2. Define rules/questions
-3. Add game ID to enum in `lib/types/games.ts`
-4. Create `lib/ai/games/[game-name]/index.ts` with system prompt + game logic
-5. Link in `app/kids/games/[gameId]/page.tsx`
-
-**Customizing Medhat personality**:
-- Edit `lib/ai/kids/character.ts` (background story) or `constitution.ts` (behavioral rules)
-- Re-inject into system prompt via `buildKidsSystemPrompt()`
-
-**Adding text/map settings**:
-- Define types in `lib/types/text-settings.ts` or `lib/types/map-settings.ts`
-- Create hook in `lib/hooks/use[Feature]Settings.ts`
-- Add UI components in `app/components/kids/settings/`
-- Use storage key `falastin_kids_[feature]_settings`
+**Profile Issues**:
+- Profiles out of sync? Check localStorage `falastin_profiles`
+- Missing profiles? Clear localStorage, log out + log back in → triggers `prefetchProfiles()`
 
 ## Critical Behaviors to Preserve
 
-1. **Reasoning models don't work with Output.object** — Use inline markers (`\nCHIPS:{...}`) for chips/game turns instead, then extract server-side.
+1. **Always use `backendFetch()`** — Never fetch directly from NestJS in API routes. All requests must pass through this wrapper.
 
-2. **Tool types as `Record<string, any>`** — Vercel AI SDK's `tool()` function returns different generics per tool, causing `Tool<never, never>` errors with strict typing. Keep as `Record<string, ReturnType<typeof tool>>`.
+2. **Token handling in cookies** — accessToken/refreshToken stored as httpOnly (not readable by JS). Always extract via `getAccessToken()`.
 
-3. **Profile-aware hooks** — Always accept optional `profileId` parameter. Default to current profile from context.
+3. **Profile context in headers** — Always pass `X-Profile-Id` header when game/settings calls need profile context.
 
-4. **RTL-first layout** — Root `<html dir="rtl">`. Test both Arabic (RTL) and English (LTR) text rendering.
+4. **Multi-profile state keys** — State that's per-profile should use `_${profileId}` suffix in localStorage key.
 
-5. **Streaming must complete** — AI SDK v6 keeps streams open until all merged streams (text + tools/data chunks) and execute promises finish. Don't close streams early.
+5. **RTL-first layout** — Root `<html dir="rtl">`. Components must work in both RTL (Arabic) and LTR (English).
+
+6. **Image search fallback** — Multi-source search should never throw; always has fallback to next source.
+
+7. **Auth token refresh** — accessToken expires (~1h). Client should refresh before expiry via `useAuth().refresh()`.
 
 ## Important Notes
 
-- **No environment secrets in commits** — `.env.local` is gitignored.
-- **Prompt caching**: `buildCacheOptions()` in `lib/ai/cache.ts` — use for long system prompts to reduce token costs.
-- **Image preloading**: Game endpoint pre-fetches hint images in parallel (3s timeout) before streaming response.
-- **Mobile-first**: App is RTL-first, designed for kids on tablets/phones. Test viewport at 375×812 (iPhone-size).
-- **Create Component**: Always use front-end design skills when create new component.
+- **No secrets in code** — `.env.local` is gitignored. Backend URL and API keys are env vars only.
+- **Mobile-first** — Design for tablets/phones (375×812 viewport). Test touch interactions.
+- **Bilingual** — All user-facing text in both Arabic and English. Test both directions.
+- **Performance** — Image search and hint generation can be slow. Pre-fetch in parallel (3s timeout).
+- **SEO** — Root layout includes JSON-LD structured data, meta tags, open graph. Update `NEXT_PUBLIC_SITE_URL` for canonical links.
+
+## Language Preferences
+
+- **Planning Output**: All planning outputs and responses should be in Arabic
