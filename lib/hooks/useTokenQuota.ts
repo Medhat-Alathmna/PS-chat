@@ -51,7 +51,7 @@ export function useTokenQuota(profileId?: string) {
   }, []);
 
   const percentUsed = quota
-    ? Math.min(100, (quota.tokensUsed / quota.tokenLimit) * 100)
+    ? (quota.tokensUsed / quota.tokenLimit) * 100
     : 0;
 
   return {

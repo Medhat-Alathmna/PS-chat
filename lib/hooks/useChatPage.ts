@@ -340,6 +340,10 @@ export function useChatPage(): UseChatPageReturn {
 
         const data = await response.json();
 
+        if (data.freeTierUsed) {
+          toast.info("🔄 تم التبديل إلى نموذج ذكاء اصطناعي مجاني — لقد استنفدت حصتك");
+        }
+
         // Create assistant message with parts
         const assistantMessageId = `assistant-${Date.now()}`;
         const assistantMessage = {

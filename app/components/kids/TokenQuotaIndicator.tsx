@@ -21,15 +21,17 @@ export default function TokenQuotaIndicator() {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  // 4 tiers: 0-25 green, 25-50 yellow, 50-75 purple, 75-100 red
+  // 5 tiers: 0-25 green, 25-50 yellow, 50-75 purple, 75-100 red, 100+ orange (free tier active)
   const tierColor =
-    percentUsed >= 75
-      ? { text: "text-red-500", bg: "bg-red-50" }
-      : percentUsed >= 50
-        ? { text: "text-[var(--kids-purple)]", bg: "bg-purple-50" }
-        : percentUsed >= 25
-          ? { text: "text-yellow-500", bg: "bg-yellow-50" }
-          : { text: "text-emerald-600", bg: "bg-emerald-50" };
+    percentUsed >= 100
+      ? { text: "text-orange-600", bg: "bg-orange-50" }
+      : percentUsed >= 75
+        ? { text: "text-red-500", bg: "bg-red-50" }
+        : percentUsed >= 50
+          ? { text: "text-[var(--kids-purple)]", bg: "bg-purple-50" }
+          : percentUsed >= 25
+            ? { text: "text-yellow-500", bg: "bg-yellow-50" }
+            : { text: "text-emerald-600", bg: "bg-emerald-50" };
 
   // Don't render while loading with no data
   if (isLoading && !quota) return null;
@@ -64,7 +66,7 @@ export default function TokenQuotaIndicator() {
           dir="rtl"
         >
           {/* Title */}
-          <p className="font-bold text-gray-800 text-sm mb-2">استهلاكك اليوم</p>
+          <p className="font-bold text-gray-800 text-sm mb-2">استهلاكك للحزمة</p>
 
           {/* Big percentage */}
           <p className={`text-4xl font-black mb-3 ${tierColor.text}`}>
@@ -79,6 +81,13 @@ export default function TokenQuotaIndicator() {
           />
 
           <hr className="my-3 border-gray-100" />
+
+          {/* Free tier notice */}
+          {percentUsed >= 100 && (
+            <p className="text-xs text-orange-600 leading-relaxed font-medium mb-2">
+              🔄 يتم استخدام نموذج ذكاء اصطناعي مجاني بديل
+            </p>
+          )}
 
           {/* User-level note */}
           <p className="text-xs text-gray-500 leading-relaxed">
