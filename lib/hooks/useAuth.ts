@@ -4,6 +4,34 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useAuthContext } from "@/lib/context/auth-context";
 
+interface BackendProfile {
+  id: string;
+  name: string;
+  age: number;
+  avatar: string;
+  color: string;
+  createdAt: string;
+}
+
+async function prefetchProfiles() {
+  const res = await fetch("/api/profiles");
+  if (!res.ok) return;
+  const backendProfiles: BackendProfile[] = await res.json();
+  const profiles = backendProfiles.map((p) => ({
+    id: p.id,
+    name: p.name,
+    age: p.age,
+    avatar: p.avatar,
+    color: p.color,
+    createdAt: new Date(p.createdAt).getTime(),
+  }));
+  const activeProfileId = profiles[0]?.id ?? null;
+  localStorage.setItem(
+    "falastin_profiles",
+    JSON.stringify({ profiles, activeProfileId })
+  );
+}
+
 export function useAuth() {
   const { user, isLoading, isAuthenticated, refresh, clearAuth } =
     useAuthContext();
@@ -31,6 +59,7 @@ export function useAuth() {
         }
 
         await refresh();
+        await prefetchProfiles().catch(() => {});
         return true;
       } catch {
         setError("حدث خطأ، حاول مرة أخرى");
@@ -60,6 +89,7 @@ export function useAuth() {
         }
 
         await refresh();
+        await prefetchProfiles().catch(() => {});
         return true;
       } catch {
         setError("حدث خطأ، حاول مرة أخرى");
