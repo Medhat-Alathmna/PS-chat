@@ -295,6 +295,25 @@ export function useProfiles() {
     setState((prev) => ({ ...prev, activeProfileId: id }));
   }, []);
 
+  /** Force-refetch profiles from the backend (bypasses localStorage cache). */
+  const refreshProfiles = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setIsApiPending(true);
+    try {
+      const profiles = await apiFetch<BackendProfile[]>("");
+      const mapped = profiles.map(toKidsProfile);
+      setState((prev) => {
+        const stillValid = mapped.find((p) => p.id === prev.activeProfileId);
+        const activeId = stillValid ? prev.activeProfileId : (mapped[0]?.id ?? null);
+        const next: ProfilesState = { profiles: mapped, activeProfileId: activeId };
+        saveProfilesState(next);
+        return next;
+      });
+    } finally {
+      setIsApiPending(false);
+    }
+  }, [isAuthenticated]);
+
   return {
     profiles: state.profiles,
     activeProfile,
@@ -304,6 +323,7 @@ export function useProfiles() {
     updateProfile,
     deleteProfile,
     switchProfile,
+    refreshProfiles,
   };
 }
 

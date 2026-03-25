@@ -127,7 +127,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
   const startSentRef = useRef(false);
 
   // Profiles
-  const { profiles, activeProfile, isLoaded, createProfile, updateProfile } = useProfiles();
+  const { profiles, activeProfile, isLoaded, createProfile, updateProfile, refreshProfiles } = useProfiles();
   const profileId = activeProfile?.id;
   const { isAuthenticated } = useAuth();
 
@@ -182,7 +182,10 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
     try {
       const res = await fetch("/api/games/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(activeProfile?.id ? { "X-Profile-Id": activeProfile.id } : {}),
+        },
         body: JSON.stringify({
           messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
           gameId,
@@ -198,6 +201,7 @@ function GameSession({ gameId, config }: { gameId: GameId; config: GameConfig })
         if (res.status === 403) {
           const errBody = await res.json().catch(() => ({}));
           if (errBody?.emailNotVerified) { showVerificationModal(); return; }
+          if (errBody?.action === "REFRESH_PROFILES") { await refreshProfiles(); return; }
         }
         if (res.status === 429) {
           const body = await res.json().catch(() => null);

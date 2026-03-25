@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { messages = [], storyConfig, kidsProfile, previousPages, lastChoiceText } = body;
+    const profileId = req.headers.get("x-profile-id");
 
     // UIMessage[] → SimpleMessage[]
     const simple = (messages as any[]).map((m: any) => ({
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       body: JSON.stringify({ messages: simple, storyConfig, kidsProfile, previousPages, lastChoiceText }),
       accessToken,
+      headers: profileId ? { "X-Profile-Id": profileId } : {},
     });
 
     return Response.json(result);

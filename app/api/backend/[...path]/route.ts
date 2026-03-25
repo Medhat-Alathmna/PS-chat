@@ -29,6 +29,9 @@ async function proxy(
   const contentType = req.headers.get("content-type");
   if (contentType) headers["Content-Type"] = contentType;
 
+  const profileId = req.headers.get("x-profile-id");
+  if (profileId) headers["X-Profile-Id"] = profileId;
+
   let body: BodyInit | undefined;
   if (req.method !== "GET" && req.method !== "HEAD") {
     body = await req.arrayBuffer().then((b) => Buffer.from(b));

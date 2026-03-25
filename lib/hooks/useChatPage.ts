@@ -208,6 +208,7 @@ export function useChatPage(): UseChatPageReturn {
     updateProfile,
     deleteProfile,
     switchProfile,
+    refreshProfiles,
   } = useProfiles();
 
   const profileId = activeProfile?.id;
@@ -309,7 +310,10 @@ export function useChatPage(): UseChatPageReturn {
         // Send request to API
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(activeProfile?.id ? { "X-Profile-Id": activeProfile.id } : {}),
+          },
           body: JSON.stringify({
             messages: [...aiMessages, userMessage].slice(-3),
             playerName: activeProfile?.name,
@@ -319,8 +323,13 @@ export function useChatPage(): UseChatPageReturn {
 
         if (!response.ok) {
           const error = await response.json().catch(() => ({}));
-          if (response.status === 403 && error?.emailNotVerified) {
-            showVerificationModal();
+          if (response.status === 403) {
+            if (error?.emailNotVerified) {
+              showVerificationModal();
+            } else if (error?.action === "REFRESH_PROFILES") {
+              await refreshProfiles();
+              toast.error("تم تغيير الملف الشخصي، يرجى المحاولة مرة أخرى.");
+            }
             setStatus("idle");
             return;
           }
@@ -350,7 +359,7 @@ export function useChatPage(): UseChatPageReturn {
         setStatus("idle");
       }
     },
-    [aiMessages, chatSettings.dialect, activeProfile?.name, user, showVerificationModal]
+    [aiMessages, chatSettings.dialect, activeProfile, user, showVerificationModal, refreshProfiles]
   );
 
   const isLoading = status === "streaming" || status === "submitted";

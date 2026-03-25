@@ -18,11 +18,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
+    const profileId = req.headers.get("x-profile-id");
+
     const backendRes = await fetch(`${BACKEND_URL}/api/ai/tts`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
+        ...(profileId ? { "X-Profile-Id": profileId } : {}),
       },
       body: JSON.stringify(body),
     });

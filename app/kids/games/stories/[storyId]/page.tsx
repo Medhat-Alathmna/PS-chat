@@ -28,7 +28,7 @@ function StoryReaderInner() {
   const storyId = params.storyId as string;
   const isNew = searchParams.get("new") === "true";
 
-  const { activeProfile, isLoaded } = useProfiles();
+  const { activeProfile, isLoaded, refreshProfiles } = useProfiles();
   const profileId = activeProfile?.id;
   const { getStory, addPage, addChoicePoint, selectChoice, completeStory, isLoaded: storiesLoaded } =
     useStories(profileId);
@@ -153,7 +153,10 @@ function StorySession({
       try {
         const res = await fetch("/api/stories/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(activeProfile?.id ? { "X-Profile-Id": activeProfile.id } : {}),
+          },
           body: JSON.stringify({
             messages: [{ role: "user", parts: [{ type: "text", text: userMessage }] }],
             storyConfig: story.config,
@@ -167,6 +170,7 @@ function StorySession({
           if (res.status === 403) {
             const body = await res.json().catch(() => ({}));
             if (body?.emailNotVerified) { showVerificationModal(); return; }
+            if (body?.action === "REFRESH_PROFILES") { await refreshProfiles(); return; }
           }
           if (res.status === 429) {
             const body = await res.json().catch(() => null);
