@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import AnimatedBackground from "./AnimatedBackground";
 import LottieAnimation from "../LottieAnimation";
@@ -45,49 +45,11 @@ export default function KidsIntroScreen({
   onEditProfile,
   onDeleteProfile,
 }: KidsIntroScreenProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [showLottie, setShowLottie] = useState(false);
   const [isTabletOrAbove, setIsTabletOrAbove] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [prompts, setPrompts] = useState<KidsPrompt[]>([]);
-
-  // Play intro voice — gated by music/sounds preference, cancelled on unmount
-  useEffect(() => {
-    const musicEnabled = localStorage.getItem("falastin_music_playing") !== "false";
-    if (!musicEnabled) return;
-
-    let cancelled = false;
-    const audio = new Audio("/sounds/medhat-voice/main tts.ogg");
-
-    const tryPlay = () => {
-      if (cancelled) return;
-      audio.play().catch(() => {});
-    };
-
-    const timer = setTimeout(() => {
-      if (cancelled) return;
-      audio.play().catch(() => {
-        // Autoplay blocked — wait for first interaction inside this screen only
-        const el = containerRef.current;
-        if (!el || cancelled) return;
-        el.addEventListener("click", tryPlay, { once: true });
-        el.addEventListener("touchstart", tryPlay, { once: true });
-      });
-    }, 600);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      audio.pause();
-      audio.src = "";
-      const el = containerRef.current;
-      if (el) {
-        el.removeEventListener("click", tryPlay);
-        el.removeEventListener("touchstart", tryPlay);
-      }
-    };
-  }, []);
 
   // Get 4 random prompts - only on client to avoid hydration mismatch
   useEffect(() => {
@@ -132,7 +94,7 @@ export default function KidsIntroScreen({
         </div>
       )}
 
-      <div ref={containerRef} className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col">
         {/* Header row — music | profile + settings + level */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0 z-20">
           {/* Left: music toggle */}

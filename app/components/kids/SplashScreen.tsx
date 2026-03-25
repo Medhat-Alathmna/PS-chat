@@ -21,11 +21,23 @@ export default function SplashScreen() {
     }
   }, []);
 
-  // Auto-dismiss after 3 seconds
+  // Play intro audio and dismiss when it ends (fallback: 10s)
   useEffect(() => {
     if (!showSplash) return;
-    const timer = setTimeout(() => setIsExiting(true), 3000);
-    return () => clearTimeout(timer);
+    const audio = new Audio("/sounds/medhat-voice/main tts.ogg");
+    const dismiss = () => setIsExiting(true);
+    audio.addEventListener("ended", dismiss);
+    // Fallback in case audio fails to play or load
+    const fallback = setTimeout(dismiss, 5000);
+    audio.play().catch(() => {
+      // Ignore (autoplay block or StrictMode AbortError) — fallback timer will close splash
+    });
+    return () => {
+      audio.removeEventListener("ended", dismiss);
+      clearTimeout(fallback);
+      audio.pause();
+      audio.src = "";
+    };
   }, [showSplash]);
 
   // Cleanup after exit animation (500ms)
