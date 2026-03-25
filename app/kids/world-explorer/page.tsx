@@ -114,7 +114,7 @@ export default function WorldExplorerPage() {
       >
         {/* Back */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.replace("/kids")}
           className="w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-90"
           style={{ background: "rgba(255,255,255,0.08)" }}
           aria-label="رجوع"
