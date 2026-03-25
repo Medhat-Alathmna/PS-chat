@@ -2,6 +2,13 @@
 // GAME TYPE DEFINITIONS
 // ============================================
 
+export type GameResponse = {
+  type: "turn" | "game_over";
+  message: string;
+  options?: string[];
+  reason?: "completed" | "quit";
+};
+
 export type GameId = "city-explorer";
 
 export type GameCategory = "educational" | "classic" | "creative";

@@ -1,35 +1,44 @@
-import { getOpenAIClient } from "@/lib/ai/config";
+"use server";
 
-const MAX_TEXT_LENGTH = 4000;
+import { NextRequest } from "next/server";
+import { getAccessToken } from "@/lib/api/cookies";
 
-export async function POST(request: Request) {
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3001";
+
+/**
+ * POST /api/tts — thin proxy to NestJS POST /ai/tts
+ * Uses raw fetch (not backendFetch) to preserve binary audio stream.
+ */
+export async function POST(req: NextRequest) {
   try {
-    const { text } = await request.json();
-
-    if (!text || typeof text !== "string") {
-      return Response.json({ error: "text is required" }, { status: 400 });
+    const accessToken = await getAccessToken();
+    if (!accessToken) {
+      return Response.json({ error: "يجب تسجيل الدخول أولاً." }, { status: 401 });
     }
 
-    const input = text.slice(0, MAX_TEXT_LENGTH);
-    const client = getOpenAIClient();
+    const body = await req.json();
 
-    const response = await client.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice: "alloy",
-      speed: 0.8,
-      input,
-      instructions:
-        "You are a 10-year-old kid talking to your best friend. Sound excited, playful, and natural like a real child. Keep a high-pitched, youthful voice. When speaking Arabic, pronounce words clearly but stay energetic and fun.",
+    const backendRes = await fetch(`${BACKEND_URL}/api/ai/tts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
     });
 
-    return new Response(response.body, {
+    if (!backendRes.ok) {
+      const err = await backendRes.json().catch(() => ({ error: "TTS failed" }));
+      return Response.json(err, { status: backendRes.status });
+    }
+
+    return new Response(backendRes.body, {
       headers: {
         "Content-Type": "audio/mpeg",
         "Cache-Control": "public, max-age=86400",
       },
     });
-  } catch (error) {
-    console.error("TTS error:", error);
+  } catch {
     return Response.json({ error: "TTS generation failed" }, { status: 500 });
   }
 }

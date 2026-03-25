@@ -25,7 +25,7 @@ import Confetti from "../../../components/kids/Confetti";
 import SpeechInput from "../../../components/kids/SpeechInput";
 import { CITIES } from "@/lib/data/cities";
 import ExpandableMap from "../../../components/kids/ExpandableMap";
-import type { GameResponse } from "@/lib/ai/games/city-explorer";
+import type { GameResponse } from "@/lib/types/games";
 import { useTokenQuota } from "@/lib/hooks/useTokenQuota";
 import MedhatBlockedMessage from "../../../components/kids/MedhatBlockedMessage";
 import { useEmailVerification } from "../../../components/kids/EmailVerificationGuard";

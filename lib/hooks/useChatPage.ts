@@ -19,7 +19,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
 import { ChatMessage, ImageResult, Sticker, RewardLevel, UnlockedSticker } from "@/lib/types";
-import { buildKidsSystemPrompt } from "@/lib/ai/kids";
 import { detectCityInText, CITIES } from "@/lib/data/cities";
 import type { City } from "@/lib/data/cities";
 import { convertMessages } from "@/lib/utils/messageConverter";
@@ -266,12 +265,6 @@ export function useChatPage(): UseChatPageReturn {
   // Chat display settings
   const { settings: chatSettings } = useChatSettings(profileId);
 
-  // System prompt with name and dialect
-  const systemPrompt = useMemo(
-    () => buildKidsSystemPrompt(activeProfile?.name, chatSettings.dialect),
-    [activeProfile?.name, chatSettings.dialect]
-  );
-
   // UI state
   const [showPointsPopup, setShowPointsPopup] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
@@ -319,11 +312,8 @@ export function useChatPage(): UseChatPageReturn {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             messages: [...aiMessages, userMessage].slice(-3),
-            config: {
-              mode: "localPrompt",
-              systemPrompt,
-            },
             playerName: activeProfile?.name,
+            dialect: chatSettings.dialect,
           }),
         });
 
@@ -355,7 +345,7 @@ export function useChatPage(): UseChatPageReturn {
         setStatus("idle");
       }
     },
-    [aiMessages, systemPrompt, activeProfile?.name, user, showVerificationModal]
+    [aiMessages, chatSettings.dialect, activeProfile?.name, user, showVerificationModal]
   );
 
   const isLoading = status === "streaming" || status === "submitted";
