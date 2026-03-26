@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useBackgroundMusic } from "@/lib/hooks/useBackgroundMusic";
 import { AuthProvider } from "@/lib/context/auth-context";
 import { EmailVerificationGuard } from "./kids/EmailVerificationGuard";
 import { Toaster } from "sonner";
 import SplashScreen from "./kids/SplashScreen";
+import PWAInstallPrompt from "./kids/PWAInstallPrompt";
 
 interface BackgroundMusicContextType {
   isPlaying: boolean;
@@ -28,6 +29,15 @@ export function useBackgroundMusicContext() {
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   const music = useBackgroundMusic();
 
+  // Register Service Worker for PWA/WebAPK support
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // SW registration failed — non-critical, app works without it
+      });
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <EmailVerificationGuard>
@@ -37,6 +47,7 @@ export default function ClientProviders({ children }: { children: React.ReactNod
             {children}
           </div>
           <SplashScreen />
+          <PWAInstallPrompt />
         </BackgroundMusicContext.Provider>
       </EmailVerificationGuard>
     </AuthProvider>
