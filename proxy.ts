@@ -97,7 +97,6 @@ export async function proxy(req: NextRequest) {
 
 function redirectToLogin(req: NextRequest): NextResponse {
   const loginUrl = new URL("/auth/login", req.url);
-  loginUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
   const res = NextResponse.redirect(loginUrl);
   // Clear stale cookies
   res.cookies.delete("access_token");

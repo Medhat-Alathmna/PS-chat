@@ -20,7 +20,6 @@ export default function LoginPage() {
 function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/kids";
   const oauthError = searchParams.get("error");
 
   const { login, register, loginWithGoogle, isPending, error, clearError } =
@@ -52,10 +51,10 @@ function LoginPageInner() {
         return;
       }
       const ok = await register(email, password);
-      if (ok) router.push(callbackUrl);
+      if (ok) router.push("/kids");
     } else {
       const ok = await login(email, password);
-      if (ok) router.push(callbackUrl);
+      if (ok) router.push("/kids");
     }
   };
 
