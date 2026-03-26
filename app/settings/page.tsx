@@ -62,7 +62,7 @@ function SettingsInner() {
 
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
-      <div className="relative flex h-screen flex-col overflow-hidden" dir="rtl">
+      <div className="relative flex h-dvh flex-col overflow-hidden" dir="rtl">
         {/* Header */}
         <header className="shrink-0 px-4 py-3 z-10">
           <div className="flex items-center gap-3 max-w-2xl mx-auto">

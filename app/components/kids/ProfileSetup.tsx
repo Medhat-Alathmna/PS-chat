@@ -53,7 +53,7 @@ export default function ProfileSetup({ onComplete, existingProfiles, onCancel, i
 
   return (
     <AnimatedBackground variant="sky" showClouds>
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-dvh flex items-center justify-center px-4">
         <div className="text-center max-w-sm mx-auto w-full">
           <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-xl animate-fade-in-up">
             {/* Progress dots */}

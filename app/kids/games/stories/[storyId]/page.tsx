@@ -47,7 +47,7 @@ function StoryReaderInner() {
   if (!story) {
     return (
       <AnimatedBackground variant="night" showStars showClouds={false} showBirds={false}>
-        <div className="flex items-center justify-center h-screen" dir="rtl">
+        <div className="flex items-center justify-center h-dvh" dir="rtl">
           <div className="text-center">
             <div className="text-4xl mb-3">😕</div>
             <p className="text-white/70 text-sm mb-4">هذه القصة غير موجودة</p>
@@ -250,7 +250,7 @@ function StorySession({
 
   return (
     <AnimatedBackground variant="night" showStars showClouds={false} showBirds={false}>
-      <div className="flex flex-col h-screen" dir="rtl">
+      <div className="flex flex-col h-dvh" dir="rtl">
         {/* Header */}
         <header className="shrink-0 px-4 pt-3 pb-1 z-10">
           <div className="flex items-center justify-between max-w-lg mx-auto">

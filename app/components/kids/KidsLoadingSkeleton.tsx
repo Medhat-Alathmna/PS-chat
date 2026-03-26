@@ -2,7 +2,7 @@
 
 export default function KidsLoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-100 to-sky-200 flex flex-col">
+    <div className="min-h-dvh bg-gradient-to-b from-sky-100 to-sky-200 flex flex-col">
       {/* Header skeleton */}
       <div className="px-4 py-3">
         <div className="h-14 bg-white/50 rounded-2xl animate-pulse" />

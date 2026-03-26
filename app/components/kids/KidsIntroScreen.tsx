@@ -94,7 +94,7 @@ export default function KidsIntroScreen({
         </div>
       )}
 
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         {/* Header row — music | profile + settings + level */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0 z-20">
           {/* Left: music toggle */}

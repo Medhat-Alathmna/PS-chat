@@ -28,7 +28,7 @@ export default function AgeGate({ onComplete }: AgeGateProps) {
 
   return (
     <AnimatedBackground variant="sky" showClouds>
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-dvh flex items-center justify-center px-4">
         <div className="text-center max-w-sm mx-auto">
           <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-xl animate-fade-in-up">
             <h2 className="text-2xl font-bold text-[var(--kids-purple)] mb-2 bubble-text">

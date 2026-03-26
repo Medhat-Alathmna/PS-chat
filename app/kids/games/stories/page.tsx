@@ -74,7 +74,7 @@ function StoriesHome() {
     <>
     {isApiPending && <ProfilesLoadingOverlay />}
     <AnimatedBackground variant="night" showStars showClouds={false} showBirds={false}>
-      <div className="relative flex h-screen flex-col overflow-hidden" dir="rtl">
+      <div className="relative flex h-dvh flex-col overflow-hidden" dir="rtl">
         {/* Header */}
         <header className="shrink-0 px-4 pt-4 pb-2 z-10">
           <div className="flex items-center justify-between max-w-lg mx-auto">

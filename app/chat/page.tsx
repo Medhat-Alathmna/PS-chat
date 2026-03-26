@@ -20,7 +20,7 @@ import MedhatBlockedMessage from "@/app/components/kids/MedhatBlockedMessage";
 export default function KidsChatPage() {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[var(--kids-bg)]"><div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--kids-primary)] border-t-transparent"></div></div>}>
+      <Suspense fallback={<div className="flex h-dvh items-center justify-center bg-[var(--kids-bg)]"><div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--kids-primary)] border-t-transparent"></div></div>}>
         <KidsChatPageInner />
       </Suspense>
     </ErrorBoundary>
@@ -79,7 +79,7 @@ function KidsChatPageInner() {
 
   return (
     <AnimatedBackground variant="sky" showClouds showBirds={false}>
-      <div className="relative flex h-screen flex-col overflow-hidden" key={profile.activeProfile.id}>
+      <div className="relative flex h-dvh flex-col overflow-hidden" key={profile.activeProfile.id}>
         {/* Header with rewards */}
         <ChatHeader
           profiles={profile.profiles}

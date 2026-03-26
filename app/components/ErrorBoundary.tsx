@@ -32,7 +32,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 to-sky-200 px-4">
+        <div className="min-h-dvh flex items-center justify-center bg-gradient-to-b from-sky-100 to-sky-200 px-4">
           <div className="text-center bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-xl max-w-sm">
             <div className="text-6xl mb-4">😅</div>
             <h2 className="text-2xl font-bold text-[var(--kids-purple)] mb-2">
