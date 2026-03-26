@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 const SPLASH_KEY = "falastin_splash_shown";
 
@@ -66,6 +67,16 @@ export default function SplashScreen() {
       `}
       aria-hidden="true"
     >
+      {/* Logo */}
+      <Image
+        src="/pss.webp"
+        alt="PS Kids"
+        width={160}
+        height={160}
+        className="animate-splash-logo mb-6 drop-shadow-lg"
+        priority
+      />
+
       {/* App name — typewriter reveal */}
       <div dir="ltr">
         <h1

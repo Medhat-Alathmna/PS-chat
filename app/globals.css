@@ -592,6 +592,22 @@ code {
    ========================================= */
 
 /* Typewriter clip reveal for "PS Kids" */
+@keyframes splashLogo {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-splash-logo {
+  opacity: 0;
+  animation: splashLogo 0.8s ease-out forwards;
+}
+
 @keyframes splashTypewriterClip {
   from {
     clip-path: inset(0 100% 0 0);
@@ -897,11 +913,13 @@ code {
   .story-card-enter,
   .animate-splash-typewriter,
   .animate-splash-tagline,
+  .animate-splash-logo,
   .animate-splash-exit {
     animation: none;
   }
 
-  .animate-splash-tagline {
+  .animate-splash-tagline,
+  .animate-splash-logo {
     opacity: 1;
   }
 

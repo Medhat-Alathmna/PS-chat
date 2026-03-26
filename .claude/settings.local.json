@@ -76,7 +76,10 @@
       "Read(//c/Work/React/PS-chat/**)",
       "WebFetch(domain:api.github.com)",
       "WebFetch(domain:patch-diff.githubusercontent.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(kill 1351)",
+      "Bash(pkill -f \"next dev\")"
     ],
     "additionalDirectories": [
       "c:\\Work\\ps-chat-backend\\src\\AI\\shared",

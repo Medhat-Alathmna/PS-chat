@@ -66,7 +66,11 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/pss.webp", sizes: "192x192", type: "image/webp" },
+      { url: "/pss.webp", sizes: "512x512", type: "image/webp" },
+    ],
     apple: "/apple-touch-icon.png",
   },
   alternates: {
