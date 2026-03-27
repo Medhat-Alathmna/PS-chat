@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
 import { ChatMessage } from "@/lib/types";
 import SpeakingIndicator from "./SpeakingIndicator";
 
@@ -75,12 +76,31 @@ export default function KidsChatBubble({
           className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-md"
           style={{ backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` }}
         >
-          <p className="leading-relaxed text-gray-700 whitespace-pre-wrap" dir="auto" style={textStyle}>
-            {formatKidsMessageWithIcons(message.content)}
+          <div dir="rtl" style={textStyle}>
+            <ReactMarkdown
+              components={{
+                h2: ({ children }) => (
+                  <h2 className="text-base font-bold mb-1 mt-0" style={{ color: bgColor ?? "var(--kids-purple)" }}>{children}</h2>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-bold text-gray-800">{children}</strong>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="border-r-4 border-[var(--kids-purple)] bg-purple-50 rounded-lg px-3 py-2 my-1.5 text-sm text-gray-700">
+                    {children}
+                  </blockquote>
+                ),
+                p: ({ children }) => (
+                  <p className="leading-relaxed text-gray-700 mb-1">{children}</p>
+                ),
+              }}
+            >
+              {formatKidsMessageWithIcons(message.content)}
+            </ReactMarkdown>
             {isStreaming && (
               <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
             )}
-          </p>
+          </div>
 
           {/* Images — below text, full bubble width */}
           {message.images && message.images.length > 0 && (
