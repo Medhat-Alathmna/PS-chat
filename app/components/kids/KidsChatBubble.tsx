@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ChatMessage } from "@/lib/types";
 import SpeakingIndicator from "./SpeakingIndicator";
 
@@ -78,12 +79,19 @@ export default function KidsChatBubble({
         >
           <div dir="rtl" style={textStyle}>
             <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
               components={{
                 h2: ({ children }) => (
                   <h2 className="text-base font-bold mb-1 mt-0" style={{ color: bgColor ?? "var(--kids-purple)" }}>{children}</h2>
                 ),
+                h3: ({ children }) => (
+                  <h3 className="text-sm font-bold mb-0.5 mt-1.5" style={{ color: bgColor ?? "var(--kids-purple)" }}>{children}</h3>
+                ),
                 strong: ({ children }) => (
                   <strong className="font-bold text-gray-800">{children}</strong>
+                ),
+                em: ({ children }) => (
+                  <em className="italic text-gray-600 not-italic">{children}</em>
                 ),
                 blockquote: ({ children }) => (
                   <blockquote className="border-r-4 border-[var(--kids-purple)] bg-purple-50 rounded-lg px-3 py-2 my-1.5 text-sm text-gray-700">
@@ -93,6 +101,70 @@ export default function KidsChatBubble({
                 p: ({ children }) => (
                   <p className="leading-relaxed text-gray-700 mb-1">{children}</p>
                 ),
+                table: ({ node }) => {
+                  const tableChildren = (node as any)?.children ?? [];
+                  const thead = tableChildren.find((c: any) => c.tagName === 'thead');
+                  const tbody = tableChildren.find((c: any) => c.tagName === 'tbody');
+
+                  const headerRow = thead?.children?.find((c: any) => c.tagName === 'tr');
+                  const headers: string[] = headerRow?.children
+                    ?.filter((c: any) => c.tagName === 'th')
+                    ?.map((th: any) => getHastText(th)) ?? [];
+
+                  const rows: string[][] = tbody?.children
+                    ?.filter((c: any) => c.tagName === 'tr')
+                    ?.map((tr: any) =>
+                      tr.children
+                        ?.filter((c: any) => c.tagName === 'td')
+                        ?.map((td: any) => getHastText(td)) ?? []
+                    ) ?? [];
+
+                  return (
+                    <>
+                      {/* موبايل: بطاقات عمودية */}
+                      <div className="sm:hidden my-2 space-y-2">
+                        <div className="flex items-center gap-1.5 text-xs font-medium opacity-60"
+                          style={{ color: bgColor ?? 'var(--kids-purple)' }}>
+                          <span>📊</span>
+                          <span>جدول بيانات</span>
+                        </div>
+                        {rows.map((row, i) => (
+                          <div key={i} className="rounded-xl p-3 space-y-1.5"
+                            style={{ backgroundColor: `${bgColor ?? '#6C5CE7'}15`, border: `1px solid ${bgColor ?? '#6C5CE7'}25` }}>
+                            {headers.map((header, j) => (
+                              <div key={j} className="flex justify-between items-start gap-2 py-1 border-b border-black/5 last:border-0">
+                                <span className="text-xs font-bold text-gray-500 shrink-0">{header}</span>
+                                <span className="text-sm text-gray-700 text-left">{row[j] ?? '—'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* ديسكتوب: جدول أفقي */}
+                      <div className="hidden sm:block overflow-x-auto my-2 rounded-xl border border-purple-100 shadow-sm">
+                        <table className="w-full text-sm border-collapse">
+                          <thead style={{ backgroundColor: `${bgColor ?? '#6C5CE7'}20` }}>
+                            <tr>
+                              {headers.map((h, i) => (
+                                <th key={i} className="px-3 py-2 text-right font-bold text-gray-700 whitespace-nowrap">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-purple-50">
+                            {rows.map((row, i) => (
+                              <tr key={i} className="hover:bg-purple-50/40 transition-colors">
+                                {row.map((cell, j) => (
+                                  <td key={j} className="px-3 py-2 text-right text-gray-600">{cell}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  );
+                },
               }}
             >
               {formatKidsMessageWithIcons(message.content)}
@@ -196,11 +268,29 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
+function getHastText(node: any): string {
+  if (!node) return '';
+  if (node.type === 'text') return node.value ?? '';
+  if (node.children) return (node.children as any[]).map(getHastText).join('');
+  return '';
+}
+
 function formatKidsMessageWithIcons(content: string): string {
   let cleaned = content;
   cleaned = cleaned.replace(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg)(\?[^\s]*)?/gi, '');
   cleaned = cleaned.replace(/https?:\/\/[^\s]+/g, '');
   cleaned = cleaned.replace(/\n\n+/g, '\n\n');
+  // Auto-fix GFM tables missing the required separator row (|---|---|)
+  // remark-gfm won't render a table without it
+  cleaned = cleaned.replace(
+    /((?:^|\n)\|[^\n]+\|)((?:\n\|[^\n]+\|)+)/gm,
+    (match, firstRow, restRows) => {
+      if (/\n\|[\s:-]+\|/.test(match)) return match; // separator already present
+      const cols = (firstRow.match(/\|/g) ?? []).length - 1;
+      const sep = '\n|' + '---|'.repeat(cols);
+      return firstRow + sep + restRows;
+    }
+  );
   cleaned = cleaned.trim();
   if (!cleaned.match(/[🎉🎊⭐✨🏆👋🌟💫]/)) {
     if (cleaned.includes("مبروك") && !cleaned.includes("🎉")) {
