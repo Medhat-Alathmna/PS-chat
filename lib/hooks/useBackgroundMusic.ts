@@ -93,9 +93,21 @@ export function useBackgroundMusic(audioPath: string = "/sounds/PS-chat-Backgoun
           }
         });
 
-        // Handle errors
-        audio.addEventListener("error", (e) => {
-          console.error("Error loading background music:", e);
+        // Handle errors — fall back to direct path if blob URL fails
+        audio.addEventListener("error", () => {
+          const mediaError = (audio as HTMLAudioElement).error;
+          const isBlobUrl = audio.src.startsWith("blob:");
+          if (isBlobUrl && isMounted) {
+            // Blob URL failed — revoke it and retry with the original path
+            if (objectUrlRef.current) {
+              URL.revokeObjectURL(objectUrlRef.current);
+              objectUrlRef.current = null;
+            }
+            audio.src = audioPath;
+            audio.load();
+          } else if (mediaError) {
+            console.warn("Background music unavailable:", mediaError.code, mediaError.message);
+          }
         });
 
         audioRef.current = audio;
