@@ -36,6 +36,22 @@ function isGuestOnly(pathname: string): boolean {
   return GUEST_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+/** Extract a cookie value from Set-Cookie response headers */
+function extractCookieValue(setCookies: string[], name: string): string | null {
+  for (const cookie of setCookies) {
+    const match = cookie.match(new RegExp(`^${name}=([^;]+)`));
+    if (match) return match[1];
+  }
+  return null;
+}
+
+/** Replace a named cookie value in a Cookie request header */
+function replaceCookieInHeader(cookieHeader: string, name: string, value: string): string {
+  const parts = cookieHeader.split(";").map(c => c.trim()).filter(c => !c.startsWith(`${name}=`));
+  parts.push(`${name}=${value}`);
+  return parts.join("; ");
+}
+
 /** Decode JWT exp without verifying signature */
 function getTokenExpiry(token: string): number | null {
   try {
@@ -82,11 +98,21 @@ export async function proxy(req: NextRequest) {
     );
 
     if (refreshRes.ok) {
-      // Forward the new Set-Cookie headers from the refresh response
-      const response = NextResponse.next();
-      refreshRes.headers.getSetCookie().forEach((cookie) => {
-        response.headers.append("Set-Cookie", cookie);
-      });
+      const setCookies = refreshRes.headers.getSetCookie();
+      const newAccessToken = extractCookieValue(setCookies, "access_token");
+
+      // Inject the new token into the current request so downstream
+      // handlers (getAccessToken / cookies()) receive the fresh token
+      const newHeaders = new Headers(req.headers);
+      if (newAccessToken) {
+        newHeaders.set(
+          "cookie",
+          replaceCookieInHeader(req.headers.get("cookie") ?? "", "access_token", newAccessToken)
+        );
+      }
+
+      const response = NextResponse.next({ request: { headers: newHeaders } });
+      setCookies.forEach(c => response.headers.append("Set-Cookie", c));
       return response;
     }
   }
