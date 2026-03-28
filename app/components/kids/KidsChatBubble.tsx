@@ -101,26 +101,89 @@ export default function KidsChatBubble({
                 p: ({ children }) => (
                   <p className="leading-relaxed text-gray-700 mb-1">{children}</p>
                 ),
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-2 rounded-xl border border-purple-100 shadow-sm">
-                    <table className="w-full text-sm border-collapse">{children}</table>
-                  </div>
-                ),
-                thead: ({ children }) => (
-                  <thead style={{ backgroundColor: `${bgColor ?? "#6C5CE7"}20` }}>{children}</thead>
-                ),
-                tbody: ({ children }) => (
-                  <tbody className="divide-y divide-purple-50">{children}</tbody>
-                ),
-                tr: ({ children }) => (
-                  <tr className="hover:bg-purple-50/40 transition-colors">{children}</tr>
-                ),
-                th: ({ children }) => (
-                  <th className="px-3 py-2 text-right font-bold text-gray-700 whitespace-nowrap">{children}</th>
-                ),
-                td: ({ children }) => (
-                  <td className="px-3 py-2 text-right text-gray-600">{children}</td>
-                ),
+                table: ({ node }) => {
+                  const tChildren = (node as any)?.children ?? [];
+                  const thead = tChildren.find((c: any) => c.tagName === 'thead');
+                  const tbody = tChildren.find((c: any) => c.tagName === 'tbody');
+
+                  const headerRow = thead?.children?.find((c: any) => c.tagName === 'tr');
+                  const headers: string[] = headerRow?.children
+                    ?.filter((c: any) => c.tagName === 'th')
+                    ?.map((th: any) => getHastText(th)) ?? [];
+
+                  const rows: string[][] = tbody?.children
+                    ?.filter((c: any) => c.tagName === 'tr')
+                    ?.map((tr: any) =>
+                      tr.children
+                        ?.filter((c: any) => c.tagName === 'td')
+                        ?.map((td: any) => getHastText(td)) ?? []
+                    ) ?? [];
+
+                  // جدول مقارنة: 3 أعمدة (مقياس + شيء أ + شيء ب)
+                  const isCompare = headers.length === 3;
+                  const colorA = bgColor ?? '#6C5CE7';
+                  const colorB = '#00B894';
+                  const parseNum = (s: string) =>
+                    parseFloat(s.replace(/[,،\s]/g, '').match(/-?[\d.]+/)?.[0] ?? '');
+
+                  return (
+                    <div className="overflow-x-auto my-2 rounded-xl border border-purple-100 shadow-sm">
+                      <table className="w-full text-sm border-collapse">
+                        <thead>
+                          <tr>
+                            {headers.map((h, i) => {
+                              const bg =
+                                isCompare && i === 1 ? `${colorA}25` :
+                                isCompare && i === 2 ? `${colorB}25` :
+                                `${colorA}20`;
+                              const color =
+                                isCompare && i === 1 ? colorA :
+                                isCompare && i === 2 ? colorB :
+                                '#374151';
+                              return (
+                                <th key={i}
+                                  className="px-3 py-2 text-right font-bold whitespace-nowrap"
+                                  style={{ backgroundColor: bg, color }}>
+                                  {h}
+                                </th>
+                              );
+                            })}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-purple-50">
+                          {rows.map((row, i) => {
+                            const numA = isCompare ? parseNum(row[1] ?? '') : NaN;
+                            const numB = isCompare ? parseNum(row[2] ?? '') : NaN;
+                            const bothNum = !isNaN(numA) && !isNaN(numB);
+                            const aWins = bothNum && numA > numB;
+                            const bWins = bothNum && numB > numA;
+
+                            return (
+                              <tr key={i} className="hover:bg-purple-50/40 transition-colors">
+                                {row.map((cell, j) => {
+                                  const isWinner =
+                                    isCompare && ((j === 1 && aWins) || (j === 2 && bWins));
+                                  const winColor = j === 1 ? colorA : colorB;
+                                  return (
+                                    <td key={j}
+                                      className="px-3 py-2 text-right"
+                                      style={{
+                                        color: isWinner ? winColor : '#4B5563',
+                                        fontWeight: isWinner ? 700 : 400,
+                                        backgroundColor: isWinner ? `${winColor}12` : undefined,
+                                      }}>
+                                      {cell}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                },
               }}
             >
               {formatKidsMessageWithIcons(message.content)}
@@ -222,6 +285,13 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
       />
     </div>
   );
+}
+
+function getHastText(node: any): string {
+  if (!node) return '';
+  if (node.type === 'text') return node.value ?? '';
+  if (node.children) return (node.children as any[]).map(getHastText).join('');
+  return '';
 }
 
 function formatKidsMessageWithIcons(content: string): string {
