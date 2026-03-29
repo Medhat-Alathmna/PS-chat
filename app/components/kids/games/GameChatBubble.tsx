@@ -65,33 +65,86 @@ export default function GameChatBubble({
         {/* Main message - only render if there's text content, images, or streaming */}
         {(hasText || isStreaming || hasImages) && (
           <div
-            className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-md"
-            style={{ backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` }}
+            className="px-4 py-4 rounded-2xl rounded-tl-sm shadow-md overflow-hidden"
+            style={{ backgroundColor: `${bgColor}12`, border: `2px solid ${bgColor}35` }}
           >
             <div dir="rtl" style={textStyle}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
                   p: ({ children }) => (
-                    <p className="leading-relaxed text-gray-700 mb-1">{children}</p>
+                    <p className="leading-loose text-gray-700 mb-2.5 last:mb-0">{children}</p>
                   ),
                   strong: ({ children }) => (
-                    <strong className="font-bold text-gray-800">{children}</strong>
+                    <mark
+                      className="font-bold rounded px-0.5 not-italic"
+                      style={{ backgroundColor: `${bgColor}25`, color: bgColor }}
+                    >
+                      {children}
+                    </mark>
                   ),
                   em: ({ children }) => (
-                    <em className="italic text-gray-600">{children}</em>
+                    <em className="italic text-gray-500">{children}</em>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-base font-bold mb-1 mt-0" style={{ color: bgColor }}>{children}</h2>
+                    <div
+                      className="flex items-center gap-2 my-3 px-3 py-2 rounded-xl font-bold text-base shadow-sm"
+                      style={{
+                        background: `linear-gradient(135deg, ${bgColor}30, ${bgColor}15)`,
+                        borderRight: `4px solid ${bgColor}`,
+                        color: bgColor,
+                      }}
+                    >
+                      <span>✨</span>
+                      <span>{children}</span>
+                    </div>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-sm font-bold mb-0.5 mt-1.5" style={{ color: bgColor }}>{children}</h3>
+                    <div
+                      className="flex items-center gap-1.5 mt-3 mb-1.5 pr-2 py-1 rounded-lg text-sm font-bold"
+                      style={{
+                        backgroundColor: `${bgColor}18`,
+                        borderRight: `3px solid ${bgColor}80`,
+                        color: bgColor,
+                      }}
+                    >
+                      <span className="opacity-70">◆</span>
+                      <span>{children}</span>
+                    </div>
+                  ),
+                  hr: () => (
+                    <div className="flex items-center justify-center gap-2 my-3">
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: `${bgColor}60` }}
+                        />
+                      ))}
+                    </div>
                   ),
                   ul: ({ children }) => (
-                    <ul className="list-disc list-inside text-gray-700 mb-1 space-y-0.5">{children}</ul>
+                    <ul className="text-gray-700 mb-2.5 space-y-1.5 pr-1">{children}</ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="list-decimal list-inside text-gray-700 mb-1 space-y-0.5">{children}</ol>
+                    <ol className="text-gray-700 mb-2.5 space-y-1.5 pr-1 list-decimal list-inside">{children}</ol>
+                  ),
+                  li: ({ children }) => (
+                    <li className="flex items-start gap-2 leading-loose">
+                      <span className="mt-0.5 shrink-0 text-sm" style={{ color: bgColor }}>🌟</span>
+                      <span>{children}</span>
+                    </li>
+                  ),
+                  blockquote: ({ children }) => (
+                    <div
+                      className="my-2 px-3 py-2 rounded-lg text-sm italic text-gray-600"
+                      style={{
+                        backgroundColor: `${bgColor}12`,
+                        borderRight: `3px solid ${bgColor}`,
+                      }}
+                    >
+                      {children}
+                    </div>
                   ),
                 }}
               >
