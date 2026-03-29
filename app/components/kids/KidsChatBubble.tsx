@@ -294,7 +294,7 @@ function getHastText(node: any): string {
   return '';
 }
 
-function formatKidsMessageWithIcons(content: string): string {
+export function formatKidsMessageWithIcons(content: string): string {
   let cleaned = content;
   cleaned = cleaned.replace(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg)(\?[^\s]*)?/gi, '');
   cleaned = cleaned.replace(/https?:\/\/[^\s]+/g, '');

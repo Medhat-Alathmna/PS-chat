@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ImageResult } from "@/lib/types";
 import SpeakingIndicator from "../SpeakingIndicator";
+import { formatKidsMessageWithIcons } from "../KidsChatBubble";
 
 interface GameChatBubbleProps {
   role: "user" | "assistant";
@@ -65,12 +68,39 @@ export default function GameChatBubble({
             className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-md"
             style={{ backgroundColor: `${bgColor}15`, border: `2px solid ${bgColor}30` }}
           >
-            <p className="leading-relaxed text-gray-700 whitespace-pre-wrap" dir="auto" style={textStyle}>
-                {content}
-                {isStreaming && (
-                  <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
-                )}
-              </p>
+            <div dir="rtl" style={textStyle}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ children }) => (
+                    <p className="leading-relaxed text-gray-700 mb-1">{children}</p>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-bold text-gray-800">{children}</strong>
+                  ),
+                  em: ({ children }) => (
+                    <em className="italic text-gray-600">{children}</em>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-base font-bold mb-1 mt-0" style={{ color: bgColor }}>{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-bold mb-0.5 mt-1.5" style={{ color: bgColor }}>{children}</h3>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="list-disc list-inside text-gray-700 mb-1 space-y-0.5">{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal list-inside text-gray-700 mb-1 space-y-0.5">{children}</ol>
+                  ),
+                }}
+              >
+                {formatKidsMessageWithIcons(content)}
+              </ReactMarkdown>
+              {isStreaming && (
+                <span className="inline-block w-1.5 h-4 bg-[var(--kids-purple)] rounded-full animate-pulse ml-1 align-middle" />
+              )}
+            </div>
               {imageResults && imageResults.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2 animate-pop-in">
                   {imageResults.slice(0, 4).map((img, i) => (

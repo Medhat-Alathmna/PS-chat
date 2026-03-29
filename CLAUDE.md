@@ -52,6 +52,7 @@ NEXT_PUBLIC_SITE_URL=https://ps-kids.school
 **Tech Stack**:
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4, Sonner (toasts)
 - **Backend**: NestJS (separate repository) — handles AI, auth, profiles, game sessions, persistence
+- **Backend Repository**: `C:\Work\ps-chat-backend` (NestJS — separate repository)
 - **Maps**: Leaflet (city explorer), React-Globe.GL (world explorer)
 - **Media**: Multi-source image search (Unsplash, Pexels, Wikimedia, OpenVerse), YouTube integration
 - **Auth**: JWT (accessToken/refreshToken cookies), Google OAuth
@@ -376,6 +377,20 @@ export async function POST(req: NextRequest) {
 - **Bilingual** — All user-facing text in both Arabic and English. Test both directions.
 - **Performance** — Image search and hint generation can be slow. Pre-fetch in parallel (3s timeout).
 - **SEO** — Root layout includes JSON-LD structured data, meta tags, open graph. Update `NEXT_PUBLIC_SITE_URL` for canonical links.
+
+## Working Principles
+
+1. **Suggest Alternatives** — Always mention better approaches or patterns when they exist, even if not explicitly asked.
+
+2. **Constructive Criticism** — Analyze and critique existing code when relevant. The goal is code quality, not just task execution.
+
+3. **DRY (Don't Repeat Yourself)** — Search for existing functions, hooks, and patterns before writing new code. Extract repeated logic into shared utilities or services.
+
+4. **Ask When Unclear** — Before starting any change with unclear scope or intent, ask a clarifying question instead of assuming.
+
+5. **Follow Existing Code Patterns** — New code must match the project's existing naming conventions, structure, and patterns to maintain consistency across the codebase.
+
+6. **Keep CLAUDE.md Updated** — When adding a new pattern, making a structural change, or making an important architectural decision, update this file to reflect the change.
 
 ## Language Preferences
 
