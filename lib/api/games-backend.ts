@@ -18,12 +18,14 @@ interface UpdateSessionData {
 
 async function proxyFetch<T = unknown>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  profileId?: string
 ): Promise<T> {
   const res = await fetch(`/api/backend${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(profileId ? { "X-Profile-Id": profileId } : {}),
       ...(options.headers as Record<string, string> | undefined),
     },
   });
@@ -54,7 +56,8 @@ export async function createGameSession(
 
     const result = await proxyFetch<CreateSessionResult>(
       `/profiles/${profileId}/games/${gameId}/sessions`,
-      { method: "POST", body: JSON.stringify(body) }
+      { method: "POST", body: JSON.stringify(body) },
+      profileId
     );
     return result?.id ?? null;
   } catch (err) {
@@ -73,10 +76,11 @@ export async function updateGameSession(
   data: UpdateSessionData
 ): Promise<void> {
   try {
-    await proxyFetch(`/profiles/${profileId}/games/sessions/${sessionId}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
+    await proxyFetch(
+      `/profiles/${profileId}/games/sessions/${sessionId}`,
+      { method: "PATCH", body: JSON.stringify(data) },
+      profileId
+    );
   } catch (err) {
     const status = (err as Error & { status?: number }).status;
     if (status !== 404) {
@@ -94,9 +98,11 @@ export async function discoverCityBackend(
   cityId: string
 ): Promise<void> {
   try {
-    await proxyFetch(`/profiles/${profileId}/games/cities/${cityId}`, {
-      method: "POST",
-    });
+    await proxyFetch(
+      `/profiles/${profileId}/games/cities/${cityId}`,
+      { method: "POST" },
+      profileId
+    );
   } catch (err) {
     const status = (err as Error & { status?: number }).status;
     if (status !== 409) {
